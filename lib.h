@@ -91,7 +91,15 @@ void *new_obj(int nblocks16);
 void free_obj(void *obj, int nblocks16);
 
 bool is_alive(void *obj);
+
 int get_live_objs_count();
+int get_max_live_objs_count();
+int get_total_objs_count();
+
+int get_live_mem_usage();
+int get_max_live_mem_usage();
+int get_total_mem_requested();
+
 void print_all_live_objs();
 
 /////////////////////////////////// mem.cpp ////////////////////////////////////
@@ -109,11 +117,16 @@ Seq    *new_seq(int length);  // Sets ref_count and length
 Map    *new_map(int size);    // Sets ref_count and size
 TagObj *new_tag_obj();        // Sets ref_count
 
+Set *shrink_set(Set *set, int new_size);
+
 Obj *new_obj_array(int size);
 void delete_obj_array(Obj *buffer, int size);
 
 int *new_int_array(int size);
 void delete_int_array(int *buffer, int size);
+
+void **new_ptr_array(int size);
+void delete_ptr_array(void **buffer, int size);
 
 //int get_ref_count(Obj obj);
 
@@ -138,6 +151,9 @@ TypeTag get_type_tag(Obj obj);
 Obj make_symb(int idx);
 int get_symb_idx(Obj obj);
 
+Obj *get_key_array_ptr(Map *map);
+Obj *get_value_array_ptr(Map *map);
+
 Obj make_obj(Set *ptr);
 Obj make_obj(Seq *ptr);
 Obj make_obj(Map *ptr);
@@ -151,10 +167,13 @@ TagObj *get_tag_obj_ptr(Obj obj);
 
 //////////////////////////////// basic_ops.cpp /////////////////////////////////
 
+bool inline_eq(Obj obj1, Obj obj2);
 bool are_eq(Obj obj1, Obj obj2);
 bool is_out_of_range(SetIter &it);
 bool is_out_of_range(SeqIter &it);
 bool is_out_of_range(MapIter &it);
+bool has_elem(Obj set, Obj elem);
+
 
 int get_int_val(Obj obj);
 int get_set_size(Obj set);
@@ -164,6 +183,7 @@ int unique_int();
 
 Obj to_obj(bool b);
 Obj to_obj(int n);
+Obj obj_neg(Obj obj);
 Obj at(Obj seq, int idx);
 Obj get_tag(Obj obj);
 Obj get_inner_obj(Obj obj);
@@ -193,7 +213,8 @@ Obj lookup(Obj map, Obj key);                   // Does not increase reference c
 Obj lookup(Obj map, Obj key, bool &found);      // Does not increase reference count
 Obj ext_lookup(Obj map, Obj key);               // Does not increase reference count
 Obj ext_lookup(Obj map, Obj key, bool &found);  // Does not increase reference count
-Obj merge_maps(Obj map1, Obj map2);
+Obj merge_sets(Obj sets);
+Obj merge_maps(Obj maps);
 Obj seq_to_set(Obj seq);
 Obj seq_to_mset(Obj seq);
 Obj list_to_seq(Obj list);
@@ -213,7 +234,6 @@ int  sort_and_release_dups(Obj *objs, int size);
 void sort_and_check_no_dups(Obj *keys, Obj *values, int size);
 int  find_obj(Obj *sorted_array,  int len, Obj obj);
 int  comp_objs(Obj obj1, Obj obj2);
-
 
 /////////////////////////////// inter_utils.cpp ////////////////////////////////
 

@@ -2,6 +2,12 @@
 #include "generated.h"
 
 
+bool inline_eq(Obj obj1, Obj obj2)
+{
+  assert(is_inline_obj(obj2));
+  return obj1 == obj2;
+}
+
 bool are_eq(Obj obj1, Obj obj2)
 {
   return comp_objs(obj1, obj2) == 0;
@@ -20,6 +26,15 @@ bool is_out_of_range(SeqIter &it)
 bool is_out_of_range(MapIter &it)
 {
   return it.idx >= it.size;
+}
+
+bool has_elem(Obj set, Obj elem)
+{
+  Set *s = get_set_ptr(set);
+  if (s == 0)
+    return false;
+  int idx = find_obj(s->elems, s->size, elem);
+  return idx != -1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -61,13 +76,24 @@ int unique_int()
 
 Obj to_obj(bool b)
 {
-  return b ? generated::S_true : generated::S_false;
+  // assert((int(b) == 0 && b == false) || (int(b) == 1 && b == true));
+  // assert(((32 >> int(b)) | 1) == (b ? generated::S_true : generated::S_false));
+  // return (32 >> int(ib)) | 1;
+  return b ? generated::S_true : generated::S_false;  // Surprisingly, this seems to be faster...
 }
 
 Obj to_obj(int n)
 {
   assert((2 * n) / 2 == n);
   return 2 * n;
+}
+
+Obj obj_neg(Obj obj)
+{
+  assert(obj == generated::S_true || obj == generated::S_false);
+  return obj == generated::S_true ? generated::S_false : generated::S_true;
+  // assert((obj ^ 0x30) == (obj == generated::S_true ? generated::S_false : generated::S_true));
+  // return obj ^ 0x30;
 }
 
 Obj at(Obj seq, int idx)
@@ -114,4 +140,3 @@ Obj get_curr_value(MapIter &it)
   Map *map = it.map;
   return map->buffer[it.idx+map->size];
 }
-

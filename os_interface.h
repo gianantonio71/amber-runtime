@@ -1,5 +1,5 @@
-#ifndef _WIN32_INTERFACE_ZH_
-#define _WIN32_INTERFACE_ZH_
+#ifndef OS_INTERFACE_H_
+#define OS_INTERFACE_H_
 
 int get_tick_count();
 

@@ -15,6 +15,18 @@ int get_symb_idx(Obj obj)
 
 ////////////////////////////////////////////////////////////////////////////////
 
+Obj *get_key_array_ptr(Map *map)
+{
+  return map->buffer;
+}
+
+Obj *get_value_array_ptr(Map *map)
+{
+  return map->buffer + map->size;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 Obj make_obj(Set *ptr)
 {
   return int(ptr) | type_tag_set;
@@ -39,6 +51,8 @@ Obj make_obj(TagObj *ptr)
 
 void *get_ptr(Obj obj)
 {
+  // assert(((void *) (obj & ~0xF)) == 0 || is_alive((void *) (obj & ~0xF)));
+
   return (void *) (obj & ~0xF);
 }
 
@@ -98,6 +112,11 @@ bool is_int(Obj obj)
   return (obj & 1) == 0;
 }
 
+bool is_empty_collection(Obj obj)
+{
+  return (obj >> 4) == 0;
+}
+
 bool is_ne_seq(Obj obj)
 {
   return (obj & 0xF) == type_tag_seq;
@@ -120,7 +139,7 @@ bool is_tag_obj(Obj obj)
 
 bool is_inline_obj(Obj obj)
 {
-  return is_int(obj) | is_symb(obj) | (get_ptr(obj) == 0);
+  return is_int(obj) | is_symb(obj) | is_empty_collection(obj);
 }
 
 bool is_ref_obj(Obj obj)

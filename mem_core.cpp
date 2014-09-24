@@ -1,6 +1,5 @@
 #include "lib.h"
 
-#include <stdio.h>
 #include <string.h>
 #include <set>
 
@@ -11,7 +10,7 @@ char *align_16(char *ptr)
   return al_ptr;
 }  
 
-const unsigned int HEAP_SIZE = 1024 * 1024 * 1024;
+const unsigned int HEAP_SIZE = 1536 * 1024 * 1024;
 
 static char fake_heap_buff[HEAP_SIZE+16];
 
@@ -122,27 +121,80 @@ void free_pooled_mem_block(void *ptr, int nblocks16)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifndef NDEBUG
+
 int num_of_live_objs;
+int max_num_of_live_objs;
+int total_num_of_objs;
+
+int live_mem_usage;
+int max_live_mem_usage;
+int total_mem_requested;
 
 std::set<void *> live_objs;
 
+void inc_live_obj_count(int nblocks16)
+{
+  num_of_live_objs++;
+  total_num_of_objs++;
+  if (num_of_live_objs > max_num_of_live_objs)
+    max_num_of_live_objs = num_of_live_objs;
+
+  live_mem_usage += nblocks16;
+  total_mem_requested += nblocks16;
+  if (live_mem_usage > max_live_mem_usage)
+    max_live_mem_usage = live_mem_usage;
+}
+
+void dec_live_obj_count(int nblocks16)
+{
+  num_of_live_objs--;
+  live_mem_usage -= nblocks16;
+}
 
 int get_live_objs_count()
 {
   return num_of_live_objs;
 }
 
+int get_max_live_objs_count()
+{
+  return max_num_of_live_objs;
+}
+
+int get_total_objs_count()
+{
+  return total_num_of_objs;
+}
+
+int get_live_mem_usage()
+{
+  return live_mem_usage;
+}
+
+int get_max_live_mem_usage()
+{
+  return max_live_mem_usage;
+}
+
+int get_total_mem_requested()
+{
+  return total_mem_requested;
+}
+
+#include <cstdio>
+
 void print_all_live_objs()
 {
   if (!live_objs.empty())
   {
-    fprintf(stderr, "Live objects:");
+    std::fprintf(stderr, "Live objects:\n");
     for (std::set<void*>::iterator it = live_objs.begin() ; it != live_objs.end() ; it++)
     {
       void *ptr = *it;
-      printf("  %8x\n", (unsigned int)ptr);
+      std::printf("  %8x\n", (unsigned int)ptr);
     }
-    fflush(stdout);
+    std::fflush(stdout);
   }
 }
 
@@ -151,28 +203,32 @@ bool is_alive(void *obj)
   return live_objs.find(obj) != live_objs.end();
 }
 
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 void *new_obj(int nblocks16)
 {
-  void *mem_block = new_pooled_mem_block(nblocks16+1);
+  void *mem_block = new_pooled_mem_block(nblocks16);
 
-  num_of_live_objs++;
+#ifndef NDEBUG
+  inc_live_obj_count(nblocks16);
   live_objs.insert(mem_block);
+#endif
 
-  //printf("Allocated: %8x\n", mem_block);
-  
   return mem_block;
 }
 
 void free_obj(void *ptr, int nblocks16)
 {
+#ifndef NDEBUG
   assert(num_of_live_objs > 0);
   assert(is_alive(ptr));
-  
-  num_of_live_objs--;
-  live_objs.erase(live_objs.find(ptr));
 
-  //printf("Released: %8x\n", ptr);
-  
+  dec_live_obj_count(nblocks16);
+  live_objs.erase(live_objs.find(ptr));
+#endif
+
   free_pooled_mem_block(ptr, nblocks16);
 }

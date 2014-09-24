@@ -327,61 +327,19 @@ Obj ext_lookup(Obj map_or_tag_obj, Obj key, bool &found)
   return lookup(map, key, found);
 }
 
-Obj merge_maps(Obj map1, Obj map2)
+
+Obj merge_sets(Obj sets)
 {
-  if (map1 == empty_map)
-  {
-    add_ref(map2);
-    return map2;
-  }
-
-  if (map2 == empty_map)
-  {
-    add_ref(map1);
-    return map1;
-  }
-
-  Map *m1 = get_map_ptr(map1);
-  Map *m2 = get_map_ptr(map2);
-  
-  int size1 = m1->size;
-  int size2 = m2->size;
-  
-  Obj *ks1 = m1->buffer;
-  Obj *ks2 = m2->buffer;
-  
-  Obj *vs1 = ks1 + size1;
-  Obj *vs2 = ks2 + size2;
-  
-  int size = size1 + size2;
-  Map *m = new_map(size);
-  Obj *ks = m->buffer;
-  Obj *vs = ks + size;
-  
-  //int i=0, j=0;
-  //for ( ; ; )
-  //{
-  //
-  //}
-
-
-  //## BAD BAD BAD VERY INEFFICIENT
-  for (int i=0 ; i < size1 ; i++)
-  {
-    ks[i] = ks1[i];
-    vs[i] = vs1[i];
-  }
-  for (int i=0 ; i < size2 ; i++)
-  {
-    ks[size1+i] = ks2[i];
-    vs[size1+i] = vs2[i];
-  }
-  sort_and_check_no_dups(ks, vs, size);
-  vec_add_ref(m->buffer, 2 * size);
-  
-  
-  return make_obj(m);
+  Obj merge_sets_impl(Obj);
+  return merge_sets_impl(sets);
 }
+
+Obj merge_maps(Obj maps)
+{
+  Obj merge_maps_impl(Obj);
+  return merge_maps_impl(maps);
+}
+
 
 Obj seq_to_set(Obj obj)
 {
@@ -408,6 +366,7 @@ Obj seq_to_set(Obj obj)
   
   return res;
 }
+
 
 Obj seq_to_mset(Obj seq_obj)
 {

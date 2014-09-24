@@ -213,8 +213,8 @@ void print(Obj obj)
   Obj str_obj = generated::To_Text(obj, env);
   obj_to_str(str_obj, buffer, BUFF_SIZE);
   release(str_obj);
-  
-  //puts(buffer);
+
+  // puts(buffer);
   print_indented(buffer);
   fflush(stdout);
 }
