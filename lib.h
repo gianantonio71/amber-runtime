@@ -146,6 +146,10 @@ bool is_ne_seq(Obj obj);
 bool is_ne_map(Obj obj);
 bool is_tag_obj(Obj obj);
 
+bool is_set(Obj obj);
+bool is_seq(Obj obj);
+bool is_map(Obj obj);
+
 TypeTag get_type_tag(Obj obj);
 
 Obj make_symb(int idx);
@@ -226,6 +230,19 @@ void move_forward(SetIter &it);
 void move_forward(SeqIter &it);
 void move_forward(MapIter &it);
 void fail();
+void runtime_check(Obj cond);
+
+/////////////////////////////////// debug.cpp //////////////////////////////////
+
+void push_call_info(const char *fn_name, int arity, Obj *params);
+void pop_call_info();
+void print_call_stack();
+void fail_if(bool condition, const char *message);
+void fail_if_not(bool condition, const char *message);
+void hard_fail_if(bool condition, const char *message);
+void hard_fail_if_not(bool condition, const char *message);
+void internal_fail();
+void internal_fail_if(bool condition);
 
 /////////////////////////////////// algs.cpp ///////////////////////////////////
 
@@ -246,4 +263,6 @@ void print(Obj obj);
 
 Obj str_to_obj(const char *c_str);
 void obj_to_str(Obj str_obj, char *buffer, int size);
+
+int char_buffer_size(Obj str_obj);
 

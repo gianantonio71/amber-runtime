@@ -217,9 +217,7 @@ static void delete_obj(Obj obj, Obj *queue, int &queue_start, int &queue_size)
     }
     
     default:
-      assert(false);
-      fail();
-      throw;
+      internal_fail();
   }
 }
 
@@ -299,4 +297,3 @@ void vec_release(Obj *objs, int len)
   for (int i=0 ; i < len ; i++)
     release(objs[i]);
 }
-

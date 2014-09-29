@@ -285,8 +285,7 @@ int comp_objs(Obj obj1, Obj obj2)
     }
 
     default:
-      assert(false);
-      fail();
+      internal_fail();
   }
 
   for (int i=0 ; i < count ; i++)

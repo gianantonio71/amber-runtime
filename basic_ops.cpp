@@ -42,6 +42,7 @@ bool has_elem(Obj set, Obj elem)
 int get_int_val(Obj obj)
 {
   assert(is_int(obj));
+  fail_if_not(is_int(obj), "Not an integer");
   return obj / 2;
 }
 
@@ -91,6 +92,7 @@ Obj to_obj(int n)
 Obj obj_neg(Obj obj)
 {
   assert(obj == generated::S_true || obj == generated::S_false);
+  fail_if_not(obj == generated::S_true || obj == generated::S_false, "Not a boolean");
   return obj == generated::S_true ? generated::S_false : generated::S_true;
   // assert((obj ^ 0x30) == (obj == generated::S_true ? generated::S_false : generated::S_true));
   // return obj ^ 0x30;
@@ -99,10 +101,7 @@ Obj obj_neg(Obj obj)
 Obj at(Obj seq, int idx)
 {
   Seq *s = get_seq_ptr(seq);
-  
-  if (idx >= s->length)
-    fail();
-  
+  fail_if_not(idx < s->length, "Invalid sequence index");
   return s->elems[idx];
 }
 

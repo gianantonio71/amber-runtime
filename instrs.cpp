@@ -1,3 +1,5 @@
+#include <cstdio>
+
 #include "lib.h"
 #include "generated.h"
 
@@ -128,6 +130,7 @@ Obj make_map(Stream &key_stream, Stream &value_stream)
 Obj make_tagged_obj(Obj tag, Obj obj)
 {
   assert(is_symb(tag));
+  fail_if_not(is_symb(tag), "Not a symbol");
   
   TagObj *tag_obj = new_tag_obj();
   
@@ -156,34 +159,25 @@ Obj get_seq_slice(Obj seq, int idx_first, int len)
 {
   assert(idx_first >= 0 && len >= 0);
   assert(seq == empty_seq || is_ne_seq(seq));
-  
+  fail_if_not(is_seq(seq), "_slice_: First param is not a sequence");
+  hard_fail_if_not(idx_first >= 0, "_slice_: Invalid sequence index"); // Depending on the signature of the function,
+  hard_fail_if_not(len >= 0, "_slice_: Invalid sequence length");      // these two checks may be unnecessary
+
   if (len == 0)
     return empty_seq;
-  
-  if (!is_ne_seq(seq))
-    fail();
-    
-  Seq *s = get_seq_ptr(seq);
 
+  Seq *s = get_seq_ptr(seq);
   int right_bound = idx_first + len;
-  
-  if (right_bound > s->length)
-  {
-    print(seq);
-    print(idx_first);
-    print(len);
-    fail();
-  }
-  
+  hard_fail_if_not(right_bound <= s->length, "Invalid subsequence start/length combination");  
   Obj *elems = s->elems + idx_first;
-  
   vec_add_ref(elems, len);
-  
   return make_seq(elems, len);
 }
 
 Obj join_seqs(Obj left, Obj right)
 {
+  // No need to check the parameters here
+
   if (left == empty_seq)
   {
     add_ref(right);
@@ -222,6 +216,8 @@ Obj join_seqs(Obj left, Obj right)
 
 Obj rev_seq(Obj seq)
 {
+  // No need to check the parameters here
+
   if (seq == empty_seq)
     return empty_seq;
   
@@ -250,14 +246,9 @@ Obj get_at(Obj seq, int idx) // Increases reference count
 
 void set_at(Obj seq, int idx, Obj value) // Value must be already reference counted
 {
-  if (seq == empty_seq)
-    fail();
-
+  // This is not called directly by the user, so asserts should be sufficient
   Seq *s = get_seq_ptr(seq);
-  
-  if (idx >= s->length)
-    fail();
-  
+  assert(idx < s->length);
   Obj *elems = s->elems;
   release(elems[idx]);
   elems[idx] = value;
@@ -265,19 +256,15 @@ void set_at(Obj seq, int idx, Obj value) // Value must be already reference coun
 
 Obj lookup(Obj map, Obj key)
 {
-  if (map == empty_map)
-    fail();
-
-  if (!is_ne_map(map))
-    print(map);
+  fail_if_not(is_ne_map(map), "First parameter is not a non-empty map"); // This could also be called by a dot access
+  hard_fail_if(map == empty_map, "_lookup_: Key not found"); // Depending on the signature of the builtin operation, this may be unnecessary
 
   Map *m = get_map_ptr(map);
   int size = m->size;
   Obj *keys = m->buffer;
   
   int idx = find_obj(keys, size, key);
-  if (idx == -1)
-    fail();
+  hard_fail_if(idx == -1, "Key not found"); // This function could be called by a dot access
   
   Obj *values = keys + size;
   Obj value = values[idx];
@@ -289,6 +276,8 @@ Obj lookup(Obj map, Obj key)
 
 Obj lookup(Obj map, Obj key, bool &found)
 {
+  // The first parameter is checked anyway
+
   if (map == empty_map)
   {
     found = false;
@@ -343,8 +332,6 @@ Obj merge_maps(Obj maps)
 
 Obj seq_to_set(Obj obj)
 {
-  assert(obj == empty_seq || is_ne_seq(obj));
-
   if (obj == empty_seq)
     return empty_set;
   
@@ -370,8 +357,6 @@ Obj seq_to_set(Obj obj)
 
 Obj seq_to_mset(Obj seq_obj)
 {
-  assert(seq_obj == empty_seq || is_ne_seq(seq_obj));
-  
   if (seq_obj == empty_seq)
     return empty_map;
 
@@ -406,8 +391,6 @@ Obj list_to_seq(Obj list)
 {
   if (list == empty_seq)
     return empty_seq;
-
-  assert(is_ne_seq(list));
 
   int len = 0;
   for (Obj tail=list ; tail != empty_seq ; tail=at(tail, 1))
@@ -510,6 +493,27 @@ void move_forward(MapIter &it)
 
 void fail()
 {
-  //print_all_live_objs();
-  throw;
+#ifndef NDEBUG
+  std::fputs("\nFail statement reached. Call stack:\n\n", stderr);
+#else
+  std::fputs("\nFail statement reached\n", stderr);
+#endif
+  std::fflush(stderr);
+  print_call_stack();
+  *(char *)0 = 0; // Causing a runtime crash, useful for debugging
+}
+
+void runtime_check(Obj cond)
+{
+  if (cond != generated::S_true)
+  {
+#ifndef NDEBUG
+    std::fputs("\nAssertion failed. Call stack:\n\n", stderr);
+#else
+    std::fputs("\nAssertion failed\n", stderr);
+#endif
+    std::fflush(stderr);
+    print_call_stack();
+    *(char *)0 = 0; // Causing a runtime crash, useful for debugging
+  }
 }

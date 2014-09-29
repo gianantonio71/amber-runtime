@@ -1,8 +1,8 @@
-#include "lib.h"
-#include "generated.h"
-
 #include <stdio.h>
 #include <string.h>
+
+#include "lib.h"
+#include "generated.h"
 
 
 
@@ -39,8 +39,7 @@ void obj_to_str(Obj str_obj, char *buffer, int size)
   {
     Seq *raw_str = get_seq_ptr(raw_str_obj);
     int len = raw_str->length;
-    if (len >= size)
-      fail();
+    internal_fail_if(len >= size);
     for (int i=0 ; i < len ; i++)
       buffer[i] = get_int_val(raw_str->elems[i]);
     buffer[len] = '\0';
@@ -49,6 +48,17 @@ void obj_to_str(Obj str_obj, char *buffer, int size)
   {
     buffer[0] = '\0';
   }
+}
+
+int char_buffer_size(Obj str_obj)
+{
+  Obj raw_str_obj = get_tag_obj_ptr(str_obj)->obj;
+
+  if (raw_str_obj == empty_seq)
+    return 1;
+
+  Seq *raw_str = get_seq_ptr(raw_str_obj);
+  return raw_str->length + 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -121,101 +131,17 @@ void release_all_cached_strings()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-int indent_delta(char ch)
-{
-  if (ch == '(' || ch == '[' || ch == '{')
-    return 1;
-    
-  if (ch == ')' || ch == ']' || ch == '}')
-    return -1;
-  
-  return 0;
-}
-
-
-void print_indented(const char *str)
-{
-  int len = strlen(str);
-
-  putchar('\n');
-
-  int indent = 0;
-  for (int i=0 ; i < len ; i++)
-  {
-    char ch = str[i];
-
-    int dind = indent_delta(ch);
-    
-    if (dind == 0)
-    {
-      putchar(ch);
-      if (ch == ',')
-      {
-        putchar('\n');
-        for (int j=0 ; j < indent ; j++)
-          printf("  ");
-        assert(str[i+1] == ' ');
-        i++;
-      }
-    }  
-
-    if (dind == 1)
-    {
-      int loc_ind = 1;
-
-      for (int j=1 ; j < 60 && i+j < len ; j++)
-      {
-        loc_ind += indent_delta(str[i+j]);
-        assert(loc_ind >= 0);
-        if (loc_ind == 0)
-        {
-          for (int k=0 ; k <= j ; k++)
-            putchar(str[i+k]);
-          i += j;
-          break;                  
-        }
-      }
-      
-      if (loc_ind > 0)
-      {
-        indent++;
-        putchar(ch);
-        putchar('\n');
-        for (int j=0 ; j < indent ; j++)
-          printf("  ");
-      }
-    }
-
-    if (dind == -1)
-    {
-      indent--;
-      putchar('\n');
-      for (int j=0 ; j < indent ; j++)
-        printf("  ");
-      putchar(ch);
-    }  
-  }
-
-  putchar('\n');
-  //delete [] str;
-}
-
 void print(Obj obj)
 {
-  const int BUFF_SIZE = 16 * 1024 *1024;
-  static char buffer[BUFF_SIZE];
-  
-  //Obj fn_to_text(Obj);
-  
   generated::Env env;
   memset(&env, 0, sizeof(generated::Env));
-  
-  Obj str_obj = generated::To_Text(obj, env);
-  obj_to_str(str_obj, buffer, BUFF_SIZE);
-  release(str_obj);
-
-  // puts(buffer);
-  print_indented(buffer);
+  Obj str_obj = generated::To_Text(obj, to_obj(80), to_obj(0), env);
+  int buff_size = char_buffer_size(str_obj);
+  char *buffer = (char *) new_obj(nblocks16(buff_size));
+  obj_to_str(str_obj, buffer, buff_size);
+  puts(buffer);
+  puts("");
   fflush(stdout);
+  release(str_obj);
+  free_obj(buffer, nblocks16(buff_size));
 }
-

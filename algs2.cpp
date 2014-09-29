@@ -235,8 +235,7 @@ Obj merge_maps_impl(Obj set_of_maps)
     Obj value = value_arrays[array_idx][src_idx-1];
 
     // Checking that this key is not a duplicate
-    if (dest_idx > 0 and are_eq(key, dest_key_array[dest_idx-1]))
-      fail();
+    hard_fail_if(dest_idx > 0 and are_eq(key, dest_key_array[dest_idx-1]), "_merge_: Maps have common keys");
 
     // Storing key and value in the target arrays and updating the cursor
     dest_key_array[dest_idx] = key;

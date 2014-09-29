@@ -65,28 +65,28 @@ RefObj *get_ref_obj_ptr(Obj obj)
 
 Set *get_set_ptr(Obj obj)
 {
-  assert(is_ne_set(obj));
-  
+  fail_if_not(is_ne_set(obj), "Object is not a non-empty set");
+
   return (Set *) get_ptr(obj);
 }
 
 Seq *get_seq_ptr(Obj obj)
 {
-  assert(is_ne_seq(obj));
+  fail_if_not(is_ne_seq(obj), "Object is not a non-empty sequence");
   
   return (Seq *) get_ptr(obj);
 }
 
 Map *get_map_ptr(Obj obj)
 {
-  assert(is_ne_map(obj));
+  fail_if_not(is_ne_map(obj), "Object is not a non-empty map");
   
   return (Map *) get_ptr(obj);
 }
 
 TagObj *get_tag_obj_ptr(Obj obj)
 {
-  assert(is_tag_obj(obj));
+  fail_if_not(is_tag_obj(obj), "Object is not a named object");
   
   return (TagObj *) get_ptr(obj);
 }
@@ -145,4 +145,21 @@ bool is_inline_obj(Obj obj)
 bool is_ref_obj(Obj obj)
 {
   return !is_inline_obj(obj);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+bool is_seq(Obj obj)
+{
+  return obj == empty_seq | is_ne_seq(obj);
+}
+
+bool is_set(Obj obj)
+{
+  return obj == empty_set | is_ne_set(obj);
+}
+
+bool is_map(Obj obj)
+{
+  return obj == empty_map | is_ne_map(obj);
 }
