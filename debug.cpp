@@ -36,7 +36,7 @@ void pop_call_info()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void print_indented_param(Obj param, bool is_last, int &file_idx)
+void print_indented_param(FILE *fp, Obj param, bool is_last, int &file_idx)
 {
   generated::Env env;
   memset(&env, 0, sizeof(generated::Env));
@@ -52,7 +52,7 @@ void print_indented_param(Obj param, bool is_last, int &file_idx)
   if (buff_size > 500)
   {
     char fname[1024];
-    sprintf(fname, "debug/param_%02d.txt", file_idx++);
+    sprintf(fname, "debug/obj_%02d.txt", file_idx);
 
     FILE *fp = fopen(fname, "w");
     if (fp != 0)
@@ -61,34 +61,43 @@ void print_indented_param(Obj param, bool is_last, int &file_idx)
       fclose(fp);
     }
 
-    sprintf(msg, "  <%s>", fname);
+    sprintf(msg, "  <obj_%02d.txt>", file_idx);
     final_text = msg;
+    file_idx++;
   }
 
-  fputs(final_text, stderr);
+  fputs(final_text, fp);
   if (!is_last)
-    fputs(",", stderr);
-  fputs("\n", stderr);
-  fflush(stderr);
+    fputs(",", fp);
+  fputs("\n", fp);
+  fflush(fp);
 
   release(str_obj);
   free_obj(buffer, nblocks16(buff_size));
 }
 
 
-void print_stack_frame(int frame_idx, int &file_idx)
+void print_stack_frame(FILE *fp, int frame_idx, int &file_idx)
 {
   const char *fn_name = function_names[frame_idx];
   int arity = arities[frame_idx];
   Obj *params = param_lists[frame_idx];
 
-  fputs(fn_name, stderr);
-  fputs("(", stderr);
+  fputs(fn_name, fp);
+  fputs("(", fp);
   if (arity > 0)
-    fputs("\n", stderr);
+    fputs("\n", fp);
   for (int i=0 ; i < arity ; i++)
-    print_indented_param(params[i], i == arity-1, file_idx);
-  fputs(")\n\n", stderr);
+    print_indented_param(fp, params[i], i == arity-1, file_idx);
+  fputs(")\n\n", fp);
+}
+
+
+void print_stack_frame(int frame_idx)
+{
+  const char *fn_name = function_names[frame_idx];
+  int arity = arities[frame_idx];
+  fprintf(stderr, "%s/%d\n", fn_name, arity);
 }
 
 
@@ -96,10 +105,21 @@ void print_call_stack()
 {
 #ifndef NDEBUG
   int size = function_names.size();
+  for (int i=0 ; i < size ; i++)
+    print_stack_frame(i);
+  fputs("\nNow trying to write a full dump of the stack to the file debug/stack_trace.txt.\nPlease be patient. This may take a while...", stderr);
+  fflush(stderr);
+  FILE *fp = fopen("debug/stack_trace.txt", "w");
+  if (fp == NULL)
+  {
+    fputs("\nFailed to open file debug/stack_trace.txt\n", stderr);
+    return;
+  }
   int file_idx = 0;
   for (int i=0 ; i < size ; i++)
-    print_stack_frame(i, file_idx);
-  fflush(stderr);
+    print_stack_frame(fp, i, file_idx);
+  fputs(" done.\n\n", stderr);
+  fclose(fp);
 #endif
 }
 

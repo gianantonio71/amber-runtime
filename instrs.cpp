@@ -214,6 +214,47 @@ Obj join_seqs(Obj left, Obj right)
   return make_obj(seq);
 }
 
+Obj join_mult_seqs(Obj seqs)
+{
+  if (seqs == empty_seq)
+    return empty_seq;
+
+  Seq *seqs_ptr = get_seq_ptr(seqs);
+  int seqs_count = seqs_ptr->length;
+
+  int res_len = 0;
+  for (int i=0 ; i < seqs_count ; i++)
+  {
+    Obj seq = seqs_ptr->elems[i];
+    if (seq != empty_seq)
+      res_len += get_seq_ptr(seq)->length;
+  }
+
+  if (res_len == 0)
+    return empty_seq;
+
+  Seq *res_seq = new_seq(res_len);
+
+  int copied = 0;
+  for (int i=0 ; i < seqs_count ; i++)
+  {
+    Obj seq = seqs_ptr->elems[i];
+    if (seq != empty_seq)
+    {
+      Seq *seq_ptr = get_seq_ptr(seq);
+      int len = seq_ptr->length;
+      for (int j=0 ; j < len ; j++)
+        res_seq->elems[copied+j] = seq_ptr->elems[j];
+      copied += len;
+    }
+  }
+  assert(copied == res_len);
+
+  vec_add_ref(res_seq->elems, res_seq->length);
+
+  return make_obj(res_seq);
+}
+
 Obj rev_seq(Obj seq)
 {
   // No need to check the parameters here

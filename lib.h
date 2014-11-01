@@ -210,6 +210,7 @@ Obj make_tagged_obj(Obj tag, Obj obj);          // obj must be already reference
 Obj make_array(int size, Obj value);
 Obj get_seq_slice(Obj seq, int idx_first, int len);
 Obj join_seqs(Obj left, Obj right);
+Obj join_mult_seqs(Obj seqs);
 Obj rev_seq(Obj seq);
 Obj get_at(Obj seq, int idx);                   // Increases reference count
 void set_at(Obj seq, int idx, Obj value);       // Value must be already reference counted
