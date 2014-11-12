@@ -406,7 +406,7 @@ Obj seq_to_mset(Obj seq_obj)
   Obj *elems = seq->elems;
   
   int *idxs = new_int_array(len);
-  Obj *counters = new_obj_array(len);
+  Obj *counters = new_obj_array(len); //## WHY OBJECTS AND NOT INTEGERS?
 
   int n = sort_group_and_count(elems, len, idxs, counters);
   
@@ -423,7 +423,7 @@ Obj seq_to_mset(Obj seq_obj)
   }
   
   delete_int_array(idxs, len);
-  delete_int_array(counters, len);
+  delete_obj_array(counters, len);
   
   return make_obj(res);
 }
