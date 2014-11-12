@@ -6,7 +6,7 @@
 
 char *align_16(char *ptr)
 {
-  char *al_ptr = (char *) (((int)(ptr+15)) & ~15);
+  char *al_ptr = (char *) (((long long)(ptr+15)) & ~15L);
   return al_ptr;
 }  
 

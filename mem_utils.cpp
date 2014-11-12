@@ -29,22 +29,22 @@ Obj *get_value_array_ptr(Map *map)
 
 Obj make_obj(Set *ptr)
 {
-  return int(ptr) | type_tag_set;
+  return ((long long) ptr) | type_tag_set;
 }
 
 Obj make_obj(Seq *ptr)
 {
-  return int(ptr) | type_tag_seq;
+  return ((long long) ptr) | type_tag_seq;
 }
 
 Obj make_obj(Map *ptr)
 {
-  return int(ptr) | type_tag_map;
+  return ((long long) ptr) | type_tag_map;
 }
 
 Obj make_obj(TagObj *ptr)
 {
-  return int(ptr) | type_tag_tag_obj;
+  return ((long long) ptr) | type_tag_tag_obj;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

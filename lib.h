@@ -1,7 +1,7 @@
 #include "utils.h"
 
 
-typedef int Obj;
+typedef long long Obj;
 
 
 struct RefObj
