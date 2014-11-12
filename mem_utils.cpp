@@ -1,16 +1,28 @@
 #include "lib.h"
 
 
+ShortTypeTag get_short_type_tag(Obj obj)
+{
+  return ShortTypeTag(obj & SHORT_TAG_MASK);
+}
+
+TypeTag get_full_type_tag(Obj obj)
+{
+  return TypeTag(obj & FULL_TAG_MASK);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 Obj make_symb(int idx)
 {
-  return ((idx + 1) << 4) | 1;
+  return symb(idx);
 }
 
 int get_symb_idx(Obj obj)
 {
   assert(is_symb(obj));
   
-  return (obj >> 4) - 1;
+  return obj >> FULL_TAG_SIZE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -27,41 +39,54 @@ Obj *get_value_array_ptr(Map *map)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Obj make_obj(Set *ptr)
+long long pack_ptr(void *ptr)
 {
-  return ((long long) ptr) | type_tag_set;
+  return ((long long) ptr) << POINTER_SHIFT;
 }
 
-Obj make_obj(Seq *ptr)
-{
-  return ((long long) ptr) | type_tag_seq;
-}
+// void *get_ptr(Obj obj)
+// {
+//   // assert(((void *) (obj & ~0xF)) == 0 || is_alive((void *) (obj & ~0xF)));
+//   return (void *) (obj & ~0xF);
+// }
 
-Obj make_obj(Map *ptr)
+void *get_ptr(Obj obj)
 {
-  return ((long long) ptr) | type_tag_map;
-}
-
-Obj make_obj(TagObj *ptr)
-{
-  return ((long long) ptr) | type_tag_tag_obj;
+  return (void *) (obj >> POINTER_SHIFT);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void *get_ptr(Obj obj)
+Obj make_obj(Set *ptr)
 {
-  // assert(((void *) (obj & ~0xF)) == 0 || is_alive((void *) (obj & ~0xF)));
-
-  return (void *) (obj & ~0xF);
+  return pack_ptr(ptr) | type_tag_set;
 }
+
+Obj make_obj(Seq *ptr)
+{
+  return pack_ptr(ptr) | type_tag_seq;
+}
+
+Obj make_obj(Map *ptr)
+{
+  return pack_ptr(ptr) | type_tag_map;
+}
+
+Obj make_obj(TagObj *ptr)
+{
+  return pack_ptr(ptr) | type_tag_tag_obj;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 RefObj *get_ref_obj_ptr(Obj obj)
 {
-  assert(is_ref_obj(obj));
+  assert(is_ref_obj(obj)); //## WHY IS THIS ONLY ASSERTED AND NOT CHECKED?
   
   return (RefObj *) get_ptr(obj);
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 Set *get_set_ptr(Obj obj)
 {
@@ -93,58 +118,44 @@ TagObj *get_tag_obj_ptr(Obj obj)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TypeTag get_type_tag(Obj obj)
-{
-  assert(!is_int(obj));
-
-  return TypeTag(obj & 0xF);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
 bool is_symb(Obj obj)
 {
-  return (obj & 0xF) == type_tag_symb;
+  return get_full_type_tag(obj) == type_tag_symb;
 }
 
 bool is_int(Obj obj)
 {
-  return (obj & 1) == 0;
-}
-
-bool is_empty_collection(Obj obj)
-{
-  return (obj >> 4) == 0;
+  return get_short_type_tag(obj) == short_type_tag_integer;
 }
 
 bool is_ne_seq(Obj obj)
 {
-  return (obj & 0xF) == type_tag_seq;
+  return get_full_type_tag(obj) == type_tag_seq;
 }
 
 bool is_ne_set(Obj obj)
 {
-  return (obj & 0xF) == type_tag_set;
+  return get_full_type_tag(obj) == type_tag_set;
 }
 
 bool is_ne_map(Obj obj)
 {
-  return (obj & 0xF) == type_tag_map;
+  return get_full_type_tag(obj) == type_tag_map;
 }
 
 bool is_tag_obj(Obj obj)
 {
-  return (obj & 0xF) == type_tag_tag_obj;
+  return get_full_type_tag(obj) == type_tag_tag_obj;
 }
 
 bool is_inline_obj(Obj obj)
 {
-  return is_int(obj) | is_symb(obj) | is_empty_collection(obj);
+  return !is_ref_obj(obj);
 }
 
 bool is_ref_obj(Obj obj)
 {
-  return !is_inline_obj(obj);
+  return get_short_type_tag(obj) == short_type_tag_reference;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

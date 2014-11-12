@@ -30,9 +30,9 @@ bool is_out_of_range(MapIter &it)
 
 bool has_elem(Obj set, Obj elem)
 {
-  Set *s = get_set_ptr(set);
-  if (s == 0)
+  if (set == empty_set)
     return false;
+  Set *s = get_set_ptr(set);
   int idx = find_obj(s->elems, s->size, elem);
   return idx != -1;
 }
@@ -43,7 +43,7 @@ int get_int_val(Obj obj)
 {
   assert(is_int(obj));
   fail_if_not(is_int(obj), "Not an integer");
-  return obj / 2;
+  return obj >> SHORT_TAG_SIZE;
 }
 
 int get_set_size(Obj set)
@@ -85,8 +85,9 @@ Obj to_obj(bool b)
 
 Obj to_obj(int n)
 {
-  assert((2 * n) / 2 == n);
-  return 2 * n;
+  Obj obj = n << SHORT_TAG_SIZE;
+  assert(get_int_val(obj) == n);
+  return obj;
 }
 
 Obj obj_neg(Obj obj)

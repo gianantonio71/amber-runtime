@@ -46,6 +46,8 @@ Obj merge_sets_impl(Obj set_of_sets)
     size--;
   }
 
+  //## HERE I SHOULD CHECK THAT ALL THE SETS THAT ARE LEFT ARE NOT EMPTY
+
   if (size == 0)
     return empty_set;
 
@@ -168,6 +170,8 @@ Obj merge_maps_impl(Obj set_of_maps)
     maps++;
     size--;
   }
+
+  //## HERE I SHOULD CHECK THAT ALL REMAINING MAPS ARE NOT EMPTY
 
   if (size == 0)
     return empty_map;

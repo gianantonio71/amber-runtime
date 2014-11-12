@@ -179,7 +179,7 @@ static void delete_obj(Obj obj, Obj *queue, int &queue_start, int &queue_size)
 {
   assert(is_ref_obj(obj));
   
-  switch (get_type_tag(obj))
+  switch (get_full_type_tag(obj))
   {
     case type_tag_set:
     {

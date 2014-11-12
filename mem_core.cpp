@@ -192,7 +192,7 @@ void print_all_live_objs()
     for (std::set<void*>::iterator it = live_objs.begin() ; it != live_objs.end() ; it++)
     {
       void *ptr = *it;
-      std::printf("  %8x\n", (unsigned int)ptr);
+      std::printf("  %8llx\n", (unsigned long long)ptr);
     }
     std::fflush(stdout);
   }

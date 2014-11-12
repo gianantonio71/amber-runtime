@@ -69,21 +69,39 @@ struct Stream
 
 ////////////////////////////////////////////////////////////////////////////////
 
-enum TypeTag {              // Native object types:
-  //type_tag_int     = 0,     //   ---0  -    Integer
-  type_tag_symb    = 1,     //   0001  1    Symbol
-  type_tag_set     = 3,     //   0011  3    Set
-  type_tag_seq     = 5,     //   0101  5    Seq
-  type_tag_map     = 7,     //   0111  7    Map
-  type_tag_tag_obj = 9,     //   1001  9    Tagged Object
+enum ShortTypeTag {
+  short_type_tag_integer    = 0,  //  00      Inline integer
+  short_type_tag_float      = 1,  //  01      Inline floating point
+  short_type_tag_inline     = 2,  //  10      Other inline objects
+  short_type_tag_reference  = 3   //  11      Object containing a pointer
 };
 
+enum TypeTag {
+  type_tag_null         = 2,   //    0  10    Null object
+  type_tag_empty_set    = 6,   //    1  10    Empty set
+  type_tag_empty_seq    = 10,  //   10  10    Empty sequence
+  type_tag_empty_map    = 14,  //   11  10    Empty map
+  type_tag_symb         = 18,  //  100  10    Symbol
 
-const Obj null_obj  = 1;
-const Obj empty_set = 3;
-const Obj empty_seq = 5;
-const Obj empty_map = 7;
+  type_tag_set          = 7,   //    1  11    Set
+  type_tag_seq          = 11,  //   10  11    Seq
+  type_tag_map          = 15,  //   11  11    Map
+  type_tag_tag_obj      = 19,  //  100  11    Tagged Object
+};
 
+const Obj null_obj  = type_tag_null;
+const Obj empty_set = type_tag_empty_set;
+const Obj empty_seq = type_tag_empty_seq;
+const Obj empty_map = type_tag_empty_map;
+
+const int SHORT_TAG_SIZE  = 2;
+const int FULL_TAG_SIZE   = 8;
+const int POINTER_SHIFT   = 24;
+
+const int SHORT_TAG_MASK  = (1 << SHORT_TAG_SIZE) - 1;
+const int FULL_TAG_MASK   = (1 << FULL_TAG_SIZE) - 1;
+
+#define symb(idx) ((idx << FULL_TAG_SIZE) | type_tag_symb)
 
 ///////////////////////////////// mem_core.cpp /////////////////////////////////
 
@@ -150,7 +168,8 @@ bool is_set(Obj obj);
 bool is_seq(Obj obj);
 bool is_map(Obj obj);
 
-TypeTag get_type_tag(Obj obj);
+ShortTypeTag get_short_type_tag(Obj obj);
+TypeTag get_full_type_tag(Obj obj);
 
 Obj make_symb(int idx);
 int get_symb_idx(Obj obj);

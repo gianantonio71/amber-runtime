@@ -203,13 +203,8 @@ int comp_objs(Obj obj1, Obj obj2)
   if (obj1 == obj2)
     return 0;
 
-  int tag1 = obj1 & 0xF;
-  int tag2 = obj2 & 0xF;
-  bool is_inline_1 = !(obj1 & 1) | tag1 <= 1 | obj1 >> 4 == 0;
-  bool is_inline_2 = !(obj2 & 1) | tag2 <= 1 | obj2 >> 4 == 0;
-
-  // bool is_inline_1 = is_inline_obj(obj1);
-  // bool is_inline_2 = is_inline_obj(obj2);
+  bool is_inline_1 = is_inline_obj(obj1);
+  bool is_inline_2 = is_inline_obj(obj2);
 
   if (is_inline_1)
     if (is_inline_2)
@@ -219,8 +214,8 @@ int comp_objs(Obj obj1, Obj obj2)
   else if (is_inline_2)
     return -1;
 
-  // int tag1 = get_type_tag(obj1);
-  // int tag2 = get_type_tag(obj2);
+  int tag1 = get_full_type_tag(obj1);
+  int tag2 = get_full_type_tag(obj2);
 
   if (tag1 != tag2)
     return tag2 - tag1;
@@ -231,7 +226,7 @@ int comp_objs(Obj obj1, Obj obj2)
 
   switch (tag1)
   {
-    case 3: //   0011  3    Set
+    case type_tag_set:
     {
       Set *set1 = get_set_ptr(obj1);
       Set *set2 = get_set_ptr(obj2);
@@ -245,7 +240,7 @@ int comp_objs(Obj obj1, Obj obj2)
       break;
     }
 
-    case 5: //   0101  5    Seq
+    case type_tag_seq:
     {
       Seq *seq1 = get_seq_ptr(obj1);
       Seq *seq2 = get_seq_ptr(obj2);
@@ -259,7 +254,7 @@ int comp_objs(Obj obj1, Obj obj2)
       break;
     }
 
-    case 7: //   0111  7    Map
+    case type_tag_map:
     {
       Map *map1 = get_map_ptr(obj1);
       Map *map2 = get_map_ptr(obj2);
@@ -273,7 +268,7 @@ int comp_objs(Obj obj1, Obj obj2)
       break;
     }
 
-    case 9: //   1001  9    Tagged Object
+    case type_tag_tag_obj:
     {
       TagObj *tag_obj1 = get_tag_obj_ptr(obj1);
       TagObj *tag_obj2 = get_tag_obj_ptr(obj2);
