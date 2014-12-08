@@ -125,19 +125,23 @@ void print_call_stack()
 
 ////////////////////////////////////////////////////////////////////////////////
 
+void hard_fail(const char *message)
+{
+  fprintf(stderr, "%s\n\n", message);
+  print_call_stack();
+  *(char *)0 = 0;
+}
+
 void hard_fail_if(bool condition, const char *message)
 {
   if (condition)
-  {
-    fprintf(stderr, "%s\n\n", message);
-    print_call_stack();
-    *(char *)0 = 0;
-  }
+    hard_fail(message);
 }
 
 void hard_fail_if_not(bool condition, const char *message)
 {
-  hard_fail_if(!condition, message);
+  if (!condition)
+    hard_fail(message);
 }
 
 void fail_if(bool condition, const char *message)

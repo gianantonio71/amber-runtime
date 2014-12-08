@@ -1,6 +1,6 @@
 #ifndef OS_INTERFACE_H_
 #define OS_INTERFACE_H_
 
-int get_tick_count();
+// int get_tick_count(); // Moved to lib.h
 
 #endif

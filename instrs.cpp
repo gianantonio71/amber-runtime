@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <cstring>
 
 #include "lib.h"
 #include "generated.h"
@@ -305,7 +306,21 @@ Obj lookup(Obj map, Obj key)
   Obj *keys = m->buffer;
   
   int idx = find_obj(keys, size, key);
-  hard_fail_if(idx == -1, "Key not found"); // This function could be called by a dot access
+  // hard_fail_if(idx == -1, "Key not found"); // This function could be called by a dot access
+  if (idx == -1)
+  {
+    if (is_symb(key))
+    {
+      int idx = get_symb_idx(key);
+      const char *str = generated::map_symb_to_str[idx];
+      char buff[1024];
+      strcpy(buff, "Key not found: ");
+      strncat(buff, str, 512);
+      hard_fail(buff);
+    }
+    else
+      hard_fail("Key not found");
+  }
   
   Obj *values = keys + size;
   Obj value = values[idx];

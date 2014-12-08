@@ -1,6 +1,8 @@
 #include "lib.h"
 #include "generated.h"
 
+#include <cstdlib>
+
 
 bool inline_eq(Obj obj1, Obj obj2)
 {
@@ -67,7 +69,12 @@ int get_map_size(Obj map)
   return get_map_ptr(map)->size;
 }
 
-int unique_int()
+int rand_nat(int max)
+{
+  return rand() % max; //## BUG: THE FUNCTION rand() ONLY GENERATES A LIMITED RANGE OF INTEGERS
+}
+
+int unique_nat()
 {
   static int next_val = 0;
   return next_val++;
@@ -139,4 +146,11 @@ Obj get_curr_value(MapIter &it)
   assert(it.idx < it.map->size);
   Map *map = it.map;
   return map->buffer[it.idx+map->size];
+}
+
+Obj rand_set_elem(Obj set)
+{
+  Set *set_ptr = get_set_ptr(set);
+  int idx = std::rand() % set_ptr->size;
+  return set_ptr->elems[idx];
 }

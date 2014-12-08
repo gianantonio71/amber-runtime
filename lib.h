@@ -202,7 +202,8 @@ int get_int_val(Obj obj);
 int get_set_size(Obj set);
 int get_seq_len(Obj seq);
 int get_map_size(Obj map);
-int unique_int();
+int rand_nat(int max);        // Non-deterministic
+int unique_nat();             // Non-deterministic
 
 Obj to_obj(bool b);
 Obj to_obj(int n);
@@ -214,6 +215,7 @@ Obj get_curr_obj(SetIter &it);
 Obj get_curr_obj(SeqIter &it);
 Obj get_curr_key(MapIter &it);
 Obj get_curr_value(MapIter &it);
+Obj rand_set_elem(Obj set);   // Non-deterministic
 
 ////////////////////////////////// instrs.cpp //////////////////////////////////
 
@@ -259,6 +261,7 @@ void pop_call_info();
 void print_call_stack();
 void fail_if(bool condition, const char *message);
 void fail_if_not(bool condition, const char *message);
+void hard_fail(const char *message);
 void hard_fail_if(bool condition, const char *message);
 void hard_fail_if_not(bool condition, const char *message);
 void internal_fail();
@@ -286,3 +289,6 @@ void obj_to_str(Obj str_obj, char *buffer, int size);
 
 int char_buffer_size(Obj str_obj);
 
+///////////////////////////// os_interface_xxx.cpp /////////////////////////////
+
+int get_tick_count();   // Impure
