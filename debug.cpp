@@ -40,7 +40,7 @@ void print_indented_param(FILE *fp, Obj param, bool is_last, int &file_idx)
 {
   generated::Env env;
   memset(&env, 0, sizeof(generated::Env));
-  Obj str_obj = generated::To_Text(param, to_obj(80), to_obj(1), env);
+  Obj str_obj = generated::To_Text(param, to_obj(80LL), to_obj(1LL), env);
 
   int buff_size = char_buffer_size(str_obj);
   char *buffer = (char *) new_obj(nblocks16(buff_size));

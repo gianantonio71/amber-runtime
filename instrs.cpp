@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cstring>
+#include <cmath>
 
 #include "lib.h"
 #include "generated.h"
@@ -139,6 +140,68 @@ Obj make_tagged_obj(Obj tag, Obj obj)
   tag_obj->obj = obj;
   
   return make_obj(tag_obj);
+}
+
+Obj make_float(double val)
+{
+  Float *float_ptr = new_float();
+  float_ptr->value = val;
+  return make_obj(float_ptr);
+}
+
+Obj neg_float(Obj obj)
+{
+  Float *ptr = get_float_ptr(obj);
+  return make_float(-ptr->value);
+}
+
+Obj add_floats(Obj obj1, Obj obj2)
+{
+  Float *ptr1 = get_float_ptr(obj1);
+  Float *ptr2 = get_float_ptr(obj2);
+  return make_float(ptr1->value + ptr2->value);
+}
+
+Obj sub_floats(Obj obj1, Obj obj2)
+{
+  Float *ptr1 = get_float_ptr(obj1);
+  Float *ptr2 = get_float_ptr(obj2);
+  return make_float(ptr1->value - ptr2->value);
+}
+
+Obj mult_floats(Obj obj1, Obj obj2)
+{
+  Float *ptr1 = get_float_ptr(obj1);
+  Float *ptr2 = get_float_ptr(obj2);
+  return make_float(ptr1->value * ptr2->value);
+}
+
+Obj div_floats(Obj obj1, Obj obj2)
+{
+  Float *ptr1 = get_float_ptr(obj1);
+  Float *ptr2 = get_float_ptr(obj2);
+  return make_float(ptr1->value / ptr2->value);
+}
+
+Obj square_root(Obj obj)
+{
+  Float *ptr = get_float_ptr(obj);
+  return make_float(sqrt(ptr->value));
+}
+
+Obj floor(Obj obj)
+{
+  throw;
+}
+
+Obj ceiling(Obj obj)
+{
+  throw;
+}
+
+Obj int_to_float(Obj obj)
+{
+  return make_float(get_int_val(obj));
 }
 
 Obj make_array(int size, Obj value)
@@ -337,7 +400,7 @@ Obj lookup(Obj map, Obj key, bool &found)
   if (map == empty_map)
   {
     found = false;
-    return to_obj(0); //## WHAT SHOULD I RETURN HERE?
+    return to_obj(0LL); //## WHAT SHOULD I RETURN HERE?
   }
 
   Map *m = get_map_ptr(map);
@@ -348,7 +411,7 @@ Obj lookup(Obj map, Obj key, bool &found)
   if (idx == -1)
   {
     found = false;
-    return to_obj(0); //## WHAT SHOULD I RETURN HERE?
+    return to_obj(0LL); //## WHAT SHOULD I RETURN HERE?
   }
   
   Obj *values = keys + size;

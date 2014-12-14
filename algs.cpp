@@ -140,7 +140,7 @@ int sort_group_and_count(Obj *objs, int len, int *idxs, Obj *counters)
     int count = j - i;
     
     idxs[n] = idxs[i];
-    counters[n] = to_obj(count);
+    counters[n] = to_obj((long long) count);
     n++;
     
     i = j;

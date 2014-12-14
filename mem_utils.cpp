@@ -77,6 +77,11 @@ Obj make_obj(TagObj *ptr)
   return pack_ptr(ptr) | type_tag_tag_obj;
 }
 
+Obj make_obj(Float *ptr)
+{
+  return pack_ptr(ptr) | type_tag_float;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 RefObj *get_ref_obj_ptr(Obj obj)
@@ -116,6 +121,13 @@ TagObj *get_tag_obj_ptr(Obj obj)
   return (TagObj *) get_ptr(obj);
 }
 
+Float *get_float_ptr(Obj obj)
+{
+  fail_if_not(is_float(obj), "Object is not a floating point number");
+
+  return (Float *) get_ptr(obj);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 bool is_symb(Obj obj)
@@ -126,6 +138,11 @@ bool is_symb(Obj obj)
 bool is_int(Obj obj)
 {
   return get_short_type_tag(obj) == short_type_tag_integer;
+}
+
+bool is_float(Obj obj)
+{
+  return get_full_type_tag(obj) == type_tag_float;
 }
 
 bool is_ne_seq(Obj obj)

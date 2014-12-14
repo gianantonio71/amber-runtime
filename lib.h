@@ -37,6 +37,12 @@ struct TagObj : public RefObj
   Obj obj;
 };
 
+struct Float : public RefObj
+{
+  int _;
+  double value;
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 
 struct SetIter
@@ -86,7 +92,8 @@ enum TypeTag {
   type_tag_set          = 7,   //    1  11    Set
   type_tag_seq          = 11,  //   10  11    Seq
   type_tag_map          = 15,  //   11  11    Map
-  type_tag_tag_obj      = 19,  //  100  11    Tagged Object
+  type_tag_tag_obj      = 19,  //  100  11    Tagged object
+  type_tag_float        = 23   //  101  11    Floating point number
 };
 
 const Obj null_obj  = type_tag_null;
@@ -134,6 +141,7 @@ Set    *new_set(int size);    // Sets ref_count and size
 Seq    *new_seq(int length);  // Sets ref_count and length
 Map    *new_map(int size);    // Sets ref_count and size
 TagObj *new_tag_obj();        // Sets ref_count
+Float  *new_float();          // Sets ref_count
 
 Set *shrink_set(Set *set, int new_size);
 
@@ -158,6 +166,7 @@ bool is_ref_obj(Obj obj);
 
 bool is_symb(Obj obj);
 bool is_int(Obj obj);
+bool is_float(Obj obj);
 
 bool is_ne_set(Obj obj);
 bool is_ne_seq(Obj obj);
@@ -181,12 +190,14 @@ Obj make_obj(Set *ptr);
 Obj make_obj(Seq *ptr);
 Obj make_obj(Map *ptr);
 Obj make_obj(TagObj *ptr);
+Obj make_obj(Float *obj);
 
 RefObj *get_ref_obj_ptr(Obj obj);
 Set    *get_set_ptr(Obj obj);
 Seq    *get_seq_ptr(Obj obj);
 Map    *get_map_ptr(Obj obj);
 TagObj *get_tag_obj_ptr(Obj obj);
+Float  *get_float_ptr(Obj obj);
 
 //////////////////////////////// basic_ops.cpp /////////////////////////////////
 
@@ -197,16 +208,18 @@ bool is_out_of_range(SeqIter &it);
 bool is_out_of_range(MapIter &it);
 bool has_elem(Obj set, Obj elem);
 
-
-int get_int_val(Obj obj);
+long long get_int_val(Obj obj);
 int get_set_size(Obj set);
 int get_seq_len(Obj seq);
 int get_map_size(Obj map);
+long long mantissa(Obj obj);
+int dec_exp(Obj obj);
 int rand_nat(int max);        // Non-deterministic
-int unique_nat();             // Non-deterministic
+long long unique_nat();       // Non-deterministic
 
 Obj to_obj(bool b);
 Obj to_obj(int n);
+Obj to_obj(long long n);
 Obj obj_neg(Obj obj);
 Obj at(Obj seq, int idx);
 Obj get_tag(Obj obj);
@@ -228,6 +241,16 @@ Obj make_seq(Stream &s);
 Obj make_map(Obj *keys, Obj *values, int size);
 Obj make_map(Stream &key_stream, Stream &value_stream);
 Obj make_tagged_obj(Obj tag, Obj obj);          // obj must be already reference-counted
+Obj make_float(double val);
+Obj neg_float(Obj val);
+Obj add_floats(Obj val1, Obj val2);
+Obj sub_floats(Obj val1, Obj val2);
+Obj mult_floats(Obj val1, Obj val2);
+Obj div_floats(Obj val1, Obj val2);
+Obj square_root(Obj val);
+Obj floor(Obj val);
+Obj ceiling(Obj val);
+Obj int_to_float(Obj val);
 Obj make_array(int size, Obj value);
 Obj get_seq_slice(Obj seq, int idx_first, int len);
 Obj join_seqs(Obj left, Obj right);

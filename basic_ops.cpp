@@ -41,7 +41,7 @@ bool has_elem(Obj set, Obj elem)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-int get_int_val(Obj obj)
+long long get_int_val(Obj obj)
 {
   assert(is_int(obj));
   fail_if_not(is_int(obj), "Not an integer");
@@ -69,14 +69,30 @@ int get_map_size(Obj map)
   return get_map_ptr(map)->size;
 }
 
+long long mantissa(Obj obj)
+{
+  long long mantissa;
+  int dec_exp;
+  mantissa_and_dec_exp(get_float_ptr(obj)->value, mantissa, dec_exp);
+  return mantissa;
+}
+
+int dec_exp(Obj obj)
+{
+  long long mantissa;
+  int dec_exp;
+  mantissa_and_dec_exp(get_float_ptr(obj)->value, mantissa, dec_exp);
+  return dec_exp;
+}
+
 int rand_nat(int max)
 {
   return rand() % max; //## BUG: THE FUNCTION rand() ONLY GENERATES A LIMITED RANGE OF INTEGERS
 }
 
-int unique_nat()
+long long unique_nat()
 {
-  static int next_val = 0;
+  static long long next_val = 0;
   return next_val++;
 }
 
@@ -91,6 +107,13 @@ Obj to_obj(bool b)
 }
 
 Obj to_obj(int n)
+{
+  Obj obj = n << SHORT_TAG_SIZE;
+  assert(get_int_val(obj) == n);
+  return obj;
+}
+
+Obj to_obj(long long n)
 {
   Obj obj = n << SHORT_TAG_SIZE;
   assert(get_int_val(obj) == n);

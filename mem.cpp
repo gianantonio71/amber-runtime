@@ -33,6 +33,11 @@ int tag_obj_mem_size()
   return nblocks16(sizeof(TagObj));
 }
 
+int float_obj_mem_size()
+{
+  return nblocks16(sizeof(Float));
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 Set *new_set(int size)
@@ -70,6 +75,13 @@ TagObj *new_tag_obj()
   TagObj *tag_obj = (TagObj *) new_obj(tag_obj_mem_size());
   tag_obj->ref_count = 1;
   return tag_obj;
+}
+
+Float *new_float()
+{
+  Float *float_obj = (Float *) new_obj(tag_obj_mem_size());
+  float_obj->ref_count = 1;
+  return float_obj;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -216,6 +228,13 @@ static void delete_obj(Obj obj, Obj *queue, int &queue_start, int &queue_size)
       break;    
     }
     
+    case type_tag_float:
+    {
+      Float *float_obj = get_float_ptr(obj);
+      free_obj(float_obj, float_obj_mem_size());
+      break;
+    }
+
     default:
       internal_fail();
   }
