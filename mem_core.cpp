@@ -98,19 +98,36 @@ void *new_pooled_mem_block(int nblocks16)
 {
   int l2c = log2_ceiling(nblocks16);
   void *head = obj_pool[l2c];
-  
+
   if (head == NULL)
     return new_mem_block(1 << l2c);
 
   void *next = * (void **) head;
   obj_pool[l2c] = next;
-  
-  return head;  
+
+  return head;
+}
+
+void *new_pooled_mem_block(int nblocks16_requested, int &nblocks16_returned)
+{
+  int l2c = log2_ceiling(nblocks16_requested);
+  void *head = obj_pool[l2c];
+
+  int actual_size = 1 << l2c;
+  nblocks16_returned = actual_size;
+
+  if (head == NULL)
+    return new_mem_block(actual_size);
+
+  void *next = * (void **) head;
+  obj_pool[l2c] = next;
+
+  return head;
 }
 
 void free_pooled_mem_block(void *ptr, int nblocks16)
 {
-  memset(ptr, 0xFF, 16*nblocks16);
+  memset(ptr, 0xFF, 16*nblocks16); //## IS THIS NECESSARY IN RELEASE MODE?
 
   int l2c = log2_ceiling(nblocks16);
   void *tail = obj_pool[l2c];
@@ -213,7 +230,19 @@ void *new_obj(int nblocks16)
   void *mem_block = new_pooled_mem_block(nblocks16);
 
 #ifndef NDEBUG
-  inc_live_obj_count(nblocks16);
+  inc_live_obj_count(nblocks16); //## THE SIZE IF THE WRONG ONE, BUT IT IS THE SAME THAT IS REPORTED BACK TO free_obj
+  live_objs.insert(mem_block);
+#endif
+
+  return mem_block;
+}
+
+void *new_obj(int nblocks16_requested, int &nblocks16_returned)
+{
+  void *mem_block = new_pooled_mem_block(nblocks16_requested, nblocks16_returned);
+
+#ifndef NDEBUG
+  inc_live_obj_count(nblocks16_returned);
   live_objs.insert(mem_block);
 #endif
 

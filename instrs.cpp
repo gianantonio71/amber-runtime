@@ -72,7 +72,7 @@ Obj make_seq(Obj *elems, int length) // Objects in elems must be already referen
   if (length == 0)
     return empty_seq;
   
-  Seq *seq = new_seq(length);
+  Seq *seq = new_full_seq(length);
   
   for (int i=0 ; i < length ; i++)
     seq->elems[i] = elems[i];
@@ -209,7 +209,7 @@ Obj make_array(int size, Obj value)
   if (size == 0)
     return empty_seq;
 
-  Seq *seq = new_seq(size);
+  Seq *seq = new_full_seq(size);
   
   for (int i=0 ; i < size ; i++)
     seq->elems[i] = value;
@@ -234,8 +234,70 @@ Obj get_seq_slice(Obj seq, int idx_first, int len)
   int right_bound = idx_first + len;
   hard_fail_if_not(right_bound <= s->length, "Invalid subsequence start/length combination");  
   Obj *elems = s->elems + idx_first;
-  vec_add_ref(elems, len);
-  return make_seq(elems, len);
+
+  FullSeq *full_seq = is_full_seq(s) ? (FullSeq *) s : ((RefSeq *)s)->full_seq;
+  add_ref(full_seq);
+  return make_obj(new_ref_seq(full_seq, s->elems+idx_first, len));
+}
+
+Obj join_seqs_helper(Seq *left_ptr, Obj *right_elems, int right_len)
+{
+  int left_len = left_ptr->length;
+  Obj *left_elems = left_ptr->elems;
+
+  bool can_be_extended = false;
+  FullSeq *full_seq_ptr = NULL;
+  if (is_full_seq(left_ptr))
+  {
+    full_seq_ptr = (FullSeq *) left_ptr;
+    if (full_seq_ptr->used_capacity == left_len)
+      if (full_seq_ptr->used_capacity + right_len <= full_seq_ptr->capacity)
+      {
+        assert(full_seq_ptr->buffer + full_seq_ptr->used_capacity == left_elems + left_len);
+        can_be_extended = true;
+      }
+  }
+  else
+  {
+    full_seq_ptr = ((RefSeq *) left_ptr)->full_seq;
+    if (left_elems + left_len == full_seq_ptr->buffer + full_seq_ptr->used_capacity)
+      if (full_seq_ptr->used_capacity + right_len <= full_seq_ptr->capacity)
+        can_be_extended = true;
+  }
+
+  vec_add_ref(right_elems, right_len);
+
+  if (can_be_extended)
+  {
+    memcpy(left_elems+left_len, right_elems, sizeof(Obj) * right_len);
+    full_seq_ptr->used_capacity += right_len;
+    add_ref(full_seq_ptr);
+    return make_obj(new_ref_seq(full_seq_ptr, full_seq_ptr->elems, left_len+right_len));
+  }
+
+  vec_add_ref(left_elems, left_len);
+
+  int len = left_len + right_len;
+
+  Seq *seq = new_full_seq(len);
+
+  for (int i=0 ; i < left_len ; i++)
+    seq->elems[i] = left_elems[i];
+  for (int i=0 ; i < right_len ; i++)
+    seq->elems[i+left_len] = right_elems[i];
+
+  return make_obj(seq);
+}
+
+Obj append_to_seq(Obj seq, Obj obj)
+{
+  if (seq == empty_seq)
+    return make_seq(&obj, 1);
+
+  Seq *seq_ptr = get_seq_ptr(seq);
+  Obj res = join_seqs_helper(seq_ptr, &obj, 1);
+  release(seq);
+  return res;
 }
 
 Obj join_seqs(Obj left, Obj right)
@@ -247,35 +309,20 @@ Obj join_seqs(Obj left, Obj right)
     add_ref(right);
     return right;
   }
-  
+
   if (right == empty_seq)
   {
     add_ref(left);
     return left;
   }
-  
+
   Seq *left_ptr  = get_seq_ptr(left);
   Seq *right_ptr = get_seq_ptr(right);
-  
-  int left_len = left_ptr->length;
+
   int right_len = right_ptr->length;
-  
-  Obj *left_elems = left_ptr->elems;
   Obj *right_elems = right_ptr->elems;
-  
-  vec_add_ref(left_elems, left_len);
-  vec_add_ref(right_elems, right_len);
-  
-  int len = left_len + right_len;
-  
-  Seq *seq = new_seq(len);
-  
-  for (int i=0 ; i < left_len ; i++)
-    seq->elems[i] = left_elems[i];
-  for (int i=0 ; i < right_len ; i++)
-    seq->elems[i+left_len] = right_elems[i];
-  
-  return make_obj(seq);
+
+  return join_seqs_helper(left_ptr, right_elems, right_len);
 }
 
 Obj join_mult_seqs(Obj seqs)
@@ -297,7 +344,7 @@ Obj join_mult_seqs(Obj seqs)
   if (res_len == 0)
     return empty_seq;
 
-  Seq *res_seq = new_seq(res_len);
+  Seq *res_seq = new_full_seq(res_len);
 
   int copied = 0;
   for (int i=0 ; i < seqs_count ; i++)
@@ -333,7 +380,7 @@ Obj rev_seq(Obj seq)
   
   vec_add_ref(elems, len);
   
-  Seq *rs = new_seq(len);
+  Seq *rs = new_full_seq(len);
   Obj *rev_elems = rs->elems;
   
   for (int i=0 ; i < len ; i++)
@@ -515,7 +562,7 @@ Obj list_to_seq(Obj list)
   for (Obj tail=list ; tail != empty_seq ; tail=at(tail, 1))
     len++;
   
-  Seq *seq = new_seq(len);
+  Seq *seq = new_full_seq(len);
   
   Obj *elems = seq->elems;
   Obj tail = list;
@@ -538,7 +585,7 @@ Obj internal_sort(Obj set)
   int size = s->size;
   Obj *src = s->elems;
   
-  Seq *seq = new_seq(size);
+  Seq *seq = new_full_seq(size);
   Obj *dest = seq->elems;
   for (int i=0 ; i < size ; i++)
     dest[i] = src[i];

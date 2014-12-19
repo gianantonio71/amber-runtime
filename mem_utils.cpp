@@ -107,6 +107,18 @@ Seq *get_seq_ptr(Obj obj)
   return (Seq *) get_ptr(obj);
 }
 
+FullSeq *get_full_seq_ptr(Obj obj)
+{
+  //## BUG: HERE CHECK THAT THE SEQUENCE IS ACTUALLY A FULL SEQUENCE
+  return (FullSeq *) get_seq_ptr(obj);
+}
+
+RefSeq *get_ref_seq_ptr(Obj obj)
+{
+  //## BUG: HERE CHECK THAT THE SEQUENCE IS ACTUALLY A REFERENCE SEQUENCE
+  return (RefSeq *) get_seq_ptr(obj);
+}
+
 Map *get_map_ptr(Obj obj)
 {
   fail_if_not(is_ne_map(obj), "Object is not a non-empty map");
@@ -126,6 +138,19 @@ Float *get_float_ptr(Obj obj)
   fail_if_not(is_float(obj), "Object is not a floating point number");
 
   return (Float *) get_ptr(obj);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+bool is_full_seq(Seq *seq)
+{
+  FullSeq *full_seq = (FullSeq *) seq;
+  return full_seq->elems == full_seq->buffer;
+}
+
+bool is_ref_seq(Seq *seq)
+{
+  return !is_full_seq(seq);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

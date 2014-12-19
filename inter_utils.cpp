@@ -18,7 +18,7 @@ Obj str_to_obj(const char *c_str)
   }
   else
   {
-    Seq *raw_str = new_seq(n);
+    Seq *raw_str = new_full_seq(n);
     for (int i=0 ; i < n ; i++)
       raw_str->elems[i] = to_obj((long long) c_str[i]);
     raw_str_obj = make_obj(raw_str);

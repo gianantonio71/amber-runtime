@@ -19,8 +19,22 @@ struct Set : public RefObj
 
 struct Seq : public RefObj
 {
-  int length;
-  Obj elems[1];
+  unsigned int length;
+  Obj *elems;
+};
+
+
+struct FullSeq : public Seq
+{
+  unsigned int capacity;
+  unsigned int used_capacity;
+  Obj buffer[1];
+};
+
+
+struct RefSeq : public Seq
+{
+  FullSeq *full_seq;
 };
 
 
@@ -36,6 +50,7 @@ struct TagObj : public RefObj
   Obj tag;
   Obj obj;
 };
+
 
 struct Float : public RefObj
 {
@@ -113,6 +128,7 @@ const int FULL_TAG_MASK   = (1 << FULL_TAG_SIZE) - 1;
 ///////////////////////////////// mem_core.cpp /////////////////////////////////
 
 void *new_obj(int nblocks16);
+void *new_obj(int nblocks16_requested, int &nblocks16_returned);
 void free_obj(void *obj, int nblocks16);
 
 bool is_alive(void *obj);
@@ -129,6 +145,7 @@ void print_all_live_objs();
 
 /////////////////////////////////// mem.cpp ////////////////////////////////////
 
+void add_ref(RefObj *);
 void add_ref(Obj obj);
 void release(Obj obj);
 
@@ -137,11 +154,14 @@ void mult_add_ref(Obj obj, int count);
 void vec_add_ref(Obj *objs, int len);
 void vec_release(Obj *objs, int len);
 
-Set    *new_set(int size);    // Sets ref_count and size
-Seq    *new_seq(int length);  // Sets ref_count and length
-Map    *new_map(int size);    // Sets ref_count and size
-TagObj *new_tag_obj();        // Sets ref_count
-Float  *new_float();          // Sets ref_count
+Set      *new_set(int size);                                        // Sets ref_count and size
+// Seq      *new_seq(int length);                                      // Sets ref_count and length
+FullSeq  *new_full_seq(int length);                                 // Sets ref_count, length, capacity, used_capacity and elems
+RefSeq   *new_ref_seq();                                            // Sets ref_count
+RefSeq   *new_ref_seq(FullSeq *full_seq, Obj *elems, int length);   // Sets all fields
+Map      *new_map(int size);                                        // Sets ref_count and size
+TagObj   *new_tag_obj();                                            // Sets ref_count
+Float    *new_float();                                              // Sets ref_count
 
 Set *shrink_set(Set *set, int new_size);
 
@@ -163,6 +183,9 @@ void delete_ptr_array(void **buffer, int size);
 
 bool is_inline_obj(Obj obj);
 bool is_ref_obj(Obj obj);
+
+bool is_full_seq(Seq *seq);
+bool is_ref_seq(Seq *seq);
 
 bool is_symb(Obj obj);
 bool is_int(Obj obj);
@@ -192,12 +215,14 @@ Obj make_obj(Map *ptr);
 Obj make_obj(TagObj *ptr);
 Obj make_obj(Float *obj);
 
-RefObj *get_ref_obj_ptr(Obj obj);
-Set    *get_set_ptr(Obj obj);
-Seq    *get_seq_ptr(Obj obj);
-Map    *get_map_ptr(Obj obj);
-TagObj *get_tag_obj_ptr(Obj obj);
-Float  *get_float_ptr(Obj obj);
+RefObj   *get_ref_obj_ptr(Obj obj);
+Set      *get_set_ptr(Obj obj);
+Seq      *get_seq_ptr(Obj obj);
+FullSeq  *get_full_seq_ptr(Obj obj);
+RefSeq   *get_ref_seq_ptr(Obj obj);
+Map      *get_map_ptr(Obj obj);
+TagObj   *get_tag_obj_ptr(Obj obj);
+Float    *get_float_ptr(Obj obj);
 
 //////////////////////////////// basic_ops.cpp /////////////////////////////////
 
@@ -253,6 +278,7 @@ Obj ceiling(Obj val);
 Obj int_to_float(Obj val);
 Obj make_array(int size, Obj value);
 Obj get_seq_slice(Obj seq, int idx_first, int len);
+Obj append_to_seq(Obj seq, Obj obj);            // Both seq and obj must already be reference counted
 Obj join_seqs(Obj left, Obj right);
 Obj join_mult_seqs(Obj seqs);
 Obj rev_seq(Obj seq);
