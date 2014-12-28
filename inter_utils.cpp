@@ -50,6 +50,28 @@ void obj_to_str(Obj str_obj, char *buffer, int size)
   }
 }
 
+char *obj_to_byte_array(Obj byte_seq_obj, int &size)
+{
+  if (byte_seq_obj == empty_seq)
+  {
+    size = 0;
+    return NULL;
+  }
+
+  Seq *seq = get_seq_ptr(byte_seq_obj);
+  int len = seq->length;
+  Obj *elems = seq->elems;
+  char *buffer = new char[len];
+  for (int i=0 ; i < len ; i++)
+  {
+    long long val = get_int_val(elems[i]);
+    assert(val >= 0 && val <= 255);
+    buffer[i] = (char) val;
+  }
+  size = len;
+  return buffer;
+}
+
 int char_buffer_size(Obj str_obj)
 {
   Obj raw_str_obj = get_tag_obj_ptr(str_obj)->obj;
@@ -59,6 +81,14 @@ int char_buffer_size(Obj str_obj)
 
   Seq *raw_str = get_seq_ptr(raw_str_obj);
   return raw_str->length + 1;
+}
+
+char *obj_to_str(Obj str_obj)
+{
+  int size = char_buffer_size(str_obj);
+  char *buffer = new char[size];
+  obj_to_str(str_obj, buffer, size);
+  return buffer;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

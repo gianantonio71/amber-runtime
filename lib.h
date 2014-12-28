@@ -335,6 +335,9 @@ void print(Obj obj);
 
 Obj str_to_obj(const char *c_str);
 void obj_to_str(Obj str_obj, char *buffer, int size);
+char *obj_to_str(Obj str_obj);
+
+char *obj_to_byte_array(Obj byte_seq_obj, int &size);
 
 int char_buffer_size(Obj str_obj);
 
