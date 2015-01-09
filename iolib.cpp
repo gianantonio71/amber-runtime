@@ -2,6 +2,8 @@
 #include "os_interface.h"
 #include "generated.h"
 
+#include <stdio.h> //## MAYBE THIS SHOULD NOT BE HERE...
+
 
 Obj io_File_Read(Obj filename, generated::Env &)
 {
@@ -49,4 +51,22 @@ Obj io_File_Write(Obj filename, Obj mode, Obj data, generated::Env &)
   }
   delete [] fname;
   return generated::S_true;
+}
+
+
+Obj io_Print(Obj str_obj, generated::Env &env)
+{
+  char *str = obj_to_str(str_obj);
+  fputs(str, stdout);
+  delete [] str;
+  return generated::S_nil;
+}
+
+
+Obj io_Get_Char(generated::Env &env)
+{
+  int ch = getchar();
+  if (ch == EOF)
+    return generated::S_nil;
+  return to_obj(ch);
 }
