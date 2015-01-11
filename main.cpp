@@ -11,26 +11,22 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-  int start_tick = get_tick_count();
-
-  generated::Env env;
-  memset(&env, 0, sizeof(generated::Env));
-
+  Obj args = empty_seq;
   if (argc > 1)
   {
     Obj *arg_buff = new Obj[argc-1];
     for (int i=0 ; i < argc-1 ; i++)
       arg_buff[i] = str_to_obj(argv[i+1]);
-    Obj args = make_seq(arg_buff, argc-1);
-    Obj res = io_Main(args, env);
-    release(args);
-    release(res);
+    args = make_seq(arg_buff, argc-1);
   }
-  else
-  {
-    Obj res = io_Main(empty_seq, env);
-    release(res);
-  }
+
+  generated::Env env;
+  memset(&env, 0, sizeof(generated::Env));
+
+  Obj res = io_Main(args, env);
+
+  release(args);
+  release(res);
 
   release_all_cached_strings();
 
@@ -46,5 +42,5 @@ int main(int argc, char **argv)
   // print_all_live_objs();
 #endif
 
-  return 0;
+  return is_int(res) ? get_int_val(res) : 0;
 }
