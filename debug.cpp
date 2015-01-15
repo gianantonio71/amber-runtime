@@ -38,13 +38,27 @@ void pop_call_info()
 
 void print_indented_param(FILE *fp, Obj param, bool is_last, int &file_idx)
 {
-  generated::Env env;
-  memset(&env, 0, sizeof(generated::Env));
-  Obj str_obj = generated::To_Text(param, to_obj(80LL), to_obj(1LL), env);
+  int buff_size;
+  char *buffer;
+  if (param != null_obj)
+  {
+    generated::Env env;
+    memset(&env, 0, sizeof(generated::Env));
+    Obj str_obj = generated::To_Text(param, to_obj(80LL), to_obj(1LL), env);
 
-  int buff_size = char_buffer_size(str_obj);
-  char *buffer = (char *) new_obj(nblocks16(buff_size));
-  obj_to_str(str_obj, buffer, buff_size);
+    buff_size = char_buffer_size(str_obj);
+    buffer = (char *) new_obj(nblocks16(buff_size));
+    obj_to_str(str_obj, buffer, buff_size);
+
+    release(str_obj);
+  }
+  else
+  {
+    static const char *CLOSURE_PLACEHOLDER_TEXT = "  <closure>";
+    buff_size = strlen(CLOSURE_PLACEHOLDER_TEXT) + 1;
+    buffer = (char *) new_obj(nblocks16(buff_size));
+    strcpy(buffer, CLOSURE_PLACEHOLDER_TEXT);
+  }
 
   char *final_text = buffer;
   char msg[1024];
@@ -72,7 +86,6 @@ void print_indented_param(FILE *fp, Obj param, bool is_last, int &file_idx)
   fputs("\n", fp);
   fflush(fp);
 
-  release(str_obj);
   free_obj(buffer, nblocks16(buff_size));
 }
 
