@@ -297,6 +297,7 @@ Obj append_to_seq(Obj seq, Obj obj)
   Seq *seq_ptr = get_seq_ptr(seq);
   Obj res = join_seqs_helper(seq_ptr, &obj, 1);
   release(seq);
+  release(obj);
   return res;
 }
 
