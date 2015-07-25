@@ -28,7 +28,7 @@ int main(int argc, char **argv)
   release(args);
   release(res);
 
-  release_all_cached_strings();
+  release_all_cached_objs();
 
 #ifndef NDEBUG
   cerr << "\nNumber of live objects: " << get_live_objs_count() << endl;

@@ -326,10 +326,11 @@ int  comp_objs(Obj obj1, Obj obj2);
 
 /////////////////////////////// inter_utils.cpp ////////////////////////////////
 
+void add_obj_to_cache(Obj obj);
+void release_all_cached_objs();
+
 Obj to_str(Obj obj);
 Obj to_symb(Obj obj);
-
-void release_all_cached_strings();
 
 void print(Obj obj);
 

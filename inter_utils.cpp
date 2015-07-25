@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <vector>
+#include <map>
+
 #include "lib.h"
 #include "generated.h"
 
@@ -93,10 +96,55 @@ char *obj_to_str(Obj str_obj)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-const int MAX_SYMBS = 10000;
+static std::vector<Obj> cached_objs;
 
-int symb_count = generated::EMB_SYMB_COUNT;
-Obj symb_strs[MAX_SYMBS];
+void add_obj_to_cache(Obj obj)
+{
+  if (is_ref_obj(obj))
+    cached_objs.push_back(obj);
+}
+
+void release_all_cached_objs()
+{
+  int count = cached_objs.size();
+  for (int i=0 ; i < count ; i++)
+    release(cached_objs[i]);
+  cached_objs.clear();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct StrObjCmp
+{
+  bool operator() (const Obj &str1, const Obj &str2) const
+  {
+    Seq *ptr1 = get_seq_ptr(get_inner_obj(str1));
+    Seq *ptr2 = get_seq_ptr(get_inner_obj(str2));
+
+    int len1 = ptr1->length;
+    int len2 = ptr2->length;
+
+    if (len1 != len2)
+      return len1 < len2;
+
+    Obj *elems1 = ptr1->elems;
+    Obj *elems2 = ptr2->elems;
+
+    for (int i=0 ; i < len1 ; i++)
+    {
+      Obj elem1 = elems1[i];
+      Obj elem2 = elems2[i];
+      if (elem1 != elem2)
+        return elem1 < elem2;
+    }
+
+    return false;
+  }
+};
+
+
+std::map<Obj, int, StrObjCmp> str_to_symb_map;
+std::vector<Obj> symb_strs;
 
 
 static void initialize_symb_strs()
@@ -110,8 +158,10 @@ static void initialize_symb_strs()
   
   for (int i=0 ; i < generated::EMB_SYMB_COUNT ; i++)
   {
-    assert(symb_strs[i] == 0);
-    symb_strs[i] = str_to_obj(generated::map_symb_to_str[i]);
+    Obj str_obj = str_to_obj(generated::map_symb_to_str[i]);
+    add_obj_to_cache(str_obj);
+    str_to_symb_map[str_obj] = i;
+    symb_strs.push_back(str_obj);
   }
 }
 
@@ -119,20 +169,12 @@ static void initialize_symb_strs()
 Obj to_str(Obj obj)
 {
   initialize_symb_strs();
-  
   assert(is_symb(obj));
-  
   int idx = get_symb_idx(obj);
-  
-  assert(idx < symb_count);
-  assert(idx < generated::EMB_SYMB_COUNT || symb_strs[idx] != 0);
-
-  if (symb_strs[idx] == 0)
-    symb_strs[idx] = str_to_obj(generated::map_symb_to_str[idx]);
-
-  add_ref(symb_strs[idx]);
-
-  return symb_strs[idx];
+  assert(idx < symb_strs.size());
+  Obj str = symb_strs[idx];
+  add_ref(str);
+  return str;
 }
 
 
@@ -140,23 +182,17 @@ Obj to_symb(Obj obj)
 {
   initialize_symb_strs();
 
-  //## BAD BAD BAD VERY INEFFICIENT. THIS HAS TO BE REWRITTEN COMPLETELY
-  for (int i=0 ; i < symb_count ; i++)
-    if (are_eq(obj, symb_strs[i]))
-      return make_symb(i);
-  symb_strs[symb_count] = obj;
-  add_ref(obj);
-  return make_symb(symb_count++);
-}
+  std::map<Obj, int, StrObjCmp>::iterator it = str_to_symb_map.find(obj);
+  if (it != str_to_symb_map.end())
+    return make_symb(it->second);
 
-void release_all_cached_strings()
-{
-  for (int i=0 ; i < symb_count ; i++)
-    if (symb_strs[i] != 0)
-    {
-      release(symb_strs[i]);
-      symb_strs[i] = 0;    
-    }
+  add_ref(obj);
+  add_obj_to_cache(obj);
+
+  int next_symb_id = symb_strs.size();
+  symb_strs.push_back(obj);
+  str_to_symb_map[obj] = next_symb_id;
+  return make_symb(next_symb_id);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

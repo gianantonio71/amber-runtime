@@ -206,7 +206,7 @@ Obj int_to_float(Obj obj)
 
 Obj make_array(int size, Obj value)
 {
-  if (size == 0)
+  if (size <= 0) //## DON'T LIKE THIS
     return empty_seq;
 
   Seq *seq = new_full_seq(size);
@@ -474,13 +474,34 @@ Obj lookup(Obj map, Obj key, bool &found)
 Obj ext_lookup(Obj map_or_tag_obj, Obj key)
 {
   Obj map = is_tag_obj(map_or_tag_obj) ? get_inner_obj(map_or_tag_obj) : map_or_tag_obj;
-  return lookup(map, key);
+  Map *ptr = get_map_ptr(map);
+  int size = ptr->size;
+  Obj *keys = ptr->buffer;
+  Obj *values = keys + size;
+  for (int i=0 ; i < size ; i++)
+    if (keys[i] == key)
+      return values[i];
+  fail();
 }
 
 Obj ext_lookup(Obj map_or_tag_obj, Obj key, bool &found)
 {
   Obj map = is_tag_obj(map_or_tag_obj) ? get_inner_obj(map_or_tag_obj) : map_or_tag_obj;
-  return lookup(map, key, found);
+  if (map != empty_map)
+  {
+    Map *ptr = get_map_ptr(map);
+    int size = ptr->size;
+    Obj *keys = ptr->buffer;
+    Obj *values = keys + size;
+    for (int i=0 ; i < size ; i++)
+      if (keys[i] == key)
+      {
+        found = true;
+        return values[i];
+      }
+  }
+  found = false;
+  return to_obj(0LL); //## WHAT SHOULD I RETURN HERE?
 }
 
 
