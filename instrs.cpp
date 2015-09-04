@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cmath>
+#include <map>
 
 #include "lib.h"
 #include "generated.h"
@@ -614,6 +615,51 @@ Obj internal_sort(Obj set)
   vec_add_ref(dest, size);
   
   return make_obj(seq);
+}
+
+static std::map<Obj, Obj> attachments_map;
+
+Obj add_attachment(Obj target, Obj data)
+{
+  std::map<Obj, Obj>::iterator it = attachments_map.find(target);
+  if (it == attachments_map.end())
+  {
+    add_ref(target);
+    add_ref(data);
+    Obj set = make_set(&data, 1);
+    attachments_map[target] = set;
+    add_obj_to_cache(target);
+    add_obj_to_cache(set);
+  }
+  else
+  {
+    Obj curr_data_set = it->second;
+
+    Obj sets[2];
+    sets[0] = curr_data_set;
+    add_ref(data);
+    sets[1] = make_set(&data, 1);
+    Obj set_of_sets = make_set(sets, 2);
+    Obj new_data_set = merge_sets(set_of_sets);
+    release(set_of_sets);
+
+    // The current data set cannot be released because it's still in the list of cached object to release
+    // release(curr_data_set);
+    attachments_map[target] = new_data_set;
+    add_obj_to_cache(new_data_set);
+  }
+  add_ref(target);
+  return target;
+}
+
+Obj fetch_attachments(Obj obj)
+{
+  std::map<Obj, Obj>::iterator it = attachments_map.find(obj);
+  if (it == attachments_map.end())
+    return empty_set;
+  Obj res = it->second;
+  add_ref(res);
+  return res;
 }
 
 void get_set_iter(SetIter &it, Obj set)

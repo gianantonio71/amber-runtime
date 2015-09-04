@@ -294,6 +294,8 @@ Obj seq_to_set(Obj seq);
 Obj seq_to_mset(Obj seq);
 Obj list_to_seq(Obj list);
 Obj internal_sort(Obj set);
+Obj add_attachment(Obj target, Obj data);
+Obj fetch_attachments(Obj obj);
 void get_set_iter(SetIter &it, Obj set);
 void get_seq_iter(SeqIter &it, Obj seq);
 void get_map_iter(MapIter &it, Obj map);
