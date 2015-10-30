@@ -101,9 +101,9 @@ long long unique_nat()
 Obj to_obj(bool b)
 {
   // assert((int(b) == 0 && b == false) || (int(b) == 1 && b == true));
-  // assert(((32 >> int(b)) | 1) == (b ? generated::S_true : generated::S_false));
+  // assert(((32 >> int(b)) | 1) == (b ? generated::True_S : generated::False_S));
   // return (32 >> int(ib)) | 1;
-  return b ? generated::S_true : generated::S_false;  // Surprisingly, this seems to be faster...
+  return b ? generated::True_S : generated::False_S;  // Surprisingly, this seems to be faster...
 }
 
 Obj to_obj(int n)
@@ -122,10 +122,10 @@ Obj to_obj(long long n)
 
 Obj obj_neg(Obj obj)
 {
-  assert(obj == generated::S_true || obj == generated::S_false);
-  fail_if_not(obj == generated::S_true || obj == generated::S_false, "Not a boolean");
-  return obj == generated::S_true ? generated::S_false : generated::S_true;
-  // assert((obj ^ 0x30) == (obj == generated::S_true ? generated::S_false : generated::S_true));
+  assert(obj == generated::True_S || obj == generated::False_S);
+  fail_if_not(obj == generated::True_S || obj == generated::False_S, "Not a boolean");
+  return obj == generated::True_S ? generated::False_S : generated::True_S;
+  // assert((obj ^ 0x30) == (obj == generated::True_S ? generated::False_S : generated::True_S));
   // return obj ^ 0x30;
 }
 

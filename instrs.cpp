@@ -739,7 +739,7 @@ void fail()
 
 void runtime_check(Obj cond)
 {
-  if (cond != generated::S_true)
+  if (cond != generated::True_S)
   {
 #ifndef NDEBUG
     std::fputs("\nAssertion failed. Call stack:\n\n", stderr);

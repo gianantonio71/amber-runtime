@@ -5,7 +5,7 @@
 #include <stdio.h> //## MAYBE THIS SHOULD NOT BE HERE...
 
 
-Obj io_File_Read(Obj filename, generated::Env &)
+Obj FileRead_P(Obj filename, generated::Env &)
 {
   char *fname = obj_to_str(filename);
   int size;
@@ -13,7 +13,7 @@ Obj io_File_Read(Obj filename, generated::Env &)
   delete [] fname;
 
   if (size == -1)
-    return generated::S_nil;
+    return generated::Nil_S;
 
   Obj seq_obj = empty_seq;
   if (size > 0)
@@ -26,16 +26,16 @@ Obj io_File_Read(Obj filename, generated::Env &)
   }
 
   TagObj *tag_obj = new_tag_obj();
-  tag_obj->tag = generated::S_just;
+  tag_obj->tag = generated::Just_S;
   tag_obj->obj = seq_obj;
   return make_obj(tag_obj);
 }
 
 
-Obj io_File_Write(Obj filename, Obj mode, Obj data, generated::Env &)
+Obj FileWrite_P(Obj filename, Obj mode, Obj data, generated::Env &)
 {
   char *fname = obj_to_str(filename);
-  bool append = mode == generated::S_true;
+  bool append = mode == generated::True_S;
   int size;
   char *buffer = obj_to_byte_array(data, size);
   bool res;
@@ -50,23 +50,23 @@ Obj io_File_Write(Obj filename, Obj mode, Obj data, generated::Env &)
     res = file_write(fname, empty_buff, 0, append);
   }
   delete [] fname;
-  return generated::S_true;
+  return generated::True_S;
 }
 
 
-Obj io_Print(Obj str_obj, generated::Env &env)
+Obj Print_P(Obj str_obj, generated::Env &env)
 {
   char *str = obj_to_str(str_obj);
   fputs(str, stdout);
   delete [] str;
-  return generated::S_nil;
+  return generated::Nil_S;
 }
 
 
-Obj io_Get_Char(generated::Env &env)
+Obj GetChar_P(generated::Env &env)
 {
   int ch = getchar();
   if (ch == EOF)
-    return generated::S_nil;
+    return generated::Nil_S;
   return to_obj(ch);
 }

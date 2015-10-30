@@ -28,7 +28,7 @@ Obj str_to_obj(const char *c_str)
   }
 
   TagObj *str = new_tag_obj();
-  str->tag = generated::S_string;
+  str->tag = generated::String_S;
   str->obj = raw_str_obj;
 
   return make_obj(str);
@@ -201,7 +201,7 @@ void print(Obj obj)
 {
   generated::Env env;
   memset(&env, 0, sizeof(generated::Env));
-  Obj str_obj = generated::To_Text(obj, to_obj(80LL), to_obj(0LL), env);
+  Obj str_obj = generated::ToText_3(obj, to_obj(80LL), to_obj(0LL), env);
   int buff_size = char_buffer_size(str_obj);
   char *buffer = (char *) new_obj(nblocks16(buff_size));
   obj_to_str(str_obj, buffer, buff_size);

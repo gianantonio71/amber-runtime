@@ -23,7 +23,7 @@ int main(int argc, char **argv)
   generated::Env env;
   memset(&env, 0, sizeof(generated::Env));
 
-  Obj res = io_Main(args, env);
+  Obj res = Main_P(args, env);
 
   release(args);
   release(res);
