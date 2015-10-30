@@ -279,6 +279,16 @@ int comp_objs(Obj obj1, Obj obj2)
       return comp_objs(tag_obj1->obj, tag_obj2->obj);
     }
 
+    case type_tag_float:
+    {
+      double float1 = get_float_ptr(obj1)->value;
+      double float2 = get_float_ptr(obj2)->value;
+      if (float1 != float2)
+        return float2 > float1 ? 1 : -1;
+      else
+        return 0;
+    }
+
     default:
       internal_fail();
   }
