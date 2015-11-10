@@ -36,57 +36,88 @@ void pop_call_info()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void print_indented_param(FILE *fp, Obj param, bool is_last, int &file_idx)
+char *printed_obj(Obj obj, int indentation, int &buff_size)
 {
-  int buff_size;
   char *buffer;
-  if (param != null_obj)
+
+  generated::Env env;
+  memset(&env, 0, sizeof(generated::Env));
+  // Obj str_obj = generated::ToText_3(obj, to_obj(80LL), to_obj(1LL), env);
+  Obj str_obj = generated::ToText_3(obj, to_obj(80LL), to_obj(indentation), env);
+
+  buff_size = char_buffer_size(str_obj);
+  buffer = (char *) new_obj(nblocks16(buff_size));
+  obj_to_str(str_obj, buffer, buff_size);
+
+  release(str_obj);
+  return buffer;
+}
+
+
+void printed_obj_or_filename(Obj obj, int indentation, bool add_path, char *buffer, int buff_size)
+{
+  // Deliberate bug: storing objects without reference counting them.
+
+  assert(buff_size >= 64);
+
+  const int MAX_OBJ_COUNT = 1024;
+
+  const char *file_template = add_path ? "<debug/obj_%02d.txt>" : "<obj_%02d.txt>";
+
+  static int filed_objs_count = 0;
+  static Obj filed_objs[MAX_OBJ_COUNT];
+
+  for (int i=0 ; i < filed_objs_count ; i++)
+    if (filed_objs[i] == obj)
+    {
+      sprintf(buffer, file_template, i);
+      return;
+    }
+
+  int obj_buff_size;
+  char *obj_buffer = printed_obj(obj, indentation, obj_buff_size);
+  if (strlen(obj_buffer) + 1 <= buff_size)
   {
-    generated::Env env;
-    memset(&env, 0, sizeof(generated::Env));
-    Obj str_obj = generated::ToText_3(param, to_obj(80LL), to_obj(1LL), env);
-
-    buff_size = char_buffer_size(str_obj);
-    buffer = (char *) new_obj(nblocks16(buff_size));
-    obj_to_str(str_obj, buffer, buff_size);
-
-    release(str_obj);
+    strcpy(buffer, obj_buffer);
+  }
+  else if (filed_objs_count >= MAX_OBJ_COUNT)
+  {
+    strcpy(buffer, "INTERNAL ERROR! CANNOT PRINT OBJECT");
   }
   else
   {
-    static const char *CLOSURE_PLACEHOLDER_TEXT = "  <closure>";
-    buff_size = strlen(CLOSURE_PLACEHOLDER_TEXT) + 1;
-    buffer = (char *) new_obj(nblocks16(buff_size));
-    strcpy(buffer, CLOSURE_PLACEHOLDER_TEXT);
-  }
-
-  char *final_text = buffer;
-  char msg[1024];
-
-  if (buff_size > 500)
-  {
     char fname[1024];
-    sprintf(fname, "debug/obj_%02d.txt", file_idx);
-
+    sprintf(fname, "debug/obj_%02d.txt", filed_objs_count);
     FILE *fp = fopen(fname, "w");
     if (fp != 0)
     {
-      fputs(buffer, fp);
+      fputs(obj_buffer, fp);
       fclose(fp);
     }
-
-    sprintf(msg, "  <obj_%02d.txt>", file_idx);
-    final_text = msg;
-    file_idx++;
+    sprintf(buffer, file_template, filed_objs_count);
+    filed_objs[filed_objs_count++] = obj;
   }
 
-  fputs(final_text, fp);
+  free_obj(obj_buffer, nblocks16(obj_buff_size));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void print_indented_param(FILE *fp, Obj param, bool is_last, int &file_idx)
+{
+  const int BUFF_SIZE = 512;
+  char buffer[BUFF_SIZE];
+
+  if (param != null_obj)
+    printed_obj_or_filename(param, 1, false, buffer, BUFF_SIZE);
+  else
+    strcpy(buffer, "  <closure>");
+
+  fputs(buffer, fp);
   if (!is_last)
     fputs(",", fp);
   fputs("\n", fp);
   fflush(fp);
-
-  free_obj(buffer, nblocks16(buff_size));
 }
 
 
@@ -136,11 +167,31 @@ void print_call_stack()
 #endif
 }
 
+
+void dump_var(const char *name, Obj value)
+{
+  const int BUFF_SIZE = 512;
+  char buffer[BUFF_SIZE];
+  printed_obj_or_filename(value, 1, true, buffer, BUFF_SIZE);
+  fprintf(stderr, "%s = %s\n\n", name, buffer);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void print_assertion_failed_msg(const char *file, int line, const char *text)
+{
+  if (text == NULL)
+    fprintf(stderr, "\nAssertion failed. File: %s, line: %d\n\n", file, line);
+  else
+    fprintf(stderr, "\nAssertion failed: %s\nFile: %s, line: %d\n\n", text, file, line);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void hard_fail(const char *message)
 {
-  fprintf(stderr, "%s\n\n", message);
+  if (message != NULL)
+    fprintf(stderr, "%s\n\n", message);
   print_call_stack();
   *(char *)0 = 0;
 }

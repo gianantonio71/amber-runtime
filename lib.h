@@ -310,6 +310,8 @@ void runtime_check(Obj cond);
 void push_call_info(const char *fn_name, int arity, Obj *params);
 void pop_call_info();
 void print_call_stack();
+void dump_var(const char *name, Obj value);
+void print_assertion_failed_msg(const char *file, int line, const char *text);
 void fail_if(bool condition, const char *message);
 void fail_if_not(bool condition, const char *message);
 void hard_fail(const char *message);
