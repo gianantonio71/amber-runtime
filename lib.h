@@ -111,11 +111,6 @@ enum TypeTag {
   type_tag_float        = 23   //  101  11    Floating point number
 };
 
-const Obj null_obj  = type_tag_null;
-const Obj empty_set = type_tag_empty_set;
-const Obj empty_seq = type_tag_empty_seq;
-const Obj empty_map = type_tag_empty_map;
-
 const int SHORT_TAG_SIZE  = 2;
 const int FULL_TAG_SIZE   = 8;
 const int POINTER_SHIFT   = 24;
@@ -124,6 +119,13 @@ const int SHORT_TAG_MASK  = (1 << SHORT_TAG_SIZE) - 1;
 const int FULL_TAG_MASK   = (1 << FULL_TAG_SIZE) - 1;
 
 #define symb(idx) ((idx << FULL_TAG_SIZE) | type_tag_symb)
+
+const Obj null_obj  = type_tag_null;
+const Obj blank_obj = (1 << FULL_TAG_SIZE) | type_tag_null;
+
+const Obj empty_set = type_tag_empty_set;
+const Obj empty_seq = type_tag_empty_seq;
+const Obj empty_map = type_tag_empty_map;
 
 ///////////////////////////////// mem_core.cpp /////////////////////////////////
 

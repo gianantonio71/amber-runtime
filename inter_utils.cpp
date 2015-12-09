@@ -199,15 +199,26 @@ Obj to_symb(Obj obj)
 
 void print(Obj obj)
 {
-  generated::Env env;
-  memset(&env, 0, sizeof(generated::Env));
-  Obj str_obj = generated::ToText_3(obj, to_obj(80LL), to_obj(0LL), env);
-  int buff_size = char_buffer_size(str_obj);
-  char *buffer = (char *) new_obj(nblocks16(buff_size));
-  obj_to_str(str_obj, buffer, buff_size);
-  puts(buffer);
+  if (obj == blank_obj)
+  {
+    puts("BLANK");
+  }
+  else if (obj == null_obj)
+  {
+    puts("NULL");
+  }
+  else
+  {
+    generated::Env env;
+    memset(&env, 0, sizeof(generated::Env));
+    Obj str_obj = generated::ToText_3(obj, to_obj(80LL), to_obj(0LL), env);
+    int buff_size = char_buffer_size(str_obj);
+    char *buffer = (char *) new_obj(nblocks16(buff_size));
+    obj_to_str(str_obj, buffer, buff_size);
+    puts(buffer);
+    release(str_obj);
+    free_obj(buffer, nblocks16(buff_size));
+  }
   puts("");
   fflush(stdout);
-  release(str_obj);
-  free_obj(buffer, nblocks16(buff_size));
 }

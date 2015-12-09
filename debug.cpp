@@ -40,16 +40,26 @@ char *printed_obj(Obj obj, int indentation, int &buff_size)
 {
   char *buffer;
 
-  generated::Env env;
-  memset(&env, 0, sizeof(generated::Env));
-  // Obj str_obj = generated::ToText_3(obj, to_obj(80LL), to_obj(1LL), env);
-  Obj str_obj = generated::ToText_3(obj, to_obj(80LL), to_obj(indentation), env);
+  if (obj == null_obj || obj == blank_obj)
+  {
+    const char *repr = obj == null_obj ? "NULL" : "BLANK";
+    buffer = (char *) new_obj(nblocks16(strlen(repr) + 1));
+    strcpy(buffer, repr);
+  }
+  else
+  {
+    generated::Env env;
+    memset(&env, 0, sizeof(generated::Env));
+    // Obj str_obj = generated::ToText_3(obj, to_obj(80LL), to_obj(1LL), env);
+    Obj str_obj = generated::ToText_3(obj, to_obj(80LL), to_obj(indentation), env);
 
-  buff_size = char_buffer_size(str_obj);
-  buffer = (char *) new_obj(nblocks16(buff_size));
-  obj_to_str(str_obj, buffer, buff_size);
+    buff_size = char_buffer_size(str_obj);
+    buffer = (char *) new_obj(nblocks16(buff_size));
+    obj_to_str(str_obj, buffer, buff_size);
 
-  release(str_obj);
+    release(str_obj);
+  }
+
   return buffer;
 }
 
