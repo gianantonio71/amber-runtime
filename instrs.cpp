@@ -410,8 +410,8 @@ void set_at(Obj seq, int idx, Obj value) // Value must be already reference coun
 
 Obj lookup(Obj map, Obj key)
 {
-  fail_if_not(is_ne_map(map), "First parameter is not a non-empty map"); // This could also be called by a dot access
-  hard_fail_if(map == empty_map, "_lookup_: Key not found"); // Depending on the signature of the builtin operation, this may be unnecessary
+  hard_fail_if(map == empty_map, "_lookup_(...): Map is empty"); // Depending on the signature of the builtin operation, this may be unnecessary
+  fail_if_not(is_ne_map(map), "_lookup_(...): First parameter is not a map"); // This could also be called by a dot access
 
   Map *m = get_map_ptr(map);
   int size = m->size;
@@ -423,15 +423,14 @@ Obj lookup(Obj map, Obj key)
   {
     if (is_symb(key))
     {
-      int idx = get_symb_idx(key);
-      const char *str = generated::map_symb_to_str[idx];
       char buff[1024];
-      strcpy(buff, "Key not found: ");
-      strncat(buff, str, 512);
+      strcpy(buff, "_lookup_(...): Key not found: ");
+      int len = strlen(buff);
+      printed_obj(key, buff+len, sizeof(buff)-len-1);
       hard_fail(buff);
     }
     else
-      hard_fail("Key not found");
+      hard_fail("_lookup_(...): Key not found");
   }
   
   Obj *values = keys + size;

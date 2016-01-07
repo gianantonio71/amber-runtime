@@ -338,8 +338,6 @@ void release_all_cached_objs();
 Obj to_str(Obj obj);
 Obj to_symb(Obj obj);
 
-void print(Obj obj);
-
 Obj str_to_obj(const char *c_str);
 void obj_to_str(Obj str_obj, char *buffer, int size);
 char *obj_to_str(Obj str_obj);
@@ -347,6 +345,12 @@ char *obj_to_str(Obj str_obj);
 char *obj_to_byte_array(Obj byte_seq_obj, int &size);
 
 int char_buffer_size(Obj str_obj);
+
+//////////////////////////////// printing.cpp //////////////////////////////////
+
+void print(Obj obj);
+void print_to_buffer_or_file(Obj obj, char *buffer, int max_size, const char *fname);
+void printed_obj(Obj obj, char *buffer, int max_size);
 
 ///////////////////////////// os_interface_xxx.cpp /////////////////////////////
 
