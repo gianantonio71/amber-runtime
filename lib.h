@@ -245,7 +245,7 @@ int rand_nat(int max);        // Non-deterministic
 long long unique_nat();       // Non-deterministic
 
 Obj to_obj(bool b);
-Obj to_obj(int n);
+Obj to_obj(int n);            //## THIS HAS TO GO
 Obj to_obj(long long n);
 Obj obj_neg(Obj obj);
 Obj at(Obj seq, int idx);

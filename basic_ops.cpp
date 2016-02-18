@@ -106,11 +106,9 @@ Obj to_obj(bool b)
   return b ? generated::True_S : generated::False_S;  // Surprisingly, this seems to be faster...
 }
 
-Obj to_obj(int n)
+Obj to_obj(int n) //## THIS HAS TO GO
 {
-  Obj obj = n << SHORT_TAG_SIZE;
-  assert(get_int_val(obj) == n);
-  return obj;
+  return to_obj((long long) n);
 }
 
 Obj to_obj(long long n)
