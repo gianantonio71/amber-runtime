@@ -273,7 +273,7 @@ Obj join_seqs_helper(Seq *left_ptr, Obj *right_elems, int right_len)
     memcpy(left_elems+left_len, right_elems, sizeof(Obj) * right_len);
     full_seq_ptr->used_capacity += right_len;
     add_ref(full_seq_ptr);
-    return make_obj(new_ref_seq(full_seq_ptr, full_seq_ptr->elems, left_len+right_len));
+    return make_obj(new_ref_seq(full_seq_ptr, left_ptr->elems, left_len+right_len));
   }
 
   vec_add_ref(left_elems, left_len);
