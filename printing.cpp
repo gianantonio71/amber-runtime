@@ -9,7 +9,7 @@ typedef enum {TEXT, SUB_START, SUB_END} EMIT_ACTION;
 
 
 void print_obj(Obj obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data);
-void print_obj_inline(Obj obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data);
+void print_obj_inline(Obj obj, bool print_delimiters, void (*emit)(void *, const void *, EMIT_ACTION), void *data);
 
 
 bool is_str(Obj tag, Obj obj)
@@ -124,9 +124,10 @@ void print_symb(Obj obj, void (*emit)(void *, const void *, EMIT_ACTION), void *
 }
 
 
-void print_seq(Obj obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
+void print_seq(Obj obj, bool print_parentheses, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
 {
-  emit(data, "[", TEXT);
+  if (print_parentheses)
+    emit(data, "(", TEXT);
   if (obj != empty_seq)
   {
     Seq *seq = get_seq_ptr(obj);
@@ -139,13 +140,14 @@ void print_seq(Obj obj, void (*emit)(void *, const void *, EMIT_ACTION), void *d
       print_obj(elems[i], emit, data);
     }
   }
-  emit(data, "]", TEXT);
+  if (print_parentheses)
+    emit(data, ")", TEXT);
 }
 
 
 void print_set(Obj obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
 {
-  emit(data, "{", TEXT);
+  emit(data, "[", TEXT);
   if (obj != empty_set)
   {
     Set *set = get_set_ptr(obj);
@@ -158,41 +160,48 @@ void print_set(Obj obj, void (*emit)(void *, const void *, EMIT_ACTION), void *d
       print_obj(elems[i], emit, data);
     }
   }
-  emit(data, "}", TEXT);
+  emit(data, "]", TEXT);
 }
 
 
-void print_map(Obj obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
+void print_map(Obj obj, bool print_brackets, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
 {
-  emit(data, "(", TEXT);
-  if (obj != empty_map)
+  if (obj == empty_map)
   {
-    Map *map = get_map_ptr(obj);
-    unsigned int size = map->size;
-    Obj *keys = get_key_array_ptr(map);
-    Obj *values = get_value_array_ptr(map);
-
-    for (int i=0 ; i < size ; i++)
-    {
-      if (i > 0)
-        emit(data, ", ", TEXT);
-      emit(data, NULL, SUB_START);
-      if (is_record(obj))
-      {
-        print_symb(keys[i], emit, data);
-        emit(data, ": ", TEXT);
-        print_obj_inline(values[i], emit, data);
-      }
-      else
-      {
-        print_obj(keys[i], emit, data);
-        emit(data, " => ", TEXT);
-        print_obj(values[i], emit, data);
-      }
-      emit(data, NULL, SUB_END);
-    }
+    emit(data, "[:]", TEXT);
+    return;
   }
-  emit(data, ")", TEXT);
+
+  if (print_brackets)
+    emit(data, "[", TEXT);
+
+  Map *map = get_map_ptr(obj);
+  unsigned int size = map->size;
+  Obj *keys = get_key_array_ptr(map);
+  Obj *values = get_value_array_ptr(map);
+
+  for (int i=0 ; i < size ; i++)
+  {
+    if (i > 0)
+      emit(data, ", ", TEXT);
+    emit(data, NULL, SUB_START);
+    if (is_record(obj))
+    {
+      print_symb(keys[i], emit, data);
+      emit(data, ": ", TEXT);
+      print_obj_inline(values[i], true, emit, data);
+    }
+    else
+    {
+      print_obj(keys[i], emit, data);
+      emit(data, " -> ", TEXT);
+      print_obj(values[i], emit, data);
+    }
+    emit(data, NULL, SUB_END);
+  }
+
+  if (print_brackets)
+    emit(data, "]", TEXT);
 }
 
 
@@ -210,24 +219,22 @@ void print_tag_obj(Obj obj, void (*emit)(void *, const void *, EMIT_ACTION), voi
   else
   {
     print_symb(tag, emit, data);
-    bool is_rec = is_record(inner_obj);
-    if (!is_rec)
-      emit(data, "(", TEXT);
-    print_obj_inline(inner_obj, emit, data);
-    if (!is_rec)
-      emit(data, ")", TEXT);
+    emit(data, "(", TEXT);
+    bool skip_delimiters = is_record(inner_obj) || (is_ne_seq(inner_obj) && get_seq_len(inner_obj) > 1);
+    print_obj_inline(inner_obj, !skip_delimiters, emit, data);
+    emit(data, ")", TEXT);
   }
 }
 
 
-void print_obj_inline(Obj obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
+void print_obj_inline(Obj obj, bool print_delimiters, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
 {
   if (is_set(obj))
     print_set(obj, emit, data);
   else if (is_seq(obj))
-    print_seq(obj, emit, data);
+    print_seq(obj, print_delimiters, emit, data);
   else if (is_map(obj))
-    print_map(obj, emit, data);
+    print_map(obj, print_delimiters, emit, data);
   else
     print_obj(obj, emit, data);
 }
@@ -253,13 +260,13 @@ void print_obj(Obj obj, void (*emit)(void *, const void *, EMIT_ACTION), void *d
     print_symb(obj, emit, data);
 
   else if (is_seq(obj))
-    print_seq(obj, emit, data);
+    print_seq(obj, true, emit, data);
 
   else if (is_set(obj))
     print_set(obj, emit, data);
 
   else if (is_map(obj))
-    print_map(obj, emit, data);
+    print_map(obj, true, emit, data);
 
   else // is_tag_obj(obj)
     print_tag_obj(obj, emit, data);
