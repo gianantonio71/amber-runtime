@@ -1,11 +1,16 @@
 #include "lib.h"
 #include "os_interface.h"
-#include "generated.h"
 
 #include <stdio.h> //## MAYBE THIS SHOULD NOT BE HERE...
 
 
-Obj FileRead_P(Obj filename, generated::Env &)
+namespace generated
+{
+  struct ENV;
+}
+
+
+OBJ FileRead_P(OBJ filename, generated::ENV &)
 {
   char *fname = obj_to_str(filename);
   int size;
@@ -13,30 +18,30 @@ Obj FileRead_P(Obj filename, generated::Env &)
   delete [] fname;
 
   if (size == -1)
-    return generated::Nil_S;
+    return make_symb(symb_idx_nil);
 
-  Obj seq_obj = empty_seq;
+  OBJ seq_obj = make_empty_seq();
   if (size > 0)
   {
-    FullSeq *seq = new_full_seq(size);
-    for (int i=0 ; i < size ; i++)
-      seq->buffer[i] = to_obj(data[i]);
+    SEQ_OBJ *seq = new_seq(size);
+    for (uint32 i=0 ; i < size ; i++)
+      seq->buffer[i] = make_int((uint8) data[i]);
     delete [] data;
-    seq_obj = make_obj(seq);
+    seq_obj = make_seq(seq, size);
   }
 
-  TagObj *tag_obj = new_tag_obj();
-  tag_obj->tag = generated::Just_S;
+  TAG_OBJ *tag_obj = new_tag_obj();
+  tag_obj->tag_idx = symb_idx_just;
   tag_obj->obj = seq_obj;
-  return make_obj(tag_obj);
+  return make_tag_obj(tag_obj);
 }
 
 
-Obj FileWrite_P(Obj filename, Obj mode, Obj data, generated::Env &)
+OBJ FileWrite_P(OBJ filename, OBJ mode, OBJ data, generated::ENV &)
 {
   char *fname = obj_to_str(filename);
-  bool append = mode == generated::True_S;
-  int size;
+  bool append = get_bool(mode);
+  uint32 size;
   char *buffer = obj_to_byte_array(data, size);
   bool res;
   if (size > 0)
@@ -50,23 +55,23 @@ Obj FileWrite_P(Obj filename, Obj mode, Obj data, generated::Env &)
     res = file_write(fname, empty_buff, 0, append);
   }
   delete [] fname;
-  return generated::True_S;
+  return make_bool(true);
 }
 
 
-Obj Print_P(Obj str_obj, generated::Env &env)
+OBJ Print_P(OBJ str_obj, generated::ENV &env)
 {
   char *str = obj_to_str(str_obj);
   fputs(str, stdout);
   delete [] str;
-  return generated::Nil_S;
+  return make_blank_obj();
 }
 
 
-Obj GetChar_P(generated::Env &env)
+OBJ GetChar_P(generated::ENV &env)
 {
   int ch = getchar();
   if (ch == EOF)
-    return generated::Nil_S;
-  return to_obj(ch);
+    return make_symb(symb_idx_nil);
+  return make_int(ch);
 }

@@ -3,44 +3,57 @@
 #include <algorithm>
 
 
-int find_obj(Obj *sorted_array, int len, Obj obj) // The array mustn't contain duplicates
+uint32 find_obj(OBJ *sorted_array, uint32 len, OBJ obj, bool &found) // The array mustn't contain duplicates
 {
-  int low_idx = 0;
-  int high_idx = len - 1;
-  
-  while (low_idx <= high_idx)
+  if (len > 0)
   {
-    int middle_idx = (low_idx + high_idx) / 2;
-    Obj middle_obj = sorted_array[middle_idx];
+    int64 low_idx = 0;
+    int64 high_idx = len - 1;
     
-    int cr = comp_objs(obj, middle_obj);
-    
-    if (cr == 0)
-      return middle_idx;
-    
-    if (cr > 0)
-      high_idx = middle_idx - 1;
-    else
-      low_idx = middle_idx + 1;
+    while (low_idx <= high_idx)
+    {
+      int64 middle_idx = (low_idx + high_idx) / 2;
+      OBJ middle_obj = sorted_array[middle_idx];
+
+      int cr = comp_objs(obj, middle_obj);
+
+      if (cr == 0)
+      {
+        found = true;
+        return middle_idx;
+      }
+
+      if (cr > 0)
+        high_idx = middle_idx - 1;
+      else
+        low_idx = middle_idx + 1;
+    }
   }
-  
+
+  found = false;
   return -1;
 }
 
 struct obj_less {
-  bool operator () (Obj obj1, Obj obj2) {
+  bool operator () (OBJ obj1, OBJ obj2) {
     return comp_objs(obj1, obj2) > 0;
   }
 };
 
+struct obj_inline_less {
+  bool operator () (OBJ obj1, OBJ obj2) {
+    return shallow_cmp(obj1, obj2) > 0;
+  }
+};
 
-int sort_and_release_dups(Obj *objs, int size)
+
+uint32 sort_and_release_dups(OBJ *objs, uint32 size)
 {
   if (size < 2)
     return size;
 
-  int low_idx = 0;
-  int high_idx = size - 1;
+  uint32 low_idx = 0;
+  uint32 high_idx = size - 1; // size is greater than 0 (actually 1) here, so this is always non-negative (actually positive)
   for ( ; ; )
   {
     // Advancing the lower cursor to the next non-inline object
@@ -54,22 +67,22 @@ int sort_and_release_dups(Obj *objs, int size)
     if (low_idx == high_idx)
       break;
 
-    Obj tmp = objs[low_idx];
+    OBJ tmp = objs[low_idx];
     objs[low_idx] = objs[high_idx];
     objs[high_idx] = tmp;
   }
 
-  int inline_count = is_inline_obj(objs[low_idx]) ? low_idx + 1 : low_idx;
+  uint32 inline_count = is_inline_obj(objs[low_idx]) ? low_idx + 1 : low_idx;
 
-  int idx = 0;
+  uint32 idx = 0;
   if (inline_count > 0)
   {
-    std::sort(objs, objs+inline_count);
+    std::sort(objs, objs+inline_count, obj_inline_less());
 
-    Obj last_obj = objs[0];
-    for (int i=1 ; i < inline_count ; i++)
+    OBJ last_obj = objs[0];
+    for (uint32 i=1 ; i < inline_count ; i++)
     {
-      Obj next_obj = objs[i];
+      OBJ next_obj = objs[i];
       if (!inline_eq(last_obj, next_obj))
       {
         idx++;
@@ -90,7 +103,7 @@ int sort_and_release_dups(Obj *objs, int size)
   if (idx != inline_count)
     objs[idx] = objs[inline_count];
 
-  for (int i=inline_count+1 ; i < size ; i++)
+  for (uint32 i=inline_count+1 ; i < size ; i++)
     // if (are_eq(objs[idx], objs[i]))
     if (comp_objs(objs[idx], objs[i]) == 0)
       release(objs[i]);
@@ -108,39 +121,39 @@ int sort_and_release_dups(Obj *objs, int size)
 
 struct obj_idx_less
 {
-  Obj *objs;
+  OBJ *objs;
 
-  obj_idx_less(Obj *objs) : objs(objs) {}
+  obj_idx_less(OBJ *objs) : objs(objs) {}
 
-  bool operator () (int idx1, int idx2)
+  bool operator () (uint32 idx1, uint32 idx2)
   {
     return comp_objs(objs[idx1], objs[idx2]) > 0;
   }
 };
 
-int sort_group_and_count(Obj *objs, int len, int *idxs, Obj *counters)
+uint32 sort_group_and_count(OBJ *objs, uint32 len, uint32 *idxs, OBJ *counters)
 {
   assert(len > 0);
   
-  for (int i=0 ; i < len ; i++)
+  for (uint32 i=0 ; i < len ; i++)
     idxs[i] = i;
   
   std::sort(idxs, idxs+len, obj_idx_less(objs));
   
-  int n = 0;
+  uint32 n = 0;
   
-  for (int i=0 ; i < len ; )
+  for (uint32 i=0 ; i < len ; )
   {
     assert(i >= n);
     
-    int j = i + 1;
+    uint32 j = i + 1;
     while (j < len && comp_objs(objs[idxs[i]], objs[idxs[j]]) == 0)
       j++;
     
-    int count = j - i;
+    uint32 count = j - i;
     
     idxs[n] = idxs[i];
-    counters[n] = to_obj((long long) count);
+    counters[n] = make_int(count);
     n++;
     
     i = j;
@@ -150,26 +163,26 @@ int sort_group_and_count(Obj *objs, int len, int *idxs, Obj *counters)
 }
 
 
-void sort_and_check_no_dups(Obj *keys, Obj *values, int size)
+void sort_and_check_no_dups(OBJ *keys, OBJ *values, uint32 size)
 {
   if (size < 2)
     return;
   
-  int *idxs = new_int_array(size);
-  for (int i=0 ; i < size ; i++)
+  uint32 *idxs = new_uint32_array(size);
+  for (uint32 i=0 ; i < size ; i++)
     idxs[i] = i;
   
   std::sort(idxs, idxs+size, obj_idx_less(keys));
 
-  for (int i=0 ; i < size ; i++)
+  for (uint32 i=0 ; i < size ; i++)
     if (idxs[i] != i)
     {
-      Obj key = keys[i];
-      Obj value = values[i];
+      OBJ key = keys[i];
+      OBJ value = values[i];
       
-      for (int j = i ; ; )
+      for (uint32 j = i ; ; )
       {
-        int k = idxs[j];
+        uint32 k = idxs[j];
         idxs[j] = j;
         
         if (k == i)
@@ -187,7 +200,7 @@ void sort_and_check_no_dups(Obj *keys, Obj *values, int size)
       }
     }
   
-  delete_int_array(idxs, size);
+  delete_uint32_array(idxs, size);
 }
 
 
@@ -198,9 +211,9 @@ void sort_and_check_no_dups(Obj *keys, Obj *values, int size)
 //              0     if obj1 = obj2
 //            < 0     if obj1 > obj2
 
-int comp_objs(Obj obj1, Obj obj2)
+int comp_objs(OBJ obj1, OBJ obj2)
 {
-  if (obj1 == obj2)
+  if (are_shallow_eq(obj1, obj2))
     return 0;
 
   bool is_inline_1 = is_inline_obj(obj1);
@@ -208,58 +221,56 @@ int comp_objs(Obj obj1, Obj obj2)
 
   if (is_inline_1)
     if (is_inline_2)
-      return obj2 - obj1;
+      return shallow_cmp(obj1, obj2);
     else
       return 1;
   else if (is_inline_2)
     return -1;
 
-  int tag1 = get_full_type_tag(obj1);
-  int tag2 = get_full_type_tag(obj2);
+  OBJ_TYPE type1 = get_high_level_type(obj1);
+  OBJ_TYPE type2 = get_high_level_type(obj2);
 
-  if (tag1 != tag2)
-    return tag2 - tag1;
+  if (type1 != type2)
+    return type2 - type1;
 
-  int count = -1;
-  Obj *elems1 = 0;
-  Obj *elems2 = 0;
+  uint32 count = 0;
+  OBJ *elems1 = 0;
+  OBJ *elems2 = 0;
 
-  switch (tag1)
+  switch (type1)
   {
-    case type_tag_set:
+    case TYPE_SEQUENCE:
     {
-      Set *set1 = get_set_ptr(obj1);
-      Set *set2 = get_set_ptr(obj2);
-      int size1 = set1->size;
-      int size2 = set2->size;
-      if (size1 != size2)
-        return size2 - size1;
-      count = size1;
-      elems1 = set1->elems;
-      elems2 = set2->elems;
-      break;
-    }
-
-    case type_tag_seq:
-    {
-      Seq *seq1 = get_seq_ptr(obj1);
-      Seq *seq2 = get_seq_ptr(obj2);
-      int len1 = seq1->length;
-      int len2 = seq2->length;
+      uint32 len1 = get_seq_length(obj1);
+      uint32 len2 = get_seq_length(obj2);
       if (len1 != len2)
         return len2 - len1;
       count = len1;
-      elems1 = seq1->elems;
-      elems2 = seq2->elems;
+      elems1 = get_seq_buffer_ptr(obj1);
+      elems2 = get_seq_buffer_ptr(obj2);
       break;
     }
 
-    case type_tag_map:
+    case TYPE_SET:
     {
-      Map *map1 = get_map_ptr(obj1);
-      Map *map2 = get_map_ptr(obj2);
-      int size1 = map1->size;
-      int size2 = map2->size;
+      SET_OBJ *set1 = get_set_ptr(obj1);
+      SET_OBJ *set2 = get_set_ptr(obj2);
+      uint32 size1 = set1->size;
+      uint32 size2 = set2->size;
+      if (size1 != size2)
+        return size2 - size1;
+      count = size1;
+      elems1 = set1->buffer;
+      elems2 = set2->buffer;
+      break;
+    }
+
+    case TYPE_MAP:
+    {
+      MAP_OBJ *map1 = get_map_ptr(obj1);
+      MAP_OBJ *map2 = get_map_ptr(obj2);
+      uint32 size1 = map1->size;
+      uint32 size2 = map2->size;
       if (size1 != size2)
         return size2 - size1;
       count = 2 * size1;
@@ -268,32 +279,22 @@ int comp_objs(Obj obj1, Obj obj2)
       break;
     }
 
-    case type_tag_tag_obj:
+    case TYPE_TAG_OBJ:
     {
-      TagObj *tag_obj1 = get_tag_obj_ptr(obj1);
-      TagObj *tag_obj2 = get_tag_obj_ptr(obj2);
-      Obj tag1 = tag_obj1->tag;
-      Obj tag2 = tag_obj2->tag;
-      if (tag1 != tag2)
-        return tag2 - tag1;
-      return comp_objs(tag_obj1->obj, tag_obj2->obj);
-    }
-
-    case type_tag_float:
-    {
-      double float1 = get_float_ptr(obj1)->value;
-      double float2 = get_float_ptr(obj2)->value;
-      if (float1 != float2)
-        return float2 > float1 ? 1 : -1;
-      else
-        return 0;
+      TAG_OBJ *tag_obj_1 = get_tag_obj_ptr(obj1);
+      TAG_OBJ *tag_obj_2 = get_tag_obj_ptr(obj2);
+      uint16 tag_idx_1 = tag_obj_1->tag_idx;
+      uint16 tag_idx_2 = tag_obj_2->tag_idx;
+      if (tag_idx_1 != tag_idx_2)
+        return tag_idx_2 - tag_idx_1;
+      return comp_objs(tag_obj_1->obj, tag_obj_2->obj);
     }
 
     default:
       internal_fail();
   }
 
-  for (int i=0 ; i < count ; i++)
+  for (uint32 i=0 ; i < count ; i++)
   {
     int cr = comp_objs(elems1[i], elems2[i]);
     if (cr != 0)

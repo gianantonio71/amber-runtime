@@ -11,19 +11,19 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-  Obj args = empty_seq;
+  OBJ args = make_empty_seq();
   if (argc > 1)
   {
-    Obj *arg_buff = new Obj[argc-1];
+    OBJ *arg_buff = new OBJ[argc-1];
     for (int i=0 ; i < argc-1 ; i++)
       arg_buff[i] = str_to_obj(argv[i+1]);
-    args = make_seq(arg_buff, argc-1);
+    args = build_seq(arg_buff, argc-1);
   }
 
-  generated::Env env;
-  memset(&env, 0, sizeof(generated::Env));
+  generated::ENV env;
+  memset(&env, 0, sizeof(generated::ENV));
 
-  Obj res = Main_P(args, env);
+  OBJ res = Main_P(args, env);
 
   release(args);
   release(res);
@@ -39,7 +39,7 @@ int main(int argc, char **argv)
   cerr << "Max live memory usage: " << get_max_live_mem_usage() << endl;
   cerr << "Total memory requested: " << get_total_mem_requested() << endl;
 
-  // print_all_live_objs();
+  print_all_live_objs();
 #endif
 
   return is_int(res) ? get_int_val(res) : 0;

@@ -10,17 +10,17 @@ char *align_16(char *ptr)
   return al_ptr;
 }  
 
-const unsigned int HEAP_SIZE = 1536 * 1024 * 1024;
+const uint32 HEAP_SIZE = 1536 * 1024 * 1024;
 
 static char fake_heap_buff[HEAP_SIZE+16];
 
 static char *fake_heap_top = align_16(fake_heap_buff);
-static unsigned int fake_heap_used = 0;
+static uint32 fake_heap_used = 0;
 
 
-void *new_mem_block(int nblocks16)
+void *new_mem_block(uint32 nblocks16)
 {
-  int block_size = 16 * nblocks16;
+  uint32 block_size = 16 * nblocks16;
   char *mem_block = fake_heap_top;
   fake_heap_used += block_size;
   if (fake_heap_used > HEAP_SIZE)
@@ -29,7 +29,7 @@ void *new_mem_block(int nblocks16)
   return mem_block;
 }
 
-void free_mem_block(void *ptr, int nblocks16)
+void free_mem_block(void *ptr, uint32 nblocks16)
 {
   throw;
 }
@@ -45,14 +45,14 @@ static void *obj_pool[OBJ_POOL_SIZE];
 //  1  2 ( 3)  4   8  16  32   64  128  256
 //  0  1       2   3   4   5    6    7    8
 
-int log2_ceiling(int _n)
+uint32 log2_ceiling(uint32 _n)
 {
   assert(_n > 0);
   
-  int idx = 0;
-  int n = _n;
+  uint32 idx = 0;
+  uint32 n = _n;
   
-  int m = n >> 16;
+  uint32 m = n >> 16;
   if (m != 0)
   {
     // At least one of the 16 most significant bits is nonzero
@@ -94,9 +94,9 @@ int log2_ceiling(int _n)
   return _n == (1 << idx) ? idx : idx + 1;
 }
 
-void *new_pooled_mem_block(int nblocks16)
+void *new_pooled_mem_block(uint32 nblocks16)
 {
-  int l2c = log2_ceiling(nblocks16);
+  uint32 l2c = log2_ceiling(nblocks16);
   void *head = obj_pool[l2c];
 
   if (head == NULL)
@@ -108,12 +108,12 @@ void *new_pooled_mem_block(int nblocks16)
   return head;
 }
 
-void *new_pooled_mem_block(int nblocks16_requested, int &nblocks16_returned)
+void *new_pooled_mem_block(uint32 nblocks16_requested, uint32 &nblocks16_returned)
 {
-  int l2c = log2_ceiling(nblocks16_requested);
+  uint32 l2c = log2_ceiling(nblocks16_requested);
   void *head = obj_pool[l2c];
 
-  int actual_size = 1 << l2c;
+  uint32 actual_size = 1 << l2c;
   nblocks16_returned = actual_size;
 
   if (head == NULL)
@@ -125,11 +125,11 @@ void *new_pooled_mem_block(int nblocks16_requested, int &nblocks16_returned)
   return head;
 }
 
-void free_pooled_mem_block(void *ptr, int nblocks16)
+void free_pooled_mem_block(void *ptr, uint32 nblocks16)
 {
   memset(ptr, 0xFF, 16*nblocks16); //## IS THIS NECESSARY IN RELEASE MODE?
 
-  int l2c = log2_ceiling(nblocks16);
+  uint32 l2c = log2_ceiling(nblocks16);
   void *tail = obj_pool[l2c];
   * (void **) ptr = tail;
   obj_pool[l2c] = ptr;
@@ -140,17 +140,17 @@ void free_pooled_mem_block(void *ptr, int nblocks16)
 
 #ifndef NDEBUG
 
-int num_of_live_objs;
-int max_num_of_live_objs;
-int total_num_of_objs;
+uint32 num_of_live_objs;
+uint32 max_num_of_live_objs;
+uint32 total_num_of_objs;
 
-int live_mem_usage;
-int max_live_mem_usage;
-int total_mem_requested;
+uint32 live_mem_usage;
+uint32 max_live_mem_usage;
+uint32 total_mem_requested;
 
 std::set<void *> live_objs;
 
-void inc_live_obj_count(int nblocks16)
+void inc_live_obj_count(uint32 nblocks16)
 {
   num_of_live_objs++;
   total_num_of_objs++;
@@ -163,38 +163,38 @@ void inc_live_obj_count(int nblocks16)
     max_live_mem_usage = live_mem_usage;
 }
 
-void dec_live_obj_count(int nblocks16)
+void dec_live_obj_count(uint32 nblocks16)
 {
   num_of_live_objs--;
   live_mem_usage -= nblocks16;
 }
 
-int get_live_objs_count()
+uint32 get_live_objs_count()
 {
   return num_of_live_objs;
 }
 
-int get_max_live_objs_count()
+uint32 get_max_live_objs_count()
 {
   return max_num_of_live_objs;
 }
 
-int get_total_objs_count()
+uint32 get_total_objs_count()
 {
   return total_num_of_objs;
 }
 
-int get_live_mem_usage()
+uint32 get_live_mem_usage()
 {
   return live_mem_usage;
 }
 
-int get_max_live_mem_usage()
+uint32 get_max_live_mem_usage()
 {
   return max_live_mem_usage;
 }
 
-int get_total_mem_requested()
+uint32 get_total_mem_requested()
 {
   return total_mem_requested;
 }
@@ -225,7 +225,7 @@ bool is_alive(void *obj)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-void *new_obj(int nblocks16)
+void *new_obj(uint32 nblocks16)
 {
   void *mem_block = new_pooled_mem_block(nblocks16);
 
@@ -237,7 +237,7 @@ void *new_obj(int nblocks16)
   return mem_block;
 }
 
-void *new_obj(int nblocks16_requested, int &nblocks16_returned)
+void *new_obj(uint32 nblocks16_requested, uint32 &nblocks16_returned)
 {
   void *mem_block = new_pooled_mem_block(nblocks16_requested, nblocks16_returned);
 
@@ -249,7 +249,7 @@ void *new_obj(int nblocks16_requested, int &nblocks16_returned)
   return mem_block;
 }
 
-void free_obj(void *ptr, int nblocks16)
+void free_obj(void *ptr, uint32 nblocks16)
 {
 #ifndef NDEBUG
   assert(num_of_live_objs > 0);
