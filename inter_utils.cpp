@@ -26,16 +26,12 @@ OBJ str_to_obj(const char *c_str)
     raw_str_obj = make_seq(raw_str, n);
   }
 
-  TAG_OBJ *str = new_tag_obj();
-  str->tag_idx = symb_idx_string;
-  str->obj = raw_str_obj;
-
-  return make_tag_obj(str);
+  return make_tag_obj(symb_idx_string, raw_str_obj);
 }
 
 void obj_to_str(OBJ str_obj, char *buffer, uint32 size)
 {
-  OBJ raw_str_obj = get_tag_obj_ptr(str_obj)->obj;
+  OBJ raw_str_obj = get_inner_obj(str_obj);
 
   if (!is_empty_seq(raw_str_obj))
   {
@@ -75,7 +71,7 @@ char *obj_to_byte_array(OBJ byte_seq_obj, uint32 &size)
 
 char *obj_to_str(OBJ str_obj)
 {
-  uint32 size = get_seq_length(get_tag_obj_ptr(str_obj)->obj) + 1;
+  uint32 size = get_seq_length(get_inner_obj(str_obj)) + 1;
   char *buffer = new char[size];
   obj_to_str(str_obj, buffer, size);
   return buffer;
@@ -105,8 +101,8 @@ struct str_obj_cmp
 {
   bool operator() (const OBJ &str1, const OBJ &str2) const
   {
-    OBJ raw_str_1 = get_tag_obj_ptr(str1)->obj;
-    OBJ raw_str_2 = get_tag_obj_ptr(str2)->obj;
+    OBJ raw_str_1 = get_inner_obj(str1);
+    OBJ raw_str_2 = get_inner_obj(str2);
 
     uint32 len1 = get_seq_length(raw_str_1);
     uint32 len2 = get_seq_length(raw_str_2);
@@ -180,6 +176,7 @@ OBJ to_symb(OBJ obj)
   add_obj_to_cache(obj);
 
   uint32 next_symb_id = symb_strs.size();
+  hard_fail_if(next_symb_id > 0xFFFF, "Exceeded maximum permitted number of symbols (= 2^16)");
   symb_strs.push_back(obj);
   str_to_symb_map[obj] = next_symb_id;
   return make_symb(next_symb_id);

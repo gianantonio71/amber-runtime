@@ -40,27 +40,37 @@ struct OBJ {
     int64   int_;
     double  float_;
     void*   ptr;
-    uint16  symb;
   } core_data;
 
   union {
     struct {
-      uint16 tags[3];
-      uint8  tag_count;
-      uint8  type;
+      uint16   symb_idx;
+      uint16   inner_tag;
+      uint16   tag;
+      uint8    unused_byte;
+      unsigned type        : 4;
+      unsigned has_ref     : 1;
+      unsigned num_tags    : 2;
+      unsigned unused_flag : 1;
     } std;
 
     struct {
-      uint32 length;
-      uint16 tag;
-      uint8  has_tag;
-      uint8  type;
+      uint32   length;
+      uint16   tag;
+      uint8    unused_byte;
+      unsigned type        : 4;
+      unsigned has_ref     : 1;
+      unsigned num_tags    : 2;
+      unsigned unused_flag : 1;
     } seq;
 
     struct {
       uint32   length;
-      unsigned offset : 24;
-      uint8    type;
+      unsigned offset      : 24;
+      unsigned type        : 4;
+      unsigned has_ref     : 1;
+      unsigned num_tags    : 2;
+      unsigned unused_flag : 1;
     } slice;
 
     uint64 word;
@@ -163,8 +173,8 @@ void print_all_live_objs();
 /////////////////////////////////// mem.cpp ////////////////////////////////////
 
 void add_ref(REF_OBJ *);
-void add_ref(OBJ obj);
-void release(OBJ obj);
+void add_ref(OBJ);
+void release(OBJ);
 
 void mult_add_ref(OBJ obj, uint32 count);
 
@@ -190,59 +200,48 @@ void delete_uint32_array(uint32 *buffer, uint32 size);
 void** new_ptr_array(uint32 size);
 void delete_ptr_array(void** buffer, uint32 size);
 
-//uint32 get_ref_count(OBJ obj);
+//uint32 get_ref_count(OBJ);
 
-//bool is_valid(OBJ obj);
+//bool is_valid(OBJ);
 //bool are_valid(OBJ* objs, uint32 count);
 
 //////////////////////////////// mem_utils.cpp /////////////////////////////////
 
-OBJ_TYPE get_type(OBJ obj);
-OBJ_TYPE get_high_level_type(OBJ obj);
+OBJ_TYPE get_logical_type(OBJ); //## RENAME TO JUST get_type() WHEN ALL IS DONE
 
-bool is_inline_obj(OBJ obj);
-bool is_ref_obj(OBJ obj);
-
-bool is_blank_obj(OBJ obj);
-bool is_null_obj(OBJ obj);
-bool is_symb(OBJ obj);
-bool is_bool(OBJ obj);
-bool is_int(OBJ obj);
-bool is_float(OBJ obj);
-
-bool is_seq(OBJ obj);
-bool is_empty_seq(OBJ obj);
-bool is_ne_seq(OBJ obj);
-bool is_set(OBJ obj);
-bool is_empty_set(OBJ obj);
-bool is_ne_set(OBJ obj);
-bool is_map(OBJ obj);
-bool is_empty_map(OBJ obj);
-bool is_ne_map(OBJ obj);
-bool is_tag_obj(OBJ obj);
+bool is_blank_obj(OBJ);
+bool is_null_obj(OBJ);
+bool is_symb(OBJ);
+bool is_bool(OBJ);
+bool is_int(OBJ);
+bool is_float(OBJ);
+bool is_seq(OBJ);
+bool is_empty_seq(OBJ);
+bool is_ne_seq(OBJ);
+bool is_set(OBJ);
+bool is_empty_set(OBJ);
+bool is_ne_set(OBJ);
+bool is_map(OBJ);
+bool is_empty_map(OBJ);
+bool is_ne_map(OBJ);
+bool is_tag_obj(OBJ);
 
 bool is_symb(OBJ, uint16);
 bool is_int(OBJ, int64);
 
-// OBJ make_symb(uint32 idx);
-// uint32 get_symb_idx(OBJ obj);
-
-uint16 get_symb_idx(OBJ obj);
-bool   get_bool(OBJ obj);
-int64  get_int(OBJ obj);
-double get_float(OBJ obj);
-uint32 get_seq_length(OBJ obj);
-uint32 get_seq_offset(OBJ seq);
-uint16 get_tag_idx(OBJ obj);
-
-OBJ* get_seq_buffer_ptr(OBJ obj);
-
-OBJ* get_key_array_ptr(MAP_OBJ* map);
-OBJ* get_value_array_ptr(MAP_OBJ* map);
+uint16 get_symb_idx(OBJ);
+bool   get_bool(OBJ);
+int64  get_int(OBJ);
+double get_float(OBJ);
+uint32 get_seq_length(OBJ);
+uint16 get_tag_idx(OBJ);
+OBJ    get_inner_obj(OBJ);
 
 OBJ make_blank_obj();
 OBJ make_null_obj();
-
+OBJ make_empty_seq();
+OBJ make_empty_set();
+OBJ make_empty_map();
 OBJ make_symb(uint16 symb_idx);
 OBJ make_bool(bool b);
 OBJ make_int(uint64 value);
@@ -251,20 +250,30 @@ OBJ make_seq(SEQ_OBJ* ptr, uint32 length);
 OBJ make_slice(SEQ_OBJ* ptr, uint32 offset, uint32 length);
 OBJ make_set(SET_OBJ* ptr);
 OBJ make_map(MAP_OBJ* ptr);
-OBJ make_tag_obj(TAG_OBJ* ptr);
+OBJ make_tag_obj(uint16 tag_idx, OBJ obj);
 
-OBJ make_empty_seq();
-OBJ make_empty_set();
-OBJ make_empty_map();
+// These functions exist in a limbo between the logical and physical world
 
-REF_OBJ* get_ref_obj_ptr(OBJ obj);
-SEQ_OBJ* get_seq_obj_ptr(OBJ obj);
-SET_OBJ* get_set_ptr(OBJ obj);
-MAP_OBJ* get_map_ptr(OBJ obj);
-TAG_OBJ* get_tag_obj_ptr(OBJ obj);
+uint32 get_seq_offset(OBJ seq);
+OBJ* get_seq_buffer_ptr(OBJ);
+
+OBJ* get_key_array_ptr(MAP_OBJ* map);
+OBJ* get_value_array_ptr(MAP_OBJ* map);
+
+SEQ_OBJ* get_seq_obj_ptr(OBJ);
+SET_OBJ* get_set_ptr(OBJ);
+MAP_OBJ* get_map_ptr(OBJ);
+
+// Purely physical representation functions
+
+bool is_inline_obj(OBJ);
+bool is_ref_obj(OBJ);
+
+OBJ_TYPE get_ref_obj_type(OBJ);
+REF_OBJ* get_ref_obj_ptr(OBJ);
 
 bool are_shallow_eq(OBJ, OBJ);
-int shallow_cmp(OBJ obj1, OBJ obj2);
+int shallow_cmp(OBJ, OBJ);
 
 //////////////////////////////// basic_ops.cpp /////////////////////////////////
 
@@ -275,19 +284,18 @@ bool is_out_of_range(SEQ_ITER &it);
 bool is_out_of_range(MAP_ITER &it);
 bool has_elem(OBJ set, OBJ elem);
 
-int64 get_int_val(OBJ obj);
+int64 get_int_val(OBJ);
 uint32 get_set_size(OBJ set);
 uint32 get_seq_len(OBJ seq);
 uint32 get_map_size(OBJ map);
-int64 mantissa(OBJ obj);
-int64 dec_exp(OBJ obj);
+int64 mantissa(OBJ);
+int64 dec_exp(OBJ);
 int64 rand_nat(int64 max);  // Non-deterministic
 int64 unique_nat();         // Non-deterministic
 
-OBJ obj_neg(OBJ obj);
+OBJ obj_neg(OBJ);
 OBJ at(OBJ seq, int64 idx);
-OBJ get_tag(OBJ obj);
-OBJ get_inner_obj(OBJ obj);
+OBJ get_tag(OBJ);
 OBJ get_curr_obj(SET_ITER &it);
 OBJ get_curr_obj(SEQ_ITER &it);
 OBJ get_curr_key(MAP_ITER &it);
@@ -334,7 +342,7 @@ OBJ seq_to_mset(OBJ seq);
 // OBJ list_to_seq(OBJ list);
 OBJ internal_sort(OBJ set);
 OBJ add_attachment(OBJ target, OBJ data);
-OBJ fetch_attachments(OBJ obj);
+OBJ fetch_attachments(OBJ);
 void get_set_iter(SET_ITER &it, OBJ set);
 void get_seq_iter(SEQ_ITER &it, OBJ seq);
 void get_map_iter(MAP_ITER &it, OBJ map);
@@ -369,11 +377,11 @@ int comp_objs(OBJ obj1, OBJ obj2);
 
 /////////////////////////////// inter_utils.cpp ////////////////////////////////
 
-void add_obj_to_cache(OBJ obj);
+void add_obj_to_cache(OBJ);
 void release_all_cached_objs();
 
-OBJ to_str(OBJ obj);
-OBJ to_symb(OBJ obj);
+OBJ to_str(OBJ);
+OBJ to_symb(OBJ);
 
 OBJ str_to_obj(const char* c_str);
 // void obj_to_str(OBJ str_obj, char* buffer, uint32 size);
@@ -385,7 +393,7 @@ uint64 char_buffer_size(OBJ str_obj);
 
 //////////////////////////////// printing.cpp //////////////////////////////////
 
-void print(OBJ obj);
+void print(OBJ);
 void print_to_buffer_or_file(OBJ obj, char* buffer, uint32 max_size, const char* fname);
 void printed_obj(OBJ obj, char* buffer, uint32 max_size);
 

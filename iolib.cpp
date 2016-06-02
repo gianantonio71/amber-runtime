@@ -30,10 +30,7 @@ OBJ FileRead_P(OBJ filename, generated::ENV &)
     seq_obj = make_seq(seq, size);
   }
 
-  TAG_OBJ *tag_obj = new_tag_obj();
-  tag_obj->tag_idx = symb_idx_just;
-  tag_obj->obj = seq_obj;
-  return make_tag_obj(tag_obj);
+  return make_tag_obj(symb_idx_just, seq_obj);
 }
 
 

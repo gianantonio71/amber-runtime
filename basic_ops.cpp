@@ -116,11 +116,6 @@ OBJ get_tag(OBJ obj)
   return make_symb(get_tag_idx(obj));
 }
 
-OBJ get_inner_obj(OBJ obj)
-{
-  return get_tag_obj_ptr(obj)->obj;
-}
-
 OBJ get_curr_obj(SEQ_ITER &it)
 {
   assert(it.idx < it.len);

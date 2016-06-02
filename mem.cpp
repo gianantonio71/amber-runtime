@@ -179,12 +179,13 @@ static void delete_obj(OBJ obj, OBJ *queue, uint32 &queue_start, uint32 &queue_s
 {
   assert(is_ref_obj(obj));
 
-  switch (get_type(obj))
+  REF_OBJ *ref_obj = get_ref_obj_ptr(obj);
+
+  switch (get_ref_obj_type(obj))
   {
     case TYPE_SEQUENCE:
-    case TYPE_SLICE:
     {
-      SEQ_OBJ *seq = get_seq_obj_ptr(obj);
+      SEQ_OBJ *seq = (SEQ_OBJ *) ref_obj;
       release(seq->buffer, seq->size, queue, queue_start, queue_size);
       free_obj(seq, seq_obj_mem_size(seq->capacity));
       break;
@@ -192,7 +193,7 @@ static void delete_obj(OBJ obj, OBJ *queue, uint32 &queue_start, uint32 &queue_s
 
     case TYPE_SET:
     {
-      SET_OBJ *set = get_set_ptr(obj);
+      SET_OBJ *set = (SET_OBJ *) ref_obj;
       uint32 size = set->size;
       release(set->buffer, size, queue, queue_start, queue_size);
       free_obj(set, set_obj_mem_size(size));
@@ -201,19 +202,19 @@ static void delete_obj(OBJ obj, OBJ *queue, uint32 &queue_start, uint32 &queue_s
 
     case TYPE_MAP:
     {
-      MAP_OBJ *map = get_map_ptr(obj);
+      MAP_OBJ *map = (MAP_OBJ *) ref_obj;
       uint32 size = map->size;
       release(map->buffer, 2*size, queue, queue_start, queue_size);
       free_obj(map, map_obj_mem_size(size));
-      break;    
+      break;
     }
 
     case TYPE_TAG_OBJ:
     {
-      TAG_OBJ *tag_obj = get_tag_obj_ptr(obj);
+      TAG_OBJ *tag_obj = (TAG_OBJ *) ref_obj;
       release(&tag_obj->obj, 1, queue, queue_start, queue_size);
       free_obj(tag_obj, tag_obj_mem_size());
-      break;    
+      break;
     }
 
     default:

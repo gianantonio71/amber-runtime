@@ -133,18 +133,13 @@ OBJ build_tagged_obj(OBJ tag, OBJ obj)
 {
   assert(is_symb(tag));
   fail_if_not(is_symb(tag), "Not a symbol");
-  
-  TAG_OBJ *tag_obj = new_tag_obj();
-  
-  tag_obj->tag_idx = get_symb_idx(tag);
-  tag_obj->obj = obj;
-  
-  return make_tag_obj(tag_obj);
+
+  return make_tag_obj(get_symb_idx(tag), obj);
 }
 
 OBJ neg_float(OBJ obj)
 {
-    return make_float(-get_float(obj));
+  return make_float(-get_float(obj));
 }
 
 OBJ add_floats(OBJ obj1, OBJ obj2)
@@ -582,9 +577,8 @@ OBJ add_attachment(OBJ target_obj, OBJ data)
 {
   if (is_ref_obj(target_obj))
   {
-    add_ref(target_obj);
-
     REF_OBJ *target_ptr = get_ref_obj_ptr(target_obj);
+
     std::map<REF_OBJ*, OBJ>::iterator it = attachments_map.find(target_ptr);
 
     if (it == attachments_map.end())
@@ -610,17 +604,19 @@ OBJ add_attachment(OBJ target_obj, OBJ data)
 
       OBJ curr_data_set = it->second;
       OBJ sets[2];
+      // The current data set has to be add-referenced because it's still in the list of cached object to release
+      add_ref(curr_data_set);
       sets[0] = curr_data_set;
       add_ref(data);
       sets[1] = build_set(&data, 1);
       OBJ set_of_sets = build_set(sets, 2);
       OBJ new_data_set = merge_sets(set_of_sets);
       release(set_of_sets);
-      // The current data set cannot be released because it's still in the list of cached object to release
-      // release(it->second);
       attachments_map[target_ptr] = new_data_set;
       add_obj_to_cache(new_data_set);
     }
+
+    add_ref(target_obj);
   }
 
   return target_obj;

@@ -62,9 +62,9 @@ void print_bare_str(OBJ str, void (*emit)(void *, const void *, EMIT_ACTION), vo
 {
   char buffer[64];
 
-  assert(is_str(get_tag_obj_ptr(str)->tag_idx, get_tag_obj_ptr(str)->obj));
+  assert(is_str(get_tag_idx(str), get_inner_obj(str)));
 
-  OBJ char_seq = get_tag_obj_ptr(str)->obj;
+  OBJ char_seq = get_inner_obj(str);
   if (is_empty_seq(char_seq))
     return;
 
@@ -203,9 +203,8 @@ void print_map(OBJ obj, bool print_brackets, void (*emit)(void *, const void *, 
 
 void print_tag_obj(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
 {
-  TAG_OBJ *tag_obj = get_tag_obj_ptr(obj);
-  uint16 tag_idx = tag_obj->tag_idx;
-  OBJ inner_obj = tag_obj->obj;
+  uint16 tag_idx = get_tag_idx(obj);
+  OBJ inner_obj = get_inner_obj(obj);
   if (is_str(tag_idx, inner_obj))
   {
     emit(data, "\"", TEXT);

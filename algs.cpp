@@ -227,8 +227,8 @@ int comp_objs(OBJ obj1, OBJ obj2)
   else if (is_inline_2)
     return -1;
 
-  OBJ_TYPE type1 = get_high_level_type(obj1);
-  OBJ_TYPE type2 = get_high_level_type(obj2);
+  OBJ_TYPE type1 = get_logical_type(obj1);
+  OBJ_TYPE type2 = get_logical_type(obj2);
 
   if (type1 != type2)
     return type2 - type1;
@@ -281,13 +281,11 @@ int comp_objs(OBJ obj1, OBJ obj2)
 
     case TYPE_TAG_OBJ:
     {
-      TAG_OBJ *tag_obj_1 = get_tag_obj_ptr(obj1);
-      TAG_OBJ *tag_obj_2 = get_tag_obj_ptr(obj2);
-      uint16 tag_idx_1 = tag_obj_1->tag_idx;
-      uint16 tag_idx_2 = tag_obj_2->tag_idx;
+      uint16 tag_idx_1 = get_tag_idx(obj1);
+      uint16 tag_idx_2 = get_tag_idx(obj2);
       if (tag_idx_1 != tag_idx_2)
         return tag_idx_2 - tag_idx_1;
-      return comp_objs(tag_obj_1->obj, tag_obj_2->obj);
+      return comp_objs(get_inner_obj(obj1), get_inner_obj(obj2));
     }
 
     default:
