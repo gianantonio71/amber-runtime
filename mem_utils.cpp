@@ -1,24 +1,24 @@
 #include "lib.h"
 
 
-ShortTypeTag get_short_type_tag(Obj obj)
+SHORT_TYPE_TAG get_short_type_tag(OBJ obj)
 {
-  return ShortTypeTag(obj & SHORT_TAG_MASK);
+  return SHORT_TYPE_TAG(obj & SHORT_TAG_MASK);
 }
 
-TypeTag get_full_type_tag(Obj obj)
+TYPE_TAG get_full_type_tag(OBJ obj)
 {
-  return TypeTag(obj & FULL_TAG_MASK);
+  return TYPE_TAG(obj & FULL_TAG_MASK);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Obj make_symb(int idx)
+OBJ make_symb(int idx)
 {
   return symb(idx);
 }
 
-int get_symb_idx(Obj obj)
+int get_symb_idx(OBJ obj)
 {
   assert(is_symb(obj));
   
@@ -27,12 +27,12 @@ int get_symb_idx(Obj obj)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Obj *get_key_array_ptr(Map *map)
+OBJ *get_key_array_ptr(MAP_OBJ *map)
 {
   return map->buffer;
 }
 
-Obj *get_value_array_ptr(Map *map)
+OBJ *get_value_array_ptr(MAP_OBJ *map)
 {
   return map->buffer + map->size;
 }
@@ -44,175 +44,267 @@ long long pack_ptr(void *ptr)
   return ((long long) ptr) << POINTER_SHIFT;
 }
 
-// void *get_ptr(Obj obj)
+// void *get_ptr(OBJ obj)
 // {
 //   // assert(((void *) (obj & ~0xF)) == 0 || is_alive((void *) (obj & ~0xF)));
 //   return (void *) (obj & ~0xF);
 // }
 
-void *get_ptr(Obj obj)
+void *get_ptr(OBJ obj)
 {
   return (void *) (obj >> POINTER_SHIFT);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Obj make_obj(Set *ptr)
+OBJ make_obj(SET_OBJ *ptr)
 {
   return pack_ptr(ptr) | type_tag_set;
 }
 
-Obj make_obj(Seq *ptr)
+OBJ make_obj(SEQ_OBJ *ptr)
 {
   return pack_ptr(ptr) | type_tag_seq;
 }
 
-Obj make_obj(Map *ptr)
+OBJ make_obj(MAP_OBJ *ptr)
 {
   return pack_ptr(ptr) | type_tag_map;
 }
 
-Obj make_obj(TagObj *ptr)
+OBJ make_obj(TAG_OBJ *ptr)
 {
   return pack_ptr(ptr) | type_tag_tag_obj;
 }
 
-Obj make_obj(Float *ptr)
+OBJ make_obj(FLOAT *ptr)
 {
   return pack_ptr(ptr) | type_tag_float;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-RefObj *get_ref_obj_ptr(Obj obj)
+REF_OBJ *get_ref_obj_ptr(OBJ obj)
 {
   assert(is_ref_obj(obj)); //## WHY IS THIS ONLY ASSERTED AND NOT CHECKED?
   
-  return (RefObj *) get_ptr(obj);
+  return (REF_OBJ *) get_ptr(obj);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Set *get_set_ptr(Obj obj)
+SET_OBJ *get_set_ptr(OBJ obj)
 {
   fail_if_not(is_ne_set(obj), "Object is not a non-empty set");
 
-  return (Set *) get_ptr(obj);
+  return (SET_OBJ *) get_ptr(obj);
 }
 
-Seq *get_seq_ptr(Obj obj)
+SEQ_OBJ *get_seq_ptr(OBJ obj)
 {
   fail_if_not(is_ne_seq(obj), "Object is not a non-empty sequence");
   
-  return (Seq *) get_ptr(obj);
+  return (SEQ_OBJ *) get_ptr(obj);
 }
 
-FullSeq *get_full_seq_ptr(Obj obj)
+FULL_SEQ_OBJ *get_full_seq_ptr(OBJ obj)
 {
   //## BUG: HERE CHECK THAT THE SEQUENCE IS ACTUALLY A FULL SEQUENCE
-  return (FullSeq *) get_seq_ptr(obj);
+  return (FULL_SEQ_OBJ *) get_seq_ptr(obj);
 }
 
-RefSeq *get_ref_seq_ptr(Obj obj)
+REF_SEQ_OBJ *get_ref_seq_ptr(OBJ obj)
 {
   //## BUG: HERE CHECK THAT THE SEQUENCE IS ACTUALLY A REFERENCE SEQUENCE
-  return (RefSeq *) get_seq_ptr(obj);
+  return (REF_SEQ_OBJ *) get_seq_ptr(obj);
 }
 
-Map *get_map_ptr(Obj obj)
+MAP_OBJ *get_map_ptr(OBJ obj)
 {
   fail_if_not(is_ne_map(obj), "Object is not a non-empty map");
   
-  return (Map *) get_ptr(obj);
+  return (MAP_OBJ *) get_ptr(obj);
 }
 
-TagObj *get_tag_obj_ptr(Obj obj)
+TAG_OBJ *get_tag_obj_ptr(OBJ obj)
 {
   fail_if_not(is_tag_obj(obj), "Object is not a named object");
   
-  return (TagObj *) get_ptr(obj);
+  return (TAG_OBJ *) get_ptr(obj);
 }
 
-Float *get_float_ptr(Obj obj)
+FLOAT *get_float_ptr(OBJ obj)
 {
   fail_if_not(is_float(obj), "Object is not a floating point number");
 
-  return (Float *) get_ptr(obj);
+  return (FLOAT *) get_ptr(obj);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool is_full_seq(Seq *seq)
+bool is_full_seq(SEQ_OBJ *seq)
 {
-  FullSeq *full_seq = (FullSeq *) seq;
+  FULL_SEQ_OBJ *full_seq = (FULL_SEQ_OBJ *) seq;
   return full_seq->elems == full_seq->buffer;
 }
 
-bool is_ref_seq(Seq *seq)
+bool is_ref_seq(SEQ_OBJ *seq)
 {
   return !is_full_seq(seq);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool is_symb(Obj obj)
+bool is_symb(OBJ obj)
 {
   return get_full_type_tag(obj) == type_tag_symb;
 }
 
-bool is_int(Obj obj)
+bool is_int(OBJ obj)
 {
   return get_short_type_tag(obj) == short_type_tag_integer;
 }
 
-bool is_float(Obj obj)
+bool is_float(OBJ obj)
 {
   return get_full_type_tag(obj) == type_tag_float;
 }
 
-bool is_ne_seq(Obj obj)
+bool is_ne_seq(OBJ obj)
 {
   return get_full_type_tag(obj) == type_tag_seq;
 }
 
-bool is_ne_set(Obj obj)
+bool is_ne_set(OBJ obj)
 {
   return get_full_type_tag(obj) == type_tag_set;
 }
 
-bool is_ne_map(Obj obj)
+bool is_ne_map(OBJ obj)
 {
   return get_full_type_tag(obj) == type_tag_map;
 }
 
-bool is_tag_obj(Obj obj)
+bool is_tag_obj(OBJ obj)
 {
   return get_full_type_tag(obj) == type_tag_tag_obj;
 }
 
-bool is_inline_obj(Obj obj)
+bool is_inline_obj(OBJ obj)
 {
   return !is_ref_obj(obj);
 }
 
-bool is_ref_obj(Obj obj)
+bool is_ref_obj(OBJ obj)
 {
   return get_short_type_tag(obj) == short_type_tag_reference;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool is_seq(Obj obj)
+bool is_seq(OBJ obj)
 {
   return obj == empty_seq | is_ne_seq(obj);
 }
 
-bool is_set(Obj obj)
+bool is_set(OBJ obj)
 {
   return obj == empty_set | is_ne_set(obj);
 }
 
-bool is_map(Obj obj)
+bool is_map(OBJ obj)
 {
   return obj == empty_map | is_ne_map(obj);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+OBJ make_blank_obj()
+{
+  return blank_obj;
+}
+
+OBJ make_null_obj()
+{
+  return null_obj;
+}
+
+OBJ make_empty_seq()
+{
+  return empty_seq;
+}
+
+OBJ make_empty_set()
+{
+  return empty_set;
+}
+
+OBJ make_empty_map()
+{
+  return empty_map;
+}
+
+bool is_symb(OBJ obj, uint16 symb_idx)
+{
+  return obj == make_symb(symb_idx);
+}
+
+bool is_int(OBJ obj, int64 value)
+{
+  return obj == make_int(value);
+}
+
+bool is_empty_seq(OBJ obj)
+{
+  return obj == empty_seq;
+}
+
+bool is_empty_set(OBJ obj)
+{
+  return obj == empty_set;
+}
+
+bool is_empty_map(OBJ obj)
+{
+  return obj == empty_map;
+}
+
+bool is_blank_obj(OBJ obj)
+{
+  return obj == blank_obj;
+}
+
+bool is_null_obj(OBJ obj)
+{
+  return obj == null_obj;
+}
+
+bool get_bool(OBJ obj)
+{
+  assert(obj == symb(symb_idx_false) | obj == symb(symb_idx_true));
+  return obj == symb(symb_idx_true);
+}
+
+uint32 get_seq_length(OBJ obj)
+{
+  if (obj == empty_seq)
+    return 0;
+  return get_seq_ptr(obj)->length;
+}
+
+SEQ_OBJ *new_seq(uint32 len)
+{
+  return new_full_seq(len);
+}
+
+OBJ *get_seq_buffer_ptr(OBJ obj)
+{
+  return get_seq_ptr(obj)->elems;
+}
+
+OBJ make_seq(SEQ_OBJ *seq, uint32 len)
+{
+  assert(seq->length == len);
+  return make_obj(seq);
 }

@@ -15,59 +15,59 @@ using namespace std;
 
 int set_obj_mem_size(int size)
 {
-  return nblocks16(sizeof(Set) + (size - 1) * sizeof(Obj));
+  return nblocks16(sizeof(SET_OBJ) + (size - 1) * sizeof(OBJ));
 }
 
 int full_seq_obj_mem_size(int capacity)
 {
-  return nblocks16(sizeof(FullSeq) + (capacity - 1) * sizeof(Obj));
+  return nblocks16(sizeof(FULL_SEQ_OBJ) + (capacity - 1) * sizeof(OBJ));
 }
 
 int ref_seq_obj_mem_size()
 {
-  return nblocks16(sizeof(RefSeq));
+  return nblocks16(sizeof(REF_SEQ_OBJ));
 }
 
 int map_obj_mem_size(int size)
 {
-  return nblocks16(sizeof(Map) + (2 * size - 1) * sizeof(Obj));
+  return nblocks16(sizeof(MAP_OBJ) + (2 * size - 1) * sizeof(OBJ));
 }
 
 int tag_obj_mem_size()
 {
-  return nblocks16(sizeof(TagObj));
+  return nblocks16(sizeof(TAG_OBJ));
 }
 
 int float_obj_mem_size()
 {
-  return nblocks16(sizeof(Float));
+  return nblocks16(sizeof(FLOAT));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 unsigned int full_seq_capacity(int nblocks16)
 {
-  return (16 * nblocks16 - sizeof(FullSeq)) / sizeof(Obj) + 1;
+  return (16 * nblocks16 - sizeof(FULL_SEQ_OBJ)) / sizeof(OBJ) + 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Set *new_set(int size)
+SET_OBJ *new_set(int size)
 {
   assert(size > 0);
 
-  Set *set = (Set *) new_obj(set_obj_mem_size(size));
+  SET_OBJ *set = (SET_OBJ *) new_obj(set_obj_mem_size(size));
   set->ref_count = 1;
   set->size = size;
   return set;
 }
 
-FullSeq *new_full_seq(int length)
+FULL_SEQ_OBJ *new_full_seq(int length)
 {
   assert(length > 0);
   
   int actual_size_blocks;
-  FullSeq *seq = (FullSeq *) new_obj(full_seq_obj_mem_size(length), actual_size_blocks);
+  FULL_SEQ_OBJ *seq = (FULL_SEQ_OBJ *) new_obj(full_seq_obj_mem_size(length), actual_size_blocks);
   seq->ref_count = 1;
   seq->length = length;
   seq->elems = seq->buffer;
@@ -76,49 +76,49 @@ FullSeq *new_full_seq(int length)
   return seq;
 }
 
-RefSeq *new_ref_seq()
+REF_SEQ_OBJ *new_ref_seq()
 {
-  RefSeq *seq = (RefSeq *) new_obj(ref_seq_obj_mem_size());
+  REF_SEQ_OBJ *seq = (REF_SEQ_OBJ *) new_obj(ref_seq_obj_mem_size());
   seq->ref_count = 1;
   return seq;
 }
 
-RefSeq *new_ref_seq(FullSeq *full_seq, Obj *elems, int length)
+REF_SEQ_OBJ *new_ref_seq(FULL_SEQ_OBJ *full_seq, OBJ *elems, int length)
 {
-  RefSeq *seq   = new_ref_seq();
+  REF_SEQ_OBJ *seq  = new_ref_seq();
   seq->length   = length;
   seq->elems    = elems;
   seq->full_seq = full_seq;
   return seq;
 }
 
-Map *new_map(int size)
+MAP_OBJ *new_map(int size)
 {
   assert(size > 0);
 
-  Map *map = (Map *) new_obj(map_obj_mem_size(size));
+  MAP_OBJ *map = (MAP_OBJ *) new_obj(map_obj_mem_size(size));
   map->ref_count = 1;
   map->size = size;
   return map;
 }
 
-TagObj *new_tag_obj()
+TAG_OBJ *new_tag_obj()
 {
-  TagObj *tag_obj = (TagObj *) new_obj(tag_obj_mem_size());
+  TAG_OBJ *tag_obj = (TAG_OBJ *) new_obj(tag_obj_mem_size());
   tag_obj->ref_count = 1;
   return tag_obj;
 }
 
-Float *new_float()
+FLOAT *new_float()
 {
-  Float *float_obj = (Float *) new_obj(tag_obj_mem_size());
+  FLOAT *float_obj = (FLOAT *) new_obj(tag_obj_mem_size());
   float_obj->ref_count = 1;
   return float_obj;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Set *shrink_set(Set *set, int new_size)
+SET_OBJ *shrink_set(SET_OBJ *set, int new_size)
 {
   assert(new_size < set->size);
   assert(set->ref_count == 1);
@@ -135,8 +135,8 @@ Set *shrink_set(Set *set, int new_size)
     return set;
   }
 
-  Set *new_set = ::new_set(new_size);
-  memcpy(new_set->elems, set->elems, new_size * sizeof(Obj));
+  SET_OBJ *new_set = ::new_set(new_size);
+  memcpy(new_set->elems, set->elems, new_size * sizeof(OBJ));
   free_obj(set, mem_size);
 
   return new_set;
@@ -144,14 +144,14 @@ Set *shrink_set(Set *set, int new_size)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Obj *new_obj_array(int size)
+OBJ *new_obj_array(int size)
 {
-  return (Obj *) new_obj(nblocks16(size * sizeof(Obj)));
+  return (OBJ *) new_obj(nblocks16(size * sizeof(OBJ)));
 }
 
-void delete_obj_array(Obj *buffer, int size)
+void delete_obj_array(OBJ *buffer, int size)
 {
-  free_obj(buffer, nblocks16(size * sizeof(Obj)));
+  free_obj(buffer, nblocks16(size * sizeof(OBJ)));
 }
 
 int *new_int_array(int size)
@@ -178,16 +178,16 @@ void delete_ptr_array(void **buffer, int size)
 
 const int MAX_QUEUE_SIZE = 1024;
 
-static void delete_obj(Obj);
+static void delete_obj(OBJ);
 
-static void release(Obj *objs, int count, Obj *queue, int &queue_start, int &queue_size)
+static void release(OBJ *objs, int count, OBJ *queue, int &queue_start, int &queue_size)
 {
   for (int i=0 ; i < count ; i++)
   {
-    Obj obj = objs[i];
+    OBJ obj = objs[i];
     if (is_ref_obj(obj))
     {
-      RefObj *ptr = get_ref_obj_ptr(obj);
+      REF_OBJ *ptr = get_ref_obj_ptr(obj);
       
       int ref_count = ptr->ref_count;
       assert(ref_count > 0);
@@ -199,7 +199,7 @@ static void release(Obj *objs, int count, Obj *queue, int &queue_start, int &que
         if (queue_size == MAX_QUEUE_SIZE)
         {
           int idx = queue_start % MAX_QUEUE_SIZE;
-          Obj first_obj = queue[idx];
+          OBJ first_obj = queue[idx];
           queue[idx] = obj;
           queue_start++;
           delete_obj(first_obj);
@@ -219,7 +219,7 @@ static void release(Obj *objs, int count, Obj *queue, int &queue_start, int &que
   }
 }
 
-static void delete_obj(Obj obj, Obj *queue, int &queue_start, int &queue_size)
+static void delete_obj(OBJ obj, OBJ *queue, int &queue_start, int &queue_size)
 {
   assert(is_ref_obj(obj));
 
@@ -227,7 +227,7 @@ static void delete_obj(Obj obj, Obj *queue, int &queue_start, int &queue_size)
   {
     case type_tag_set:
     {
-      Set *set = get_set_ptr(obj);
+      SET_OBJ *set = get_set_ptr(obj);
       int size = set->size;
       release(set->elems, size, queue, queue_start, queue_size);
       free_obj(set, set_obj_mem_size(size));
@@ -236,16 +236,16 @@ static void delete_obj(Obj obj, Obj *queue, int &queue_start, int &queue_size)
 
     case type_tag_seq:
     {
-      Seq *seq = get_seq_ptr(obj);
+      SEQ_OBJ *seq = get_seq_ptr(obj);
       if (is_full_seq(seq))
       {
-        FullSeq *full_seq = (FullSeq *) seq;
+        FULL_SEQ_OBJ *full_seq = (FULL_SEQ_OBJ *) seq;
         release(full_seq->elems, full_seq->used_capacity, queue, queue_start, queue_size);
         free_obj(full_seq, full_seq_obj_mem_size(full_seq->capacity));
       }
       else
       {
-        RefSeq *ref_seq = (RefSeq *) seq;
+        REF_SEQ_OBJ *ref_seq = (REF_SEQ_OBJ *) seq;
         release(make_obj(ref_seq->full_seq));
         free_obj(ref_seq, ref_seq_obj_mem_size());
       }
@@ -254,7 +254,7 @@ static void delete_obj(Obj obj, Obj *queue, int &queue_start, int &queue_size)
 
     case type_tag_map:
     {
-      Map *map = get_map_ptr(obj);
+      MAP_OBJ *map = get_map_ptr(obj);
       int size = map->size;
       release(map->buffer, 2*size, queue, queue_start, queue_size);
       free_obj(map, map_obj_mem_size(size));
@@ -263,7 +263,7 @@ static void delete_obj(Obj obj, Obj *queue, int &queue_start, int &queue_size)
 
     case type_tag_tag_obj:
     {
-      TagObj *tag_obj = get_tag_obj_ptr(obj);
+      TAG_OBJ *tag_obj = get_tag_obj_ptr(obj);
       release(&tag_obj->obj, 1, queue, queue_start, queue_size);
       free_obj(tag_obj, tag_obj_mem_size());
       break;    
@@ -271,7 +271,7 @@ static void delete_obj(Obj obj, Obj *queue, int &queue_start, int &queue_size)
 
     case type_tag_float:
     {
-      Float *float_obj = get_float_ptr(obj);
+      FLOAT *float_obj = get_float_ptr(obj);
       free_obj(float_obj, float_obj_mem_size());
       break;
     }
@@ -281,18 +281,18 @@ static void delete_obj(Obj obj, Obj *queue, int &queue_start, int &queue_size)
   }
 }
 
-static void delete_obj(Obj obj)
+static void delete_obj(OBJ obj)
 {
   assert(is_ref_obj(obj));
 
   int queue_start = 0;
   int queue_size = 1;
-  Obj queue[MAX_QUEUE_SIZE];
+  OBJ queue[MAX_QUEUE_SIZE];
   queue[0] = obj;
 
   while (queue_size > 0)
   {
-    Obj next_obj = queue[queue_start % MAX_QUEUE_SIZE];
+    OBJ next_obj = queue[queue_start % MAX_QUEUE_SIZE];
     queue_size--;
     queue_start++;
     
@@ -302,7 +302,7 @@ static void delete_obj(Obj obj)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void add_ref(RefObj *ptr)
+void add_ref(REF_OBJ *ptr)
 {
 #ifndef NOGC
   assert(ptr->ref_count > 0);
@@ -310,7 +310,7 @@ void add_ref(RefObj *ptr)
 #endif
 }
 
-void add_ref(Obj obj)
+void add_ref(OBJ obj)
 {
 #ifndef NOGC
   if (is_ref_obj(obj))
@@ -318,12 +318,12 @@ void add_ref(Obj obj)
 #endif
 }
 
-void release(Obj obj)
+void release(OBJ obj)
 {
 #ifndef NOGC
   if (is_ref_obj(obj))
   {
-    RefObj *ptr = get_ref_obj_ptr(obj);
+    REF_OBJ *ptr = get_ref_obj_ptr(obj);
     int ref_count = ptr->ref_count;
     assert(ref_count > 0);
     if (ref_count == 1)
@@ -336,13 +336,13 @@ void release(Obj obj)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void mult_add_ref(Obj obj, int count)
+void mult_add_ref(OBJ obj, int count)
 {
   assert(count > 0);
   
   if (is_ref_obj(obj))
   {
-    RefObj *ptr = get_ref_obj_ptr(obj);
+    REF_OBJ *ptr = get_ref_obj_ptr(obj);
     assert(ptr->ref_count > 0);
     ptr->ref_count += count;
   }
@@ -350,13 +350,13 @@ void mult_add_ref(Obj obj, int count)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void vec_add_ref(Obj *objs, int len)
+void vec_add_ref(OBJ *objs, int len)
 {
   for (int i=0 ; i < len ; i++)
     add_ref(objs[i]);
 }
 
-void vec_release(Obj *objs, int len)
+void vec_release(OBJ *objs, int len)
 {
   for (int i=0 ; i < len ; i++)
     release(objs[i]);

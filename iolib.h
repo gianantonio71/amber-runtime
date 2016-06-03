@@ -1,9 +1,9 @@
 namespace generated
 {
-  struct Env;
+  struct ENV;
 }
 
-Obj FileRead_P(Obj, generated::Env &);
-Obj FileWrite_P(Obj, Obj, Obj, generated::Env &);
-Obj Print_P(Obj, generated::Env &env);
-Obj GetChar_P(generated::Env &env);
+OBJ FileRead_P(OBJ, generated::ENV &);
+OBJ FileWrite_P(OBJ, OBJ, OBJ, generated::ENV &);
+OBJ Print_P(OBJ, generated::ENV &env);
+OBJ GetChar_P(generated::ENV &env);

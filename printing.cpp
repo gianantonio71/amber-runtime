@@ -8,13 +8,13 @@
 typedef enum {TEXT, SUB_START, SUB_END} EMIT_ACTION;
 
 
-void print_obj(Obj obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data);
-void print_obj_inline(Obj obj, bool print_delimiters, void (*emit)(void *, const void *, EMIT_ACTION), void *data);
+void print_obj(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data);
+void print_obj_inline(OBJ obj, bool print_delimiters, void (*emit)(void *, const void *, EMIT_ACTION), void *data);
 
 
-bool is_str(Obj tag, Obj obj)
+bool is_str(OBJ tag, OBJ obj)
 {
-  if (tag != generated::String_S)
+  if (tag != make_symb(symb_idx_string))
     return false;
 
   if (obj == empty_seq)
@@ -23,17 +23,17 @@ bool is_str(Obj tag, Obj obj)
   if (!is_ne_seq(obj))
     return false;
 
-  Seq *seq = get_seq_ptr(obj);
+  SEQ_OBJ *seq = get_seq_ptr(obj);
 
   if (seq == NULL)
     return true;
 
   unsigned int len = seq->length;
-  Obj *elems = seq->elems;
+  OBJ *elems = seq->elems;
 
   for (int i=0 ; i < len ; i++)
   {
-    Obj elem = elems[i];
+    OBJ elem = elems[i];
 
     if (!is_int(elem))
       return false;
@@ -47,14 +47,14 @@ bool is_str(Obj tag, Obj obj)
 }
 
 
-bool is_record(Obj obj)
+bool is_record(OBJ obj)
 {
   if (!is_ne_map(obj))
     return false;
 
-  Map *map = get_map_ptr(obj);
+  MAP_OBJ *map = get_map_ptr(obj);
   unsigned int size = map->size;
-  Obj *keys = get_key_array_ptr(map);
+  OBJ *keys = get_key_array_ptr(map);
 
   for (int i=0 ; i < size ; i++)
     if (!is_symb(keys[i]))
@@ -64,19 +64,19 @@ bool is_record(Obj obj)
 }
 
 
-void print_bare_str(Obj str, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
+void print_bare_str(OBJ str, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
 {
   char buffer[64];
 
   assert(is_str(get_tag_obj_ptr(str)->tag, get_tag_obj_ptr(str)->obj));
 
-  Obj char_seq_obj = get_tag_obj_ptr(str)->obj;
+  OBJ char_seq_obj = get_tag_obj_ptr(str)->obj;
   if (char_seq_obj == empty_seq)
     return;
 
-  Seq *char_seq = get_seq_ptr(char_seq_obj);
+  SEQ_OBJ *char_seq = get_seq_ptr(char_seq_obj);
   unsigned int len = char_seq->length;
-  Obj *chars = char_seq->elems;
+  OBJ *chars = char_seq->elems;
 
   for (int i=0 ; i < len ; i++)
   {
@@ -98,7 +98,7 @@ void print_bare_str(Obj str, void (*emit)(void *, const void *, EMIT_ACTION), vo
 }
 
 
-void print_int(Obj obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
+void print_int(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
 {
   long long n = get_int_val(obj);
   char buffer[1024];
@@ -107,32 +107,32 @@ void print_int(Obj obj, void (*emit)(void *, const void *, EMIT_ACTION), void *d
 }
 
 
-void print_float(Obj obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
+void print_float(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
 {
-  Float *x = get_float_ptr(obj);
+  FLOAT *x = get_float_ptr(obj);
   char buffer[1024];
   sprintf(buffer, "%g", x->value);
   emit(data, buffer, TEXT);
 }
 
 
-void print_symb(Obj obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
+void print_symb(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
 {
-  Obj str = to_str(obj);
+  OBJ str = to_str(obj);
   print_bare_str(str, emit, data);
   release(str);
 }
 
 
-void print_seq(Obj obj, bool print_parentheses, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
+void print_seq(OBJ obj, bool print_parentheses, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
 {
   if (print_parentheses)
     emit(data, "(", TEXT);
   if (obj != empty_seq)
   {
-    Seq *seq = get_seq_ptr(obj);
+    SEQ_OBJ *seq = get_seq_ptr(obj);
     unsigned int len = seq->length;
-    Obj *elems = seq->elems;
+    OBJ *elems = seq->elems;
     for (int i=0 ; i < len ; i++)
     {
       if (i > 0)
@@ -145,14 +145,14 @@ void print_seq(Obj obj, bool print_parentheses, void (*emit)(void *, const void 
 }
 
 
-void print_set(Obj obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
+void print_set(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
 {
   emit(data, "[", TEXT);
   if (obj != empty_set)
   {
-    Set *set = get_set_ptr(obj);
+    SET_OBJ *set = get_set_ptr(obj);
     unsigned int size = set->size;
-    Obj *elems = set->elems;
+    OBJ *elems = set->elems;
     for (int i=0 ; i < size ; i++)
     {
       if (i > 0)
@@ -164,7 +164,7 @@ void print_set(Obj obj, void (*emit)(void *, const void *, EMIT_ACTION), void *d
 }
 
 
-void print_map(Obj obj, bool print_brackets, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
+void print_map(OBJ obj, bool print_brackets, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
 {
   if (obj == empty_map)
   {
@@ -175,10 +175,10 @@ void print_map(Obj obj, bool print_brackets, void (*emit)(void *, const void *, 
   if (print_brackets)
     emit(data, "[", TEXT);
 
-  Map *map = get_map_ptr(obj);
+  MAP_OBJ *map = get_map_ptr(obj);
   unsigned int size = map->size;
-  Obj *keys = get_key_array_ptr(map);
-  Obj *values = get_value_array_ptr(map);
+  OBJ *keys = get_key_array_ptr(map);
+  OBJ *values = get_value_array_ptr(map);
 
   for (int i=0 ; i < size ; i++)
   {
@@ -205,11 +205,11 @@ void print_map(Obj obj, bool print_brackets, void (*emit)(void *, const void *, 
 }
 
 
-void print_tag_obj(Obj obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
+void print_tag_obj(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
 {
-  TagObj *tag_obj = get_tag_obj_ptr(obj);
-  Obj tag = tag_obj->tag;
-  Obj inner_obj = tag_obj->obj;
+  TAG_OBJ *tag_obj = get_tag_obj_ptr(obj);
+  OBJ tag = tag_obj->tag;
+  OBJ inner_obj = tag_obj->obj;
   if (is_str(tag, inner_obj))
   {
     emit(data, "\"", TEXT);
@@ -227,7 +227,7 @@ void print_tag_obj(Obj obj, void (*emit)(void *, const void *, EMIT_ACTION), voi
 }
 
 
-void print_obj_inline(Obj obj, bool print_delimiters, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
+void print_obj_inline(OBJ obj, bool print_delimiters, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
 {
   if (is_set(obj))
     print_set(obj, emit, data);
@@ -240,7 +240,7 @@ void print_obj_inline(Obj obj, bool print_delimiters, void (*emit)(void *, const
 }
 
 
-void print_obj(Obj obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
+void print_obj(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
 {
   emit(data, NULL, SUB_START);
 
@@ -508,7 +508,7 @@ void stdout_print(void *, const char *text, int len)
 }
 
 
-void print(Obj obj)
+void print(OBJ obj)
 {
   PRINT_BUFFER *pb = new PRINT_BUFFER;
 
@@ -544,7 +544,7 @@ void calc_length(void *ptr, const char *text, int len)
 }
 
 
-void print_to_buffer_or_file(Obj obj, char *buffer, int max_size, const char *fname)
+void print_to_buffer_or_file(OBJ obj, char *buffer, int max_size, const char *fname)
 {
   PRINT_BUFFER *pb = new PRINT_BUFFER;
 
@@ -568,7 +568,7 @@ void print_to_buffer_or_file(Obj obj, char *buffer, int max_size, const char *fn
 }
 
 
-void printed_obj(Obj obj, char *buffer, int max_size)
+void printed_obj(OBJ obj, char *buffer, int max_size)
 {
   PRINT_BUFFER *pb = new PRINT_BUFFER;
 

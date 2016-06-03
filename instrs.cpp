@@ -8,25 +8,25 @@
 
 
 
-void init(Stream &s)
+void init(STREAM &s)
 {
   s.buffer = 0;
   s.capacity = 0;
   s.count = 0;
 }
 
-void append(Stream &s, Obj obj) // obj must be already reference-counted
+void append(STREAM &s, OBJ obj) // obj must be already reference-counted
 {
   assert(s.count <= s.capacity);
   
   int count = s.count;
   int capacity = s.capacity;
-  Obj *buffer = s.buffer;
+  OBJ *buffer = s.buffer;
   
   if (count == capacity)
   {
     int new_capacity = capacity == 0 ? 32 : 2 * capacity;
-    Obj *new_buffer = new_obj_array(new_capacity);
+    OBJ *new_buffer = new_obj_array(new_capacity);
     for (int i=0 ; i < count ; i++)
       new_buffer[i] = buffer[i];
     if (capacity != 0)
@@ -39,22 +39,22 @@ void append(Stream &s, Obj obj) // obj must be already reference-counted
   s.count++;
 }
 
-Obj make_set(Obj *elems, int size)
+OBJ build_set(OBJ *elems, int size)
 {
   if (size == 0)
     return empty_set;
 
   size = sort_and_release_dups(elems, size);
   
-  Set *set = new_set(size);
-  Obj *es = set->elems;
+  SET_OBJ *set = new_set(size);
+  OBJ *es = set->elems;
   for (int i=0 ; i < size ; i++)
     es[i] = elems[i];
   
   return make_obj(set);
 }
 
-Obj make_set(Stream &s)
+OBJ build_set(STREAM &s)
 {
   assert((s.count == 0 && s.capacity == 0 && s.buffer == 0) || (s.count > 0 && s.capacity > 0 && s.buffer != 0));
 
@@ -62,18 +62,18 @@ Obj make_set(Stream &s)
   if (count == 0)
     return empty_set;
 
-  Obj *buffer = s.buffer;
-  Obj set = make_set(buffer, count);
+  OBJ *buffer = s.buffer;
+  OBJ set = build_set(buffer, count);
   delete_obj_array(buffer, s.capacity);
   return set;
 }
 
-Obj make_seq(Obj *elems, int length) // Objects in elems must be already reference-counted
+OBJ build_seq(OBJ *elems, int length) // Objects in elems must be already reference-counted
 {
   if (length == 0)
     return empty_seq;
   
-  Seq *seq = new_full_seq(length);
+  SEQ_OBJ *seq = new_full_seq(length);
   
   for (int i=0 ; i < length ; i++)
     seq->elems[i] = elems[i];
@@ -81,30 +81,30 @@ Obj make_seq(Obj *elems, int length) // Objects in elems must be already referen
   return make_obj(seq);
 }
 
-Obj make_seq(Stream &s)
+OBJ build_seq(STREAM &s)
 {
   if (s.count == 0)
     return empty_seq;
 
   //## COULD IT BE OPTIMIZED?
   
-  Obj seq = make_seq(s.buffer, s.count);
+  OBJ seq = build_seq(s.buffer, s.count);
   
   delete_obj_array(s.buffer, s.capacity);
 
   return seq;
 }
 
-Obj make_map(Obj *keys, Obj *values, int size)
+OBJ build_map(OBJ *keys, OBJ *values, int size)
 {
   if (size == 0)
     return empty_map;
     
   sort_and_check_no_dups(keys, values, size);
   
-  Map *map = new_map(size);
-  Obj *ks  = map->buffer;
-  Obj *vs  = ks + map->size;
+  MAP_OBJ *map = new_map(size);
+  OBJ *ks  = map->buffer;
+  OBJ *vs  = ks + map->size;
   
   for (int i=0 ; i < size ; i++)
   {
@@ -115,14 +115,14 @@ Obj make_map(Obj *keys, Obj *values, int size)
   return make_obj(map);
 }
 
-Obj make_map(Stream &key_stream, Stream &value_stream)
+OBJ build_map(STREAM &key_stream, STREAM &value_stream)
 {
   assert(key_stream.count == value_stream.count);
   
   if (key_stream.count == 0)
     return empty_map;
     
-  Obj map = make_map(key_stream.buffer, value_stream.buffer, key_stream.count);
+  OBJ map = build_map(key_stream.buffer, value_stream.buffer, key_stream.count);
   
   delete_obj_array(key_stream.buffer, key_stream.capacity);
   delete_obj_array(value_stream.buffer, value_stream.capacity);
@@ -130,12 +130,12 @@ Obj make_map(Stream &key_stream, Stream &value_stream)
   return map;
 }
 
-Obj make_tagged_obj(Obj tag, Obj obj)
+OBJ build_tagged_obj(OBJ tag, OBJ obj)
 {
   assert(is_symb(tag));
   fail_if_not(is_symb(tag), "Not a symbol");
   
-  TagObj *tag_obj = new_tag_obj();
+  TAG_OBJ *tag_obj = new_tag_obj();
   
   tag_obj->tag = tag;
   tag_obj->obj = obj;
@@ -143,84 +143,82 @@ Obj make_tagged_obj(Obj tag, Obj obj)
   return make_obj(tag_obj);
 }
 
-Obj make_float(double val)
+OBJ make_float(double val)
 {
-  Float *float_ptr = new_float();
+  FLOAT *float_ptr = new_float();
   float_ptr->value = val;
   return make_obj(float_ptr);
 }
 
-Obj neg_float(Obj obj)
+OBJ neg_float(OBJ obj)
 {
-  Float *ptr = get_float_ptr(obj);
+  FLOAT *ptr = get_float_ptr(obj);
   return make_float(-ptr->value);
 }
 
-Obj add_floats(Obj obj1, Obj obj2)
+OBJ add_floats(OBJ obj1, OBJ obj2)
 {
-  Float *ptr1 = get_float_ptr(obj1);
-  Float *ptr2 = get_float_ptr(obj2);
+  FLOAT *ptr1 = get_float_ptr(obj1);
+  FLOAT *ptr2 = get_float_ptr(obj2);
   return make_float(ptr1->value + ptr2->value);
 }
 
-Obj sub_floats(Obj obj1, Obj obj2)
+OBJ sub_floats(OBJ obj1, OBJ obj2)
 {
-  Float *ptr1 = get_float_ptr(obj1);
-  Float *ptr2 = get_float_ptr(obj2);
+  FLOAT *ptr1 = get_float_ptr(obj1);
+  FLOAT *ptr2 = get_float_ptr(obj2);
   return make_float(ptr1->value - ptr2->value);
 }
 
-Obj mult_floats(Obj obj1, Obj obj2)
+OBJ mult_floats(OBJ obj1, OBJ obj2)
 {
-  Float *ptr1 = get_float_ptr(obj1);
-  Float *ptr2 = get_float_ptr(obj2);
+  FLOAT *ptr1 = get_float_ptr(obj1);
+  FLOAT *ptr2 = get_float_ptr(obj2);
   return make_float(ptr1->value * ptr2->value);
 }
 
-Obj div_floats(Obj obj1, Obj obj2)
+OBJ div_floats(OBJ obj1, OBJ obj2)
 {
-  Float *ptr1 = get_float_ptr(obj1);
-  Float *ptr2 = get_float_ptr(obj2);
+  FLOAT *ptr1 = get_float_ptr(obj1);
+  FLOAT *ptr2 = get_float_ptr(obj2);
   return make_float(ptr1->value / ptr2->value);
 }
 
-Obj square_root(Obj obj)
+OBJ square_root(OBJ obj)
 {
-  Float *ptr = get_float_ptr(obj);
+  FLOAT *ptr = get_float_ptr(obj);
   return make_float(sqrt(ptr->value));
 }
 
-Obj floor(Obj obj)
+OBJ floor(OBJ obj)
 {
   throw;
 }
 
-Obj ceiling(Obj obj)
+OBJ ceiling(OBJ obj)
 {
   throw;
 }
 
-Obj int_to_float(Obj obj)
+OBJ int_to_float(OBJ obj)
 {
   return make_float(get_int_val(obj));
 }
 
-Obj make_array(int size, Obj value)
+OBJ blank_array(int size)
 {
   if (size <= 0) //## DON'T LIKE THIS
     return empty_seq;
 
-  Seq *seq = new_full_seq(size);
+  SEQ_OBJ *seq = new_full_seq(size);
   
   for (int i=0 ; i < size ; i++)
-    seq->elems[i] = value;
-  
-  mult_add_ref(value, size);
+    seq->elems[i] = blank_obj;
   
   return make_obj(seq);
 }
 
-Obj get_seq_slice(Obj seq, int idx_first, int len)
+OBJ get_seq_slice(OBJ seq, int idx_first, int len)
 {
   assert(idx_first >= 0 && len >= 0);
   assert(seq == empty_seq || is_ne_seq(seq));
@@ -231,26 +229,26 @@ Obj get_seq_slice(Obj seq, int idx_first, int len)
   if (len == 0)
     return empty_seq;
 
-  Seq *s = get_seq_ptr(seq);
+  SEQ_OBJ *s = get_seq_ptr(seq);
   int right_bound = idx_first + len;
   hard_fail_if_not(right_bound <= s->length, "Invalid subsequence start/length combination");  
-  Obj *elems = s->elems + idx_first;
+  OBJ *elems = s->elems + idx_first;
 
-  FullSeq *full_seq = is_full_seq(s) ? (FullSeq *) s : ((RefSeq *)s)->full_seq;
+  FULL_SEQ_OBJ *full_seq = is_full_seq(s) ? (FULL_SEQ_OBJ *) s : ((REF_SEQ_OBJ *)s)->full_seq;
   add_ref(full_seq);
   return make_obj(new_ref_seq(full_seq, s->elems+idx_first, len));
 }
 
-Obj join_seqs_helper(Seq *left_ptr, Obj *right_elems, int right_len)
+OBJ join_seqs_helper(SEQ_OBJ *left_ptr, OBJ *right_elems, int right_len)
 {
   int left_len = left_ptr->length;
-  Obj *left_elems = left_ptr->elems;
+  OBJ *left_elems = left_ptr->elems;
 
   bool can_be_extended = false;
-  FullSeq *full_seq_ptr = NULL;
+  FULL_SEQ_OBJ *full_seq_ptr = NULL;
   if (is_full_seq(left_ptr))
   {
-    full_seq_ptr = (FullSeq *) left_ptr;
+    full_seq_ptr = (FULL_SEQ_OBJ *) left_ptr;
     if (full_seq_ptr->used_capacity == left_len)
       if (full_seq_ptr->used_capacity + right_len <= full_seq_ptr->capacity)
       {
@@ -260,7 +258,7 @@ Obj join_seqs_helper(Seq *left_ptr, Obj *right_elems, int right_len)
   }
   else
   {
-    full_seq_ptr = ((RefSeq *) left_ptr)->full_seq;
+    full_seq_ptr = ((REF_SEQ_OBJ *) left_ptr)->full_seq;
     if (left_elems + left_len == full_seq_ptr->buffer + full_seq_ptr->used_capacity)
       if (full_seq_ptr->used_capacity + right_len <= full_seq_ptr->capacity)
         can_be_extended = true;
@@ -270,7 +268,7 @@ Obj join_seqs_helper(Seq *left_ptr, Obj *right_elems, int right_len)
 
   if (can_be_extended)
   {
-    memcpy(left_elems+left_len, right_elems, sizeof(Obj) * right_len);
+    memcpy(left_elems+left_len, right_elems, sizeof(OBJ) * right_len);
     full_seq_ptr->used_capacity += right_len;
     add_ref(full_seq_ptr);
     return make_obj(new_ref_seq(full_seq_ptr, left_ptr->elems, left_len+right_len));
@@ -280,7 +278,7 @@ Obj join_seqs_helper(Seq *left_ptr, Obj *right_elems, int right_len)
 
   int len = left_len + right_len;
 
-  Seq *seq = new_full_seq(len);
+  SEQ_OBJ *seq = new_full_seq(len);
 
   for (int i=0 ; i < left_len ; i++)
     seq->elems[i] = left_elems[i];
@@ -290,19 +288,19 @@ Obj join_seqs_helper(Seq *left_ptr, Obj *right_elems, int right_len)
   return make_obj(seq);
 }
 
-Obj append_to_seq(Obj seq, Obj obj)
+OBJ append_to_seq(OBJ seq, OBJ obj)
 {
   if (seq == empty_seq)
-    return make_seq(&obj, 1);
+    return build_seq(&obj, 1);
 
-  Seq *seq_ptr = get_seq_ptr(seq);
-  Obj res = join_seqs_helper(seq_ptr, &obj, 1);
+  SEQ_OBJ *seq_ptr = get_seq_ptr(seq);
+  OBJ res = join_seqs_helper(seq_ptr, &obj, 1);
   release(seq);
   release(obj);
   return res;
 }
 
-Obj join_seqs(Obj left, Obj right)
+OBJ join_seqs(OBJ left, OBJ right)
 {
   // No need to check the parameters here
 
@@ -318,27 +316,27 @@ Obj join_seqs(Obj left, Obj right)
     return left;
   }
 
-  Seq *left_ptr  = get_seq_ptr(left);
-  Seq *right_ptr = get_seq_ptr(right);
+  SEQ_OBJ *left_ptr  = get_seq_ptr(left);
+  SEQ_OBJ *right_ptr = get_seq_ptr(right);
 
   int right_len = right_ptr->length;
-  Obj *right_elems = right_ptr->elems;
+  OBJ *right_elems = right_ptr->elems;
 
   return join_seqs_helper(left_ptr, right_elems, right_len);
 }
 
-Obj join_mult_seqs(Obj seqs)
+OBJ join_mult_seqs(OBJ seqs)
 {
   if (seqs == empty_seq)
     return empty_seq;
 
-  Seq *seqs_ptr = get_seq_ptr(seqs);
+  SEQ_OBJ *seqs_ptr = get_seq_ptr(seqs);
   int seqs_count = seqs_ptr->length;
 
   int res_len = 0;
   for (int i=0 ; i < seqs_count ; i++)
   {
-    Obj seq = seqs_ptr->elems[i];
+    OBJ seq = seqs_ptr->elems[i];
     if (seq != empty_seq)
       res_len += get_seq_ptr(seq)->length;
   }
@@ -346,15 +344,15 @@ Obj join_mult_seqs(Obj seqs)
   if (res_len == 0)
     return empty_seq;
 
-  Seq *res_seq = new_full_seq(res_len);
+  SEQ_OBJ *res_seq = new_full_seq(res_len);
 
   int copied = 0;
   for (int i=0 ; i < seqs_count ; i++)
   {
-    Obj seq = seqs_ptr->elems[i];
+    OBJ seq = seqs_ptr->elems[i];
     if (seq != empty_seq)
     {
-      Seq *seq_ptr = get_seq_ptr(seq);
+      SEQ_OBJ *seq_ptr = get_seq_ptr(seq);
       int len = seq_ptr->length;
       for (int j=0 ; j < len ; j++)
         res_seq->elems[copied+j] = seq_ptr->elems[j];
@@ -368,22 +366,22 @@ Obj join_mult_seqs(Obj seqs)
   return make_obj(res_seq);
 }
 
-Obj rev_seq(Obj seq)
+OBJ rev_seq(OBJ seq)
 {
   // No need to check the parameters here
 
   if (seq == empty_seq)
     return empty_seq;
   
-  Seq *s = get_seq_ptr(seq);
+  SEQ_OBJ *s = get_seq_ptr(seq);
   
   int len = s->length;
-  Obj *elems = s->elems;
+  OBJ *elems = s->elems;
   
   vec_add_ref(elems, len);
   
-  Seq *rs = new_full_seq(len);
-  Obj *rev_elems = rs->elems;
+  SEQ_OBJ *rs = new_full_seq(len);
+  OBJ *rev_elems = rs->elems;
   
   for (int i=0 ; i < len ; i++)
     rev_elems[len-i-1] = elems[i];
@@ -391,31 +389,31 @@ Obj rev_seq(Obj seq)
   return make_obj(rs);  
 }
 
-Obj get_at(Obj seq, int idx) // Increases reference count
+OBJ get_at(OBJ seq, int idx) // Increases reference count
 {
-  Obj obj = at(seq, idx);
+  OBJ obj = at(seq, idx);
   add_ref(obj);
   return obj;
 }
 
-void set_at(Obj seq, int idx, Obj value) // Value must be already reference counted
+void set_at(OBJ seq, int idx, OBJ value) // Value must be already reference counted
 {
   // This is not called directly by the user, so asserts should be sufficient
-  Seq *s = get_seq_ptr(seq);
+  SEQ_OBJ *s = get_seq_ptr(seq);
   assert(idx < s->length);
-  Obj *elems = s->elems;
+  OBJ *elems = s->elems;
   release(elems[idx]);
   elems[idx] = value;
 }
 
-Obj lookup(Obj map, Obj key)
+OBJ lookup(OBJ map, OBJ key)
 {
   hard_fail_if(map == empty_map, "_lookup_(...): Map is empty"); // Depending on the signature of the builtin operation, this may be unnecessary
   fail_if_not(is_ne_map(map), "_lookup_(...): First parameter is not a map"); // This could also be called by a dot access
 
-  Map *m = get_map_ptr(map);
+  MAP_OBJ *m = get_map_ptr(map);
   int size = m->size;
-  Obj *keys = m->buffer;
+  OBJ *keys = m->buffer;
   
   int idx = find_obj(keys, size, key);
   // hard_fail_if(idx == -1, "Key not found"); // This function could be called by a dot access
@@ -433,37 +431,37 @@ Obj lookup(Obj map, Obj key)
       hard_fail("_lookup_(...): Key not found");
   }
   
-  Obj *values = keys + size;
-  Obj value = values[idx];
+  OBJ *values = keys + size;
+  OBJ value = values[idx];
 
   //add_ref(value);
     
   return value;
 }
 
-Obj lookup(Obj map, Obj key, bool &found)
+OBJ lookup(OBJ map, OBJ key, bool &found)
 {
   // The first parameter is checked anyway
 
   if (map == empty_map)
   {
     found = false;
-    return to_obj(0LL); //## WHAT SHOULD I RETURN HERE?
+    return make_int(0LL); //## WHAT SHOULD I RETURN HERE?
   }
 
-  Map *m = get_map_ptr(map);
+  MAP_OBJ *m = get_map_ptr(map);
   int size = m->size;
-  Obj *keys = m->buffer;
+  OBJ *keys = m->buffer;
   
   int idx = find_obj(keys, size, key);
   if (idx == -1)
   {
     found = false;
-    return to_obj(0LL); //## WHAT SHOULD I RETURN HERE?
+    return make_int(0LL); //## WHAT SHOULD I RETURN HERE?
   }
   
-  Obj *values = keys + size;
-  Obj value = values[idx];
+  OBJ *values = keys + size;
+  OBJ value = values[idx];
   
   //add_ref(value);
   
@@ -471,28 +469,28 @@ Obj lookup(Obj map, Obj key, bool &found)
   return value;
 }
 
-Obj ext_lookup(Obj map_or_tag_obj, Obj key)
+OBJ ext_lookup(OBJ map_or_tag_obj, OBJ key)
 {
-  Obj map = is_tag_obj(map_or_tag_obj) ? get_inner_obj(map_or_tag_obj) : map_or_tag_obj;
-  Map *ptr = get_map_ptr(map);
+  OBJ map = is_tag_obj(map_or_tag_obj) ? get_inner_obj(map_or_tag_obj) : map_or_tag_obj;
+  MAP_OBJ *ptr = get_map_ptr(map);
   int size = ptr->size;
-  Obj *keys = ptr->buffer;
-  Obj *values = keys + size;
+  OBJ *keys = ptr->buffer;
+  OBJ *values = keys + size;
   for (int i=0 ; i < size ; i++)
     if (keys[i] == key)
       return values[i];
   fail();
 }
 
-Obj ext_lookup(Obj map_or_tag_obj, Obj key, bool &found)
+OBJ ext_lookup(OBJ map_or_tag_obj, OBJ key, bool &found)
 {
-  Obj map = is_tag_obj(map_or_tag_obj) ? get_inner_obj(map_or_tag_obj) : map_or_tag_obj;
+  OBJ map = is_tag_obj(map_or_tag_obj) ? get_inner_obj(map_or_tag_obj) : map_or_tag_obj;
   if (map != empty_map)
   {
-    Map *ptr = get_map_ptr(map);
+    MAP_OBJ *ptr = get_map_ptr(map);
     int size = ptr->size;
-    Obj *keys = ptr->buffer;
-    Obj *values = keys + size;
+    OBJ *keys = ptr->buffer;
+    OBJ *values = keys + size;
     for (int i=0 ; i < size ; i++)
       if (keys[i] == key)
       {
@@ -501,41 +499,41 @@ Obj ext_lookup(Obj map_or_tag_obj, Obj key, bool &found)
       }
   }
   found = false;
-  return to_obj(0LL); //## WHAT SHOULD I RETURN HERE?
+  return make_int(0LL); //## WHAT SHOULD I RETURN HERE?
 }
 
 
-Obj merge_sets(Obj sets)
+OBJ merge_sets(OBJ sets)
 {
-  Obj merge_sets_impl(Obj);
+  OBJ merge_sets_impl(OBJ);
   return merge_sets_impl(sets);
 }
 
-Obj merge_maps(Obj maps)
+OBJ merge_maps(OBJ maps)
 {
-  Obj merge_maps_impl(Obj);
+  OBJ merge_maps_impl(OBJ);
   return merge_maps_impl(maps);
 }
 
 
-Obj seq_to_set(Obj obj)
+OBJ seq_to_set(OBJ obj)
 {
   if (obj == empty_seq)
     return empty_set;
   
-  Seq *seq = get_seq_ptr(obj);
+  SEQ_OBJ *seq = get_seq_ptr(obj);
   int len = seq->length;
-  Obj *seq_elems = seq->elems;
+  OBJ *seq_elems = seq->elems;
   
-  Obj *elems = new_obj_array(len);
+  OBJ *elems = new_obj_array(len);
   for (int i=0 ; i < len ; i++)
   {
-    Obj elem = seq_elems[i];
+    OBJ elem = seq_elems[i];
     add_ref(elem);
     elems[i] = elem;  
   }
   
-  Obj res = make_set(elems, len);
+  OBJ res = build_set(elems, len);
   
   delete_obj_array(elems, len);
   
@@ -543,27 +541,27 @@ Obj seq_to_set(Obj obj)
 }
 
 
-Obj seq_to_mset(Obj seq_obj)
+OBJ seq_to_mset(OBJ seq_obj)
 {
   if (seq_obj == empty_seq)
     return empty_map;
 
-  Seq *seq = get_seq_ptr(seq_obj);
+  SEQ_OBJ *seq = get_seq_ptr(seq_obj);
   int len = seq->length;
-  Obj *elems = seq->elems;
+  OBJ *elems = seq->elems;
   
   int *idxs = new_int_array(len);
-  Obj *counters = new_obj_array(len); //## WHY OBJECTS AND NOT INTEGERS?
+  OBJ *counters = new_obj_array(len); //## WHY OBJECTS AND NOT INTEGERS?
 
   int n = sort_group_and_count(elems, len, idxs, counters);
   
-  Map *res = new_map(n);
-  Obj *keys = res->buffer;
-  Obj *values = keys + n;
+  MAP_OBJ *res = new_map(n);
+  OBJ *keys = res->buffer;
+  OBJ *values = keys + n;
   
   for (int i=0 ; i < n ; i++)
   {
-    Obj obj = elems[idxs[i]];
+    OBJ obj = elems[idxs[i]];
     add_ref(obj);
     keys[i] = obj;
     values[i] = counters[i];
@@ -575,19 +573,19 @@ Obj seq_to_mset(Obj seq_obj)
   return make_obj(res);
 }
 
-Obj list_to_seq(Obj list)
+OBJ list_to_seq(OBJ list)
 {
   if (list == empty_seq)
     return empty_seq;
 
   int len = 0;
-  for (Obj tail=list ; tail != empty_seq ; tail=at(tail, 1))
+  for (OBJ tail=list ; tail != empty_seq ; tail=at(tail, 1))
     len++;
   
-  Seq *seq = new_full_seq(len);
+  SEQ_OBJ *seq = new_full_seq(len);
   
-  Obj *elems = seq->elems;
-  Obj tail = list;
+  OBJ *elems = seq->elems;
+  OBJ tail = list;
   
   for (int i=0 ; i < len ; i++)
   {
@@ -598,17 +596,17 @@ Obj list_to_seq(Obj list)
   return make_obj(seq);
 }
 
-Obj internal_sort(Obj set)
+OBJ internal_sort(OBJ set)
 {
   if (set == empty_set)
     return empty_seq;
 
-  Set *s = get_set_ptr(set);
+  SET_OBJ *s = get_set_ptr(set);
   int size = s->size;
-  Obj *src = s->elems;
+  OBJ *src = s->elems;
   
-  Seq *seq = new_full_seq(size);
-  Obj *dest = seq->elems;
+  SEQ_OBJ *seq = new_full_seq(size);
+  OBJ *dest = seq->elems;
   for (int i=0 ; i < size ; i++)
     dest[i] = src[i];
   vec_add_ref(dest, size);
@@ -616,30 +614,30 @@ Obj internal_sort(Obj set)
   return make_obj(seq);
 }
 
-static std::map<Obj, Obj> attachments_map;
+static std::map<OBJ, OBJ> attachments_map;
 
-Obj add_attachment(Obj target, Obj data)
+OBJ add_attachment(OBJ target, OBJ data)
 {
-  std::map<Obj, Obj>::iterator it = attachments_map.find(target);
+  std::map<OBJ, OBJ>::iterator it = attachments_map.find(target);
   if (it == attachments_map.end())
   {
     add_ref(target);
     add_ref(data);
-    Obj set = make_set(&data, 1);
+    OBJ set = build_set(&data, 1);
     attachments_map[target] = set;
     add_obj_to_cache(target);
     add_obj_to_cache(set);
   }
   else
   {
-    Obj curr_data_set = it->second;
+    OBJ curr_data_set = it->second;
 
-    Obj sets[2];
+    OBJ sets[2];
     sets[0] = curr_data_set;
     add_ref(data);
-    sets[1] = make_set(&data, 1);
-    Obj set_of_sets = make_set(sets, 2);
-    Obj new_data_set = merge_sets(set_of_sets);
+    sets[1] = build_set(&data, 1);
+    OBJ set_of_sets = build_set(sets, 2);
+    OBJ new_data_set = merge_sets(set_of_sets);
     release(set_of_sets);
 
     // The current data set cannot be released because it's still in the list of cached object to release
@@ -651,17 +649,17 @@ Obj add_attachment(Obj target, Obj data)
   return target;
 }
 
-Obj fetch_attachments(Obj obj)
+OBJ fetch_attachments(OBJ obj)
 {
-  std::map<Obj, Obj>::iterator it = attachments_map.find(obj);
+  std::map<OBJ, OBJ>::iterator it = attachments_map.find(obj);
   if (it == attachments_map.end())
     return empty_set;
-  Obj res = it->second;
+  OBJ res = it->second;
   add_ref(res);
   return res;
 }
 
-void get_set_iter(SetIter &it, Obj set)
+void get_set_iter(SET_ITER &it, OBJ set)
 {
   it.idx = 0;
   if (set != empty_set)
@@ -676,7 +674,7 @@ void get_set_iter(SetIter &it, Obj set)
   }
 }
 
-void get_seq_iter(SeqIter &it, Obj seq)
+void get_seq_iter(SEQ_ITER &it, OBJ seq)
 {
   it.idx = 0;
   if (seq != empty_seq)
@@ -691,7 +689,7 @@ void get_seq_iter(SeqIter &it, Obj seq)
   }
 }
 
-void get_map_iter(MapIter &it, Obj map)
+void get_map_iter(MAP_ITER &it, OBJ map)
 {
   it.idx = 0;
   if (map != empty_map)
@@ -706,19 +704,19 @@ void get_map_iter(MapIter &it, Obj map)
   }
 }
 
-void move_forward(SetIter &it)
+void move_forward(SET_ITER &it)
 {
   assert(!is_out_of_range(it));
   it.idx++;
 }
 
-void move_forward(SeqIter &it)
+void move_forward(SEQ_ITER &it)
 {
   assert(!is_out_of_range(it));
   it.idx++;
 }
 
-void move_forward(MapIter &it)
+void move_forward(MAP_ITER &it)
 {
   assert(!is_out_of_range(it));
   it.idx++;
@@ -736,9 +734,9 @@ void fail()
   *(char *)0 = 0; // Causing a runtime crash, useful for debugging
 }
 
-void runtime_check(Obj cond)
+void runtime_check(OBJ cond)
 {
-  if (cond != generated::True_S)
+  if (cond != make_symb(1))
   {
 #ifndef NDEBUG
     std::fputs("\nAssertion failed. Call stack:\n\n", stderr);

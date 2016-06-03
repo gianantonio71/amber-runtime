@@ -4,72 +4,72 @@
 #include <cstdlib>
 
 
-bool inline_eq(Obj obj1, Obj obj2)
+bool inline_eq(OBJ obj1, OBJ obj2)
 {
   assert(is_inline_obj(obj2));
   return obj1 == obj2;
 }
 
-bool are_eq(Obj obj1, Obj obj2)
+bool are_eq(OBJ obj1, OBJ obj2)
 {
   return comp_objs(obj1, obj2) == 0;
 }
 
-bool is_out_of_range(SetIter &it)
+bool is_out_of_range(SET_ITER &it)
 {
   return it.idx >= it.size;
 }
 
-bool is_out_of_range(SeqIter &it)
+bool is_out_of_range(SEQ_ITER &it)
 {
   return it.idx >= it.len;
 }
 
-bool is_out_of_range(MapIter &it)
+bool is_out_of_range(MAP_ITER &it)
 {
   return it.idx >= it.size;
 }
 
-bool has_elem(Obj set, Obj elem)
+bool has_elem(OBJ set, OBJ elem)
 {
   if (set == empty_set)
     return false;
-  Set *s = get_set_ptr(set);
+  SET_OBJ *s = get_set_ptr(set);
   int idx = find_obj(s->elems, s->size, elem);
   return idx != -1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-long long get_int_val(Obj obj)
+long long get_int_val(OBJ obj)
 {
   assert(is_int(obj));
   fail_if_not(is_int(obj), "Not an integer");
   return obj >> SHORT_TAG_SIZE;
 }
 
-int get_set_size(Obj set)
+int get_set_size(OBJ set)
 {
   if (set == empty_set)
     return 0;
   return get_set_ptr(set)->size;
 }
 
-int get_seq_len(Obj seq)
+int get_seq_len(OBJ seq)
 {
   if (seq == empty_seq)
     return 0;
   return get_seq_ptr(seq)->length;
 }
 
-int get_map_size(Obj map)
+int get_map_size(OBJ map)
 {
   if (map == empty_map)
     return 0;
   return get_map_ptr(map)->size;
 }
 
-long long mantissa(Obj obj)
+long long mantissa(OBJ obj)
 {
   long long mantissa;
   int dec_exp;
@@ -77,7 +77,7 @@ long long mantissa(Obj obj)
   return mantissa;
 }
 
-int dec_exp(Obj obj)
+int dec_exp(OBJ obj)
 {
   long long mantissa;
   int dec_exp;
@@ -98,80 +98,72 @@ long long unique_nat()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Obj to_obj(bool b)
+OBJ make_bool(bool b)
 {
-  // assert((int(b) == 0 && b == false) || (int(b) == 1 && b == true));
-  // assert(((32 >> int(b)) | 1) == (b ? generated::True_S : generated::False_S));
-  // return (32 >> int(ib)) | 1;
-  return b ? generated::True_S : generated::False_S;  // Surprisingly, this seems to be faster...
+  return b ? make_symb(1) : make_symb(0);
 }
 
-Obj to_obj(int n) //## THIS HAS TO GO
+OBJ make_int(long long n)
 {
-  return to_obj((long long) n);
-}
-
-Obj to_obj(long long n)
-{
-  Obj obj = n << SHORT_TAG_SIZE;
+  OBJ obj = n << SHORT_TAG_SIZE;
   assert(get_int_val(obj) == n);
   return obj;
 }
 
-Obj obj_neg(Obj obj)
+OBJ obj_neg(OBJ obj)
 {
-  assert(obj == generated::True_S || obj == generated::False_S);
-  fail_if_not(obj == generated::True_S || obj == generated::False_S, "Not a boolean");
-  return obj == generated::True_S ? generated::False_S : generated::True_S;
-  // assert((obj ^ 0x30) == (obj == generated::True_S ? generated::False_S : generated::True_S));
+  assert(obj == make_symb(1) || obj == make_symb(0));
+  fail_if_not(obj == make_symb(1) || obj == make_symb(0), "Not a boolean");
+  return obj == make_symb(1) ? make_symb(0) : make_symb(1);
+  // assert((obj ^ 0x30) == (obj == make_symb(1) ? make_symb(0) : make_symb(1)));
   // return obj ^ 0x30;
 }
 
-Obj at(Obj seq, int idx)
+OBJ at(OBJ seq, int idx)
 {
-  Seq *s = get_seq_ptr(seq);
+  SEQ_OBJ *s = get_seq_ptr(seq);
   fail_if_not(idx < s->length, "Invalid sequence index");
   return s->elems[idx];
 }
 
-Obj get_tag(Obj obj)
+OBJ get_tag(OBJ obj)
 {
   return get_tag_obj_ptr(obj)->tag;
 }
 
-Obj get_inner_obj(Obj obj)
+OBJ get_inner_obj(OBJ obj)
 {
   return get_tag_obj_ptr(obj)->obj;
 }
 
-Obj get_curr_obj(SetIter &it)
+OBJ get_curr_obj(SET_ITER &it)
 {
   assert(it.idx < it.set->size);
   return it.set->elems[it.idx];
 }
 
-Obj get_curr_obj(SeqIter &it)
+OBJ get_curr_obj(SEQ_ITER &it)
 {
   assert(it.idx < it.seq->length);
   return it.seq->elems[it.idx];
 }
 
-Obj get_curr_key(MapIter &it)
+OBJ get_curr_key(MAP_ITER &it)
 {
   assert(it.idx < it.map->size);
   return it.map->buffer[it.idx];
 }
 
-Obj get_curr_value(MapIter &it)
+OBJ get_curr_value(MAP_ITER &it)
 {
   assert(it.idx < it.map->size);
-  Map *map = it.map;
+  MAP_OBJ *map = it.map;
   return map->buffer[it.idx+map->size];
 }
 
-Obj rand_set_elem(Obj set)
+OBJ rand_set_elem(OBJ set)
 {
-  Set *set_ptr = get_set_ptr(set);
+  SET_OBJ *set_ptr = get_set_ptr(set);
   int idx = std::rand() % set_ptr->size;
   return set_ptr->elems[idx];
 }

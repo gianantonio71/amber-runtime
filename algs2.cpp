@@ -6,12 +6,12 @@
 class obj_tag
 {
 public:
-  obj_tag(Obj obj, int tag) : obj(obj), tag(tag)
+  obj_tag(OBJ obj, int tag) : obj(obj), tag(tag)
   {
 
   }
 
-  Obj obj;
+  OBJ obj;
   int tag;
 };
 
@@ -24,17 +24,17 @@ bool operator < (const obj_tag &lhs, const obj_tag &rhs)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-Obj merge_sets_impl(Obj set_of_sets)
+OBJ merge_sets_impl(OBJ set_of_sets)
 {
   if (set_of_sets == empty_set)
     return empty_set;
 
-  Set *set_of_sets_ptr = get_set_ptr(set_of_sets);
+  SET_OBJ *set_of_sets_ptr = get_set_ptr(set_of_sets);
   int size = set_of_sets_ptr->size;
 
   assert(size > 0);
   
-  Obj *sets = set_of_sets_ptr->elems;
+  OBJ *sets = set_of_sets_ptr->elems;
 
   for (int i=1 ; i < size ; i++)
     assert(sets[i] != empty_set);
@@ -53,7 +53,7 @@ Obj merge_sets_impl(Obj set_of_sets)
 
   if (size == 1)
   {
-    Obj res = sets[0];
+    OBJ res = sets[0];
     add_ref(res);
     return res;
   }
@@ -62,10 +62,10 @@ Obj merge_sets_impl(Obj set_of_sets)
 
   int elem_count = 0;                               // Total number of elements in all the sets
   int *sizes = new_int_array(size);                 // Sizes of sets
-  Obj **elem_arrays = (Obj **) new_ptr_array(size); // Pointers to the elements in each of the sets
+  OBJ **elem_arrays = (OBJ **) new_ptr_array(size); // Pointers to the elements in each of the sets
   for (int i=0 ; i < size ; i++)
   {
-    Set *set_ptr = get_set_ptr(sets[i]);
+    SET_OBJ *set_ptr = get_set_ptr(sets[i]);
     assert(set_ptr != 0);
     int array_size = set_ptr->size;
     assert(array_size > 0);
@@ -96,8 +96,8 @@ Obj merge_sets_impl(Obj set_of_sets)
   // in the input, so that the size of the union is lower
   // then the sums of the sizes of the inputs) and
   // initializing its cursor
-  Set *res_set = new_set(elem_count);
-  Obj *dest_array = res_set->elems;
+  SET_OBJ *res_set = new_set(elem_count);
+  OBJ *dest_array = res_set->elems;
   int dest_idx = 0;
 
   // Main loop: popping elements from the priority queue,
@@ -117,13 +117,13 @@ Obj merge_sets_impl(Obj set_of_sets)
 
     int src_idx = idxs[array_idx];
     int src_size = sizes[array_idx];
-    Obj *src_array = elem_arrays[array_idx];
+    OBJ *src_array = elem_arrays[array_idx];
     // If the array that contained the value just popped
     // has more elements, we take the next one and store
     // it in the priority queue
     if (src_idx < src_size)
     {
-      Obj new_obj = src_array[src_idx];
+      OBJ new_obj = src_array[src_idx];
       idxs[array_idx] = src_idx + 1;
       obj_tag ot(new_obj, array_idx);
       pq.push(ot);
@@ -149,17 +149,17 @@ Obj merge_sets_impl(Obj set_of_sets)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-Obj merge_maps_impl(Obj set_of_maps)
+OBJ merge_maps_impl(OBJ set_of_maps)
 {
   if (set_of_maps == empty_set)
     return empty_map;
 
-  Set *set_of_maps_ptr = get_set_ptr(set_of_maps);
+  SET_OBJ *set_of_maps_ptr = get_set_ptr(set_of_maps);
   int size = set_of_maps_ptr->size;
 
   assert(size > 0);
 
-  Obj *maps = set_of_maps_ptr->elems;
+  OBJ *maps = set_of_maps_ptr->elems;
 
   for (int i=1 ; i < size ; i++)
     assert(maps[i] != empty_map);
@@ -178,7 +178,7 @@ Obj merge_maps_impl(Obj set_of_maps)
 
   if (size == 1)
   {
-    Obj res = maps[0];
+    OBJ res = maps[0];
     add_ref(res);
     return res;
   }
@@ -187,11 +187,11 @@ Obj merge_maps_impl(Obj set_of_maps)
 
   int pair_count = 0;                                 // Total number of key/value pairs in all the maps
   int *sizes = new_int_array(size);                   // Sizes of all maps
-  Obj **key_arrays = (Obj **) new_ptr_array(size);    // Pointers to the key arrays in each of the maps
-  Obj **value_arrays = (Obj **) new_ptr_array(size);  // Pointers to the value arrays in each of the maps
+  OBJ **key_arrays = (OBJ **) new_ptr_array(size);    // Pointers to the key arrays in each of the maps
+  OBJ **value_arrays = (OBJ **) new_ptr_array(size);  // Pointers to the value arrays in each of the maps
   for (int i=0 ; i < size ; i++)
   {
-    Map *map_ptr = get_map_ptr(maps[i]);
+    MAP_OBJ *map_ptr = get_map_ptr(maps[i]);
     assert(map_ptr != 0);
     int map_size = map_ptr->size;
     assert(map_size > 0);
@@ -219,9 +219,9 @@ Obj merge_maps_impl(Obj set_of_maps)
     idxs[i] = 1;
 
   // Allocating the output object and initializing its cursor
-  Map *res_map = new_map(pair_count);
-  Obj *dest_key_array = get_key_array_ptr(res_map);
-  Obj *dest_value_array = get_value_array_ptr(res_map);
+  MAP_OBJ *res_map = new_map(pair_count);
+  OBJ *dest_key_array = get_key_array_ptr(res_map);
+  OBJ *dest_value_array = get_value_array_ptr(res_map);
   int dest_idx = 0;
 
   // Main loop: popping elements from the priority queue,
@@ -235,8 +235,8 @@ Obj merge_maps_impl(Obj set_of_maps)
     pq.pop();
     int array_idx = ot.tag;
     int src_idx = idxs[array_idx];
-    Obj key = ot.obj;
-    Obj value = value_arrays[array_idx][src_idx-1];
+    OBJ key = ot.obj;
+    OBJ value = value_arrays[array_idx][src_idx-1];
 
     // Checking that this key is not a duplicate
     hard_fail_if(dest_idx > 0 and are_eq(key, dest_key_array[dest_idx-1]), "_merge_: Maps have common keys");
@@ -247,12 +247,12 @@ Obj merge_maps_impl(Obj set_of_maps)
     dest_idx++;
 
     int src_size = sizes[array_idx];
-    Obj *src_key_array = key_arrays[array_idx];
+    OBJ *src_key_array = key_arrays[array_idx];
     // If the map that contained the key just popped has more elements,
     // we take the key of the next one and store it in the priority queue
     if (src_idx < src_size)
     {
-      Obj new_key = src_key_array[src_idx];
+      OBJ new_key = src_key_array[src_idx];
       idxs[array_idx] = src_idx + 1;
       obj_tag ot(new_key, array_idx);
       pq.push(ot);

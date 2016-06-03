@@ -10,9 +10,9 @@ using namespace std;
 
 std::vector<const char *> function_names;
 std::vector<int>    arities;
-std::vector<Obj *>  param_lists;
+std::vector<OBJ *>  param_lists;
 
-void push_call_info(const char *fn_name, int arity, Obj *params)
+void push_call_info(const char *fn_name, int arity, OBJ *params)
 {
 #ifndef NDEBUG
   function_names.push_back(fn_name);
@@ -36,12 +36,12 @@ void pop_call_info()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void printed_obj_or_filename(Obj obj, bool add_path, char *buffer, int buff_size)
+void printed_obj_or_filename(OBJ obj, bool add_path, char *buffer, int buff_size)
 {
   const int MAX_OBJ_COUNT = 1024;
   static int filed_objs_count = 0;
   // Deliberate bug: storing objects without reference counting them.
-  static Obj filed_objs[MAX_OBJ_COUNT];
+  static OBJ filed_objs[MAX_OBJ_COUNT];
 
   assert(buff_size >= 64);
 
@@ -70,7 +70,7 @@ void printed_obj_or_filename(Obj obj, bool add_path, char *buffer, int buff_size
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void print_indented_param(FILE *fp, Obj param, bool is_last)
+void print_indented_param(FILE *fp, OBJ param, bool is_last)
 {
   const int BUFF_SIZE = 512;
   char buffer[BUFF_SIZE];
@@ -98,7 +98,7 @@ void print_stack_frame(FILE *fp, int frame_idx)
 {
   const char *fn_name = function_names[frame_idx];
   int arity = arities[frame_idx];
-  Obj *params = param_lists[frame_idx];
+  OBJ *params = param_lists[frame_idx];
 
   fputs(fn_name, fp);
   fputs("(", fp);
@@ -140,7 +140,7 @@ void print_call_stack()
 }
 
 
-void dump_var(const char *name, Obj value)
+void dump_var(const char *name, OBJ value)
 {
   const int BUFF_SIZE = 512;
   char buffer[BUFF_SIZE];
