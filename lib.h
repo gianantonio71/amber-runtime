@@ -393,3 +393,12 @@ uint32 get_seq_length(OBJ obj);
 SEQ_OBJ *new_seq(uint32 len);
 OBJ *get_seq_buffer_ptr(OBJ obj);
 OBJ make_seq(SEQ_OBJ *seq, uint32 len);
+
+
+OBJ build_const_uint8_seq(const uint8* buffer, uint32 len);
+OBJ build_const_uint16_seq(const uint16* buffer, uint32 len);
+OBJ build_const_uint31_seq(const uint32* buffer, uint32 len);
+OBJ build_const_int8_seq(const int8* buffer, uint32 len);
+OBJ build_const_int16_seq(const int16* buffer, uint32 len);
+OBJ build_const_int32_seq(const int32* buffer, uint32 len);
+OBJ build_const_int64_seq(const int64* buffer, uint32 len);
