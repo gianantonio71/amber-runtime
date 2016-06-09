@@ -402,3 +402,5 @@ OBJ build_const_int8_seq(const int8* buffer, uint32 len);
 OBJ build_const_int16_seq(const int16* buffer, uint32 len);
 OBJ build_const_int32_seq(const int32* buffer, uint32 len);
 OBJ build_const_int64_seq(const int64* buffer, uint32 len);
+
+int get_tag_idx(OBJ obj);

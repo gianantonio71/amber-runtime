@@ -847,3 +847,9 @@ OBJ build_const_int64_seq(const int64* buffer, uint32 len)
 
   return make_obj(seq);
 }
+
+
+int get_tag_idx(OBJ obj)
+{
+  return get_symb_idx(get_tag(obj));
+}
