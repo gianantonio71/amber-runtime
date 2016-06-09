@@ -779,7 +779,7 @@ OBJ build_const_uint16_seq(const uint16* buffer, uint32 len)
 }
 
 
-OBJ build_const_uint31_seq(const uint32* buffer, uint32 len)
+OBJ build_const_uint32_seq(const uint32* buffer, uint32 len)
 {
   if (len == 0)
     return empty_seq;
