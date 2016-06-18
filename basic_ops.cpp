@@ -126,6 +126,21 @@ OBJ at(OBJ seq, int idx)
   return s->elems[idx];
 }
 
+OBJ search_or_lookup(OBJ coll, OBJ value)
+{
+  if (is_seq(coll))
+    return at(coll, get_int_val(value));
+
+  if (is_set(coll))
+    return make_bool(has_elem(coll, value));
+
+  if (is_map(coll))
+    return lookup(coll, value);
+
+  hard_fail("Object being searched is not a collection");
+  throw;
+}
+
 OBJ get_tag(OBJ obj)
 {
   return get_tag_obj_ptr(obj)->tag;

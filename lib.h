@@ -404,3 +404,5 @@ OBJ build_const_int32_seq(const int32* buffer, uint32 len);
 OBJ build_const_int64_seq(const int64* buffer, uint32 len);
 
 int get_tag_idx(OBJ obj);
+
+OBJ search_or_lookup(OBJ coll, OBJ value);
