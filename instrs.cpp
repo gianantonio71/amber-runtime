@@ -731,3 +731,96 @@ void runtime_check(OBJ cond)
     *(char *)0 = 0; // Causing a runtime crash, useful for debugging
   }
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+OBJ build_const_uint8_seq(const uint8* buffer, uint32 len)
+{
+  if (len == 0)
+    return make_empty_seq();
+
+  SEQ_OBJ *seq = new_seq(len);
+
+  for (int i=0 ; i < len ; i++)
+    seq->buffer[i] = make_int(buffer[i]);
+
+  return make_seq(seq, len);
+}
+
+OBJ build_const_uint16_seq(const uint16* buffer, uint32 len)
+{
+  if (len == 0)
+    return make_empty_seq();
+
+  SEQ_OBJ *seq = new_seq(len);
+
+  for (int i=0 ; i < len ; i++)
+    seq->buffer[i] = make_int(buffer[i]);
+
+  return make_seq(seq, len);
+}
+
+OBJ build_const_uint32_seq(const uint32* buffer, uint32 len)
+{
+  if (len == 0)
+    return make_empty_seq();
+
+  SEQ_OBJ *seq = new_seq(len);
+
+  for (int i=0 ; i < len ; i++)
+    seq->buffer[i] = make_int(buffer[i]);
+
+  return make_seq(seq, len);
+}
+
+OBJ build_const_int8_seq(const int8* buffer, uint32 len)
+{
+  if (len == 0)
+    return make_empty_seq();
+
+  SEQ_OBJ *seq = new_seq(len);
+
+  for (int i=0 ; i < len ; i++)
+    seq->buffer[i] = make_int(buffer[i]);
+
+  return make_seq(seq, len);
+}
+
+OBJ build_const_int16_seq(const int16* buffer, uint32 len)
+{
+  if (len == 0)
+    return make_empty_seq();
+
+  SEQ_OBJ *seq = new_seq(len);
+
+  for (int i=0 ; i < len ; i++)
+    seq->buffer[i] = make_int(buffer[i]);
+
+  return make_seq(seq, len);
+}
+
+OBJ build_const_int32_seq(const int32* buffer, uint32 len)
+{
+  if (len == 0)
+    return make_empty_seq();
+
+  SEQ_OBJ *seq = new_seq(len);
+
+  for (int i=0 ; i < len ; i++)
+    seq->buffer[i] = make_int(buffer[i]);
+
+  return make_seq(seq, len);
+}
+
+OBJ build_const_int64_seq(const int64* buffer, uint32 len)
+{
+  if (len == 0)
+    return make_empty_seq();
+
+  SEQ_OBJ *seq = new_seq(len);
+
+  for (int i=0 ; i < len ; i++)
+    seq->buffer[i] = make_int(buffer[i]);
+
+  return make_seq(seq, len);
+}

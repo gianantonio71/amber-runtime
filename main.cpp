@@ -39,7 +39,7 @@ int main(int argc, char **argv)
   cerr << "Max live memory usage: " << get_max_live_mem_usage() << endl;
   cerr << "Total memory requested: " << get_total_mem_requested() << endl;
 
-  print_all_live_objs();
+  // print_all_live_objs();
 #endif
 
   return is_int(res) ? get_int_val(res) : 0;
