@@ -85,8 +85,9 @@ int64 dec_exp(OBJ obj)
   return dec_exp;
 }
 
-int64 rand_nat(uint64 max)
+int64 rand_nat(int64 max)
 {
+  assert(max > 0);
   return rand() % max; //## BUG: THE FUNCTION rand() ONLY GENERATES A LIMITED RANGE OF INTEGERS
 }
 
