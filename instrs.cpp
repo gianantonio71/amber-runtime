@@ -143,13 +143,6 @@ OBJ build_tagged_obj(OBJ tag, OBJ obj)
   return make_obj(tag_obj);
 }
 
-OBJ make_float(double val)
-{
-  FLOAT *float_ptr = new_float();
-  float_ptr->value = val;
-  return make_obj(float_ptr);
-}
-
 OBJ neg_float(OBJ obj)
 {
   FLOAT *ptr = get_float_ptr(obj);

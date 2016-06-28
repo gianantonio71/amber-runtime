@@ -110,6 +110,13 @@ OBJ make_int(long long n)
   return obj;
 }
 
+OBJ make_float(double x)
+{
+  FLOAT *f = new_float();
+  f->value = x;
+  return make_obj(f);
+}
+
 OBJ obj_neg(OBJ obj)
 {
   assert(obj == make_symb(1) || obj == make_symb(0));

@@ -255,11 +255,9 @@ int dec_exp(OBJ obj);
 int rand_nat(int max);        // Non-deterministic
 long long unique_nat();       // Non-deterministic
 
-// OBJ to_obj(bool b);
-// OBJ to_obj(int n);            //## THIS HAS TO GO
-// OBJ to_obj(long long n);
 OBJ make_bool(bool b);
 OBJ make_int(long long n);
+OBJ make_float(double x);
 OBJ obj_neg(OBJ obj);
 OBJ at(OBJ seq, int idx);
 OBJ get_tag(OBJ obj);
