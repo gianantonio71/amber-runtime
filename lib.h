@@ -302,6 +302,8 @@ OBJ get_curr_key(MAP_ITER &it);
 OBJ get_curr_value(MAP_ITER &it);
 OBJ rand_set_elem(OBJ set);   // Non-deterministic
 
+OBJ search_or_lookup(OBJ coll, OBJ value);
+
 ////////////////////////////////// instrs.cpp //////////////////////////////////
 
 void init(STREAM &s);

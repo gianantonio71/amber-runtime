@@ -147,3 +147,18 @@ OBJ rand_set_elem(OBJ set)
   uint32 idx = std::rand() % set_ptr->size;
   return set_ptr->buffer[idx];
 }
+
+OBJ search_or_lookup(OBJ coll, OBJ value)
+{
+  if (is_seq(coll))
+    return at(coll, get_int_val(value));
+
+  if (is_set(coll))
+    return make_bool(has_elem(coll, value));
+
+  if (is_map(coll))
+    return lookup(coll, value);
+
+  hard_fail("Object being searched is not a collection");
+  throw;
+}
