@@ -144,6 +144,55 @@ struct STREAM {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+struct VALUE_STORE {
+  OBJ *slots;
+  uint32 size;
+  uint32 used;
+  uint32 first_free;
+};
+
+
+struct UNARY_TABLE {
+  uint64 *bitmap;
+  uint32 size;
+  uint32 count;
+};
+
+
+struct UNARY_TABLE_UPDATES {
+  vector<uint32> deletes;
+  vector<uint32> inserts;
+};
+
+
+struct UNARY_TABLE_ITER {
+  uint64 *bitmap;
+  uint32 size;
+  uint32 curr_value;
+};
+
+
+struct BINARY_TABLE {
+  set<uint64> left_to_right;
+  set<uint64> right_to_left;
+};
+
+
+struct BINARY_TABLE_UPDATES {
+  vector<uint64> deletes;
+  vector<uint64> inserts;
+};
+
+
+struct BINARY_TABLE_ITER {
+  set<uint64>::iterator iter;
+  set<uint64>::iterator end;
+  uint32 value;
+  bool reversed;
+};
+
+///////////////////////////////////////////////////////////////
+
 const uint64 MAX_SEQ_LEN = 0xFFFFFFFF;
 
 const uint16 symb_idx_false   = 0;
@@ -410,3 +459,70 @@ void printed_obj(OBJ obj, char* buffer, uint32 max_size);
 ///////////////////////////// os_interface_xxx.cpp /////////////////////////////
 
 uint64 get_tick_count();   // Impure
+
+//////////////////////////////// value-store.cpp ///////////////////////////////
+
+void value_store_init(VALUE_STORE *store);
+void value_store_cleanup(VALUE_STORE *store);
+
+OBJ lookup_surrogate(VALUE_STORE *store, int64 surr);
+int64 lookup_value(VALUE_STORE *store, OBJ value);
+
+int64 insert_value(VALUE_STORE *store, OBJ value);
+
+//////////////////////////////// unary-table.cpp ///////////////////////////////
+
+void unary_table_init(UNARY_TABLE *table);
+void unary_table_cleanup(UNARY_TABLE *table);
+
+void unary_table_updates_init(UNARY_TABLE_UPDATES *table);
+void unary_table_updates_cleanup(UNARY_TABLE_UPDATES *table);
+
+bool unary_table_contains(UNARY_TABLE *table, uint32 value);
+
+void unary_table_insert(UNARY_TABLE_UPDATES *updates, uint32 value);
+
+void unary_table_delete(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates, uint32 value);
+void unary_table_clear(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates);
+
+bool unary_table_updates_check(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates);
+void unary_table_updates_apply(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates);
+
+void unary_table_get_iter(UNARY_TABLE *table, UNARY_TABLE_ITER *iter);
+void unary_table_iter_next(UNARY_TABLE_ITER *iter);
+
+bool unary_table_iter_is_out_of_range(UNARY_TABLE_ITER *iter);
+
+uint32 unary_table_iter_get_field(UNARY_TABLE_ITER *iter);
+
+/////////////////////////////// binary-table.cpp ///////////////////////////////
+
+void binary_table_init(BINARY_TABLE *table);
+void binary_table_cleanup(BINARY_TABLE *table);
+
+void binary_table_updates_init(BINARY_TABLE_UPDATES *updates);
+void binary_table_updates_cleanup(BINARY_TABLE_UPDATES *updates);
+
+bool binary_table_contains(BINARY_TABLE *table, uint32 left_val, uint32 right_val);
+
+void binary_table_delete(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates, uint32 left_val, uint32 right_val);
+void binary_table_delete_by_col_0(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates, uint32 value);
+void binary_table_delete_by_col_1(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates, uint32 value);
+void binary_table_clear(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates);
+
+void binary_table_insert(BINARY_TABLE_UPDATES *updates, uint32 left_val, uint32 right_val);
+
+bool binary_table_updates_check(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates, bool left_is_unique, bool right_is_unique);
+
+void binary_table_updates_apply(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates);
+
+void binary_table_get_iter_by_col_0(BINARY_TABLE *table, BINARY_TABLE_ITER *iter, uint32 value);
+void binary_table_get_iter_by_col_1(BINARY_TABLE *table, BINARY_TABLE_ITER *iter, uint32 value);
+void binary_table_get_iter(BINARY_TABLE *table, BINARY_TABLE_ITER *iter);
+
+bool binary_table_iter_is_out_of_range(BINARY_TABLE_ITER *iter);
+
+uint32 binary_table_iter_get_left_field(BINARY_TABLE_ITER *iter);
+uint32 binary_table_iter_get_right_field(BINARY_TABLE_ITER *iter);
+
+void binary_table_iter_next(BINARY_TABLE_ITER *iter);

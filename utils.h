@@ -1,4 +1,9 @@
 //#include <memory.h>
+#include <set>
+#include <vector>
+
+using std::set;
+using std::vector;
 
 #ifndef NDEBUG
   //#define assert(_E_) (void)(_assert_((_E_), #_E_, __FILE__, __LINE__) ? 0 : (*((char *)0)) = 0)
