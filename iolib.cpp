@@ -1,5 +1,5 @@
 #include "lib.h"
-#include "os_interface.h"
+#include "os-interface.h"
 
 #include <stdio.h> //## MAYBE THIS SHOULD NOT BE HERE...
 
@@ -60,6 +60,7 @@ OBJ Print_P(OBJ str_obj, generated::ENV &env)
 {
   char *str = obj_to_str(str_obj);
   fputs(str, stdout);
+  fflush(stdout);
   delete [] str;
   return make_blank_obj();
 }

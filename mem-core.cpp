@@ -8,7 +8,7 @@ char *align_16(char *ptr)
 {
   char *al_ptr = (char *) (((long long)(ptr+15)) & ~15L);
   return al_ptr;
-}  
+}
 
 const uint32 HEAP_SIZE = 1536 * 1024 * 1024;
 
@@ -48,10 +48,10 @@ static void *obj_pool[OBJ_POOL_SIZE];
 uint32 log2_ceiling(uint32 _n)
 {
   assert(_n > 0);
-  
+
   uint32 idx = 0;
   uint32 n = _n;
-  
+
   uint32 m = n >> 16;
   if (m != 0)
   {
@@ -66,21 +66,21 @@ uint32 log2_ceiling(uint32 _n)
     idx += 8;
     n = m;
   }
-  
+
   m = n >> 4;
   if (m != 0)
   {
     idx += 4;
     n = m;
   }
-  
+
   m = n >> 2;
   if (m != 0)
   {
     idx += 2;
     n = m;
   }
-  
+
   m = n >> 1;
   if (m != 0)
   {
@@ -90,7 +90,7 @@ uint32 log2_ceiling(uint32 _n)
 
   assert(n == 1);
   assert(_n >= (1 << idx) && _n < (1 << (idx+1)));
-  
+
   return _n == (1 << idx) ? idx : idx + 1;
 }
 

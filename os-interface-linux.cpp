@@ -1,4 +1,4 @@
-#include "os_interface.h"
+#include "os-interface.h"
 
 #include <time.h>
 #include <stdio.h>
@@ -7,12 +7,12 @@
 
 int get_tick_count()
 {
-	struct timespec ts;
-	if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0)
-	{
- 		// error
-	}
-	return 1000 * ts.tv_sec + ts.tv_nsec / 1000000;
+  struct timespec ts;
+  if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0)
+  {
+    // error
+  }
+  return 1000 * ts.tv_sec + ts.tv_nsec / 1000000;
 }
 
 char *file_read(const char *fname, int &size)
@@ -23,7 +23,8 @@ char *file_read(const char *fname, int &size)
     size = -1;
     return NULL;
   }
-  int start = ftell(fp);                    assert(start == 0);
+  int start = ftell(fp);
+  assert(start == 0);
   fseek(fp, 0, SEEK_END);
   int end = ftell(fp);
   fseek(fp, 0, SEEK_SET);

@@ -5,7 +5,7 @@
 using namespace std;
 
 #include "lib.h"
-#include "os_interface.h"
+#include "os-interface.h"
 #include "generated.h"
 
 

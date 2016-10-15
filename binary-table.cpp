@@ -1,55 +1,6 @@
 #include "lib.h"
+#include "table-utils.h"
 
-#include <algorithm>
-
-
-using std::sort;
-using std::unique;
-
-
-uint64 pack(uint64 left, uint64 right)
-{
-  return (left << 32) | right;
-}
-
-uint64 swap(uint64 pair)
-{
-  return (pair >> 32) | (pair << 32);
-}
-
-uint32 left(uint64 pair)
-{
-  return pair >> 32;
-}
-
-uint32 right(uint64 pair)
-{
-  return pair;
-}
-
-template <typename T> void sort_unique(vector<T> &xs)
-{
-  sort(xs.begin(), xs.end());
-  xs.erase(unique(xs.begin(), xs.end()), xs.end());
-}
-
-void take_left(vector<uint32> &ls, const vector<uint64> &ps)
-{
-  uint32 count = ps.size();
-  ls.resize(count);
-  for (uint32 i=0 ; i < count ; i++)
-    ls[i] = left(ps[i]);
-}
-
-void take_right(vector<uint32> &rs, const vector<uint64> &ps)
-{
-  uint32 count = ps.size();
-  rs.resize(count);
-  for (uint32 i=0 ; i < count ; i++)
-    rs[i] = right(ps[i]);
-}
-
-////////////////////////////////////////////////////////////////////////////////
 
 void binary_table_init(BINARY_TABLE *table)
 {
@@ -205,117 +156,20 @@ void binary_table_iter_next(BINARY_TABLE_ITER *iter)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool binary_table_update_left_col_stays_unique(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates)
+bool binary_table_updates_check_0(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates)
 {
-  set<uint64> &left_to_right = table->left_to_right;
-  vector<uint64> &deletes = updates->deletes;
-  vector<uint64> &inserts = updates->inserts;
-
-  // Gathering and sorting all left column values from tuples to delete
-  vector<uint32> deleted_values;
-  take_left(deleted_values, deletes);
-  sort(deleted_values.begin(), deleted_values.end());
-
-  // Gathering all left column values from tuples to insert.
-  // Since the tuples to insert are already sorted, the resulting array is sorted too
-  vector<uint32> inserted_values;
-  take_left(inserted_values, inserts);
-
-  // Checking that there are no duplicates. Since the duplicates among the tuples
-  // to insert have already been eliminated, the presence of a duplicate among
-  // left column values implies a unicity conflict
-  uint32 count = inserted_values.size();
-  uint32 last = inserted_values[0];
-  for (int i=1 ; i < count ; i++)
-  {
-    uint32 elem = inserted_values[i];
-    if (elem == last)
-      return false;
-    assert(elem > last);
-    last = elem;
-  }
-
-  // Checking that for each left column value to insert, either there's an
-  // entry among the values to delete, or there's no entry in the current table
-  for (int i=0 ; i < count ; i++)
-  {
-    uint32 value = inserted_values[i];
-    if (!binary_search(deleted_values.begin(), deleted_values.end(), value))
-    {
-      set<uint64>::iterator it = left_to_right.lower_bound(pack(value, 0));
-      if (it != left_to_right.end() && left(*it) == value)
-        return false;
-    }
-  }
-
-  // Everything seems fine...
-  return true;
-}
-
-bool binary_table_update_right_col_stays_unique(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates)
-{
-  set<uint64> &right_to_left = table->right_to_left;
-  vector<uint64> &deletes = updates->deletes;
-  vector<uint64> &inserts = updates->inserts;
-
-  // Gathering and sorting all right column values from tuples to delete
-  vector<uint32> deleted_values;
-  take_right(deleted_values, deletes);
-  sort(deleted_values.begin(), deleted_values.end());
-
-  // Gathering all left column values from tuples to insert. Here we also need to sort them
-  vector<uint32> inserted_values;
-  take_right(inserted_values, inserts);
-  sort(inserted_values.begin(), inserted_values.end());
-
-  // Checking that there are no duplicates. Since the duplicates among the tuples
-  // to insert have already been eliminated, the presence of a duplicate among
-  // right column values implies a unicity conflict
-  uint32 count = inserted_values.size();
-  uint32 last = inserted_values[0];
-  for (int i=1 ; i < count ; i++)
-  {
-    uint32 elem = inserted_values[i];
-    if (elem == last)
-      return false;
-    assert(elem > last);
-    last = elem;
-  }
-
-  // Checking that for each right column value to insert, either there's an
-  // entry among the values to delete, or there's no entry in the current table
-  for (int i=0 ; i < count ; i++)
-  {
-    uint32 value = inserted_values[i];
-    if (!binary_search(deleted_values.begin(), deleted_values.end(), value))
-    {
-      set<uint64>::iterator it = right_to_left.lower_bound(pack(value, 0));
-      if (it != right_to_left.end() && left(*it) == value)
-        return false;
-    }
-  }
-
-  // Everything seems fine...
-  return true;
-}
-
-bool binary_table_updates_check(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates, bool left_is_unique, bool right_is_unique)
-{
-  // If neither column is unique, any update is valid
-  if (!left_is_unique & !right_is_unique)
-    return true;
-
-  // If there's nothing to insert, the update is trivially valid
-  if (updates->inserts.empty())
-    return true;
-
-  // Sorting and removing duplicates from all insertions.
   sort_unique(updates->inserts);
+  return table_updates_check_key<col_0>(updates->inserts, updates->deletes, table->left_to_right);
+}
 
-  // Checking unicity in the left column, if need be
-  if (left_is_unique && !binary_table_update_left_col_stays_unique(table, updates))
-    return false;
+bool binary_table_updates_check_1(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates)
+{
+  sort_unique(updates->inserts);
+  return table_updates_check_key<col_1>(updates->inserts, updates->deletes, table->right_to_left);
+}
 
-  // Checking unicity in the right column, again if need be
-  return !right_is_unique || binary_table_update_right_col_stays_unique(table, updates);
+bool binary_table_updates_check_0_1(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates)
+{
+  return binary_table_updates_check_0(table, updates) &&
+    table_updates_check_key<col_1>(updates->inserts, updates->deletes, table->right_to_left);
 }

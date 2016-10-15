@@ -191,6 +191,45 @@ struct BINARY_TABLE_ITER {
   bool reversed;
 };
 
+
+struct tuple3 {
+  uint64 fields01;
+  uint32 field2;
+
+  bool operator == (const tuple3 &o) const {
+    return fields01 == o.fields01 & field2 == o.field2;
+  }
+
+  bool operator < (const tuple3 &o) const {
+    return fields01 != o.fields01 ? fields01 < o.fields01 : field2 < o.field2;
+  }
+};
+
+// bool operator < (const tuple3 &l, tuple3 &r) {
+//   return l.fields01 != r.fields01 ? l.fields01 < r.fields01 : l.field2 < r.field2;
+// }
+
+
+struct TERNARY_TABLE {
+  set<tuple3> unshifted;
+  set<tuple3> shifted_once;
+  set<tuple3> shifted_twice;
+};
+
+
+struct TERNARY_TABLE_UPDATES {
+  vector<tuple3> deletes;
+  vector<tuple3> inserts;
+};
+
+
+struct TERNARY_TABLE_ITER {
+  set<tuple3>::iterator iter;
+  set<tuple3>::iterator end;
+  uint64 excl_upper_bound;
+  uint8 shift;
+};
+
 ///////////////////////////////////////////////////////////////
 
 const uint64 MAX_SEQ_LEN = 0xFFFFFFFF;
@@ -201,7 +240,7 @@ const uint16 symb_idx_nil     = 2;
 const uint16 symb_idx_string  = 3;
 const uint16 symb_idx_just    = 4;
 
-///////////////////////////////// mem_core.cpp /////////////////////////////////
+///////////////////////////////// mem-core.cpp /////////////////////////////////
 
 void* new_obj(uint32 nblocks16);
 void* new_obj(uint32 nblocks16_requested, uint32 &nblocks16_returned);
@@ -254,7 +293,7 @@ void delete_ptr_array(void** buffer, uint32 size);
 //bool is_valid(OBJ);
 //bool are_valid(OBJ* objs, uint32 count);
 
-//////////////////////////////// mem_utils.cpp /////////////////////////////////
+//////////////////////////////// mem-utils.cpp /////////////////////////////////
 
 OBJ_TYPE get_logical_type(OBJ); //## RENAME TO JUST get_type() WHEN ALL IS DONE
 
@@ -324,7 +363,7 @@ REF_OBJ* get_ref_obj_ptr(OBJ);
 bool are_shallow_eq(OBJ, OBJ);
 int shallow_cmp(OBJ, OBJ);
 
-//////////////////////////////// basic_ops.cpp /////////////////////////////////
+//////////////////////////////// basic-ops.cpp /////////////////////////////////
 
 bool inline_eq(OBJ obj1, OBJ obj2);
 bool are_eq(OBJ obj1, OBJ obj2);
@@ -434,7 +473,7 @@ void sort_and_check_no_dups(OBJ* keys, OBJ* values, uint32 size);
 uint32 find_obj(OBJ* sorted_array, uint32 len, OBJ obj, bool &found); //## WHAT SHOULD THIS RETURN? ANY VALUE IN THE [0, 2^32-1] IS A VALID SEQUENCE INDEX, SO WHAT COULD BE USED TO REPRESENT "NOT FOUND"?
 int comp_objs(OBJ obj1, OBJ obj2);
 
-/////////////////////////////// inter_utils.cpp ////////////////////////////////
+/////////////////////////////// inter-utils.cpp ////////////////////////////////
 
 void add_obj_to_cache(OBJ);
 void release_all_cached_objs();
@@ -456,7 +495,7 @@ void print(OBJ);
 void print_to_buffer_or_file(OBJ obj, char* buffer, uint32 max_size, const char* fname);
 void printed_obj(OBJ obj, char* buffer, uint32 max_size);
 
-///////////////////////////// os_interface_xxx.cpp /////////////////////////////
+///////////////////////////// os-interface-xxx.cpp /////////////////////////////
 
 uint64 get_tick_count();   // Impure
 
@@ -512,7 +551,9 @@ void binary_table_clear(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates);
 
 void binary_table_insert(BINARY_TABLE_UPDATES *updates, uint32 left_val, uint32 right_val);
 
-bool binary_table_updates_check(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates, bool left_is_unique, bool right_is_unique);
+bool binary_table_updates_check_0(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates);
+bool binary_table_updates_check_1(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates);
+bool binary_table_updates_check_0_1(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates);
 
 void binary_table_updates_apply(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates);
 
@@ -526,3 +567,47 @@ uint32 binary_table_iter_get_left_field(BINARY_TABLE_ITER *iter);
 uint32 binary_table_iter_get_right_field(BINARY_TABLE_ITER *iter);
 
 void binary_table_iter_next(BINARY_TABLE_ITER *iter);
+
+/////////////////////////////// ternary-table.cpp ///////////////////////////////
+
+void ternary_table_init(TERNARY_TABLE *table);
+void ternary_table_cleanup(TERNARY_TABLE *table);
+
+void ternary_table_updates_init(TERNARY_TABLE_UPDATES *updates);
+void ternary_table_updates_cleanup(TERNARY_TABLE_UPDATES *updates);
+
+bool ternary_table_contains(TERNARY_TABLE *table, uint32 left_val, uint32 middle_val, uint32 right_val);
+
+void ternary_table_delete(TERNARY_TABLE *table, TERNARY_TABLE_UPDATES *updates, uint32 left_val, uint32 middle_val, uint32 right_val);
+void ternary_table_delete_by_cols_01(TERNARY_TABLE *table, TERNARY_TABLE_UPDATES *updates, uint32 value0, uint32 value1);
+void ternary_table_delete_by_cols_02(TERNARY_TABLE *table, TERNARY_TABLE_UPDATES *updates, uint32 value0, uint32 value2);
+void ternary_table_delete_by_cols_12(TERNARY_TABLE *table, TERNARY_TABLE_UPDATES *updates, uint32 value1, uint32 value2);
+void ternary_table_delete_by_col_0(TERNARY_TABLE *table, TERNARY_TABLE_UPDATES *updates, uint32 value);
+void ternary_table_delete_by_col_1(TERNARY_TABLE *table, TERNARY_TABLE_UPDATES *updates, uint32 value);
+void ternary_table_delete_by_col_2(TERNARY_TABLE *table, TERNARY_TABLE_UPDATES *updates, uint32 value);
+void ternary_table_clear(TERNARY_TABLE *table, TERNARY_TABLE_UPDATES *updates);
+
+void ternary_table_insert(TERNARY_TABLE_UPDATES *updates, uint32 left_val, uint32 middle_val, uint32 right_val);
+
+bool ternary_table_updates_check_01(TERNARY_TABLE *table, TERNARY_TABLE_UPDATES *updates);
+bool ternary_table_updates_check_01_2(TERNARY_TABLE *table, TERNARY_TABLE_UPDATES *updates);
+bool ternary_table_updates_check_01_12(TERNARY_TABLE *table, TERNARY_TABLE_UPDATES *updates);
+bool ternary_table_updates_check_01_12_20(TERNARY_TABLE *table, TERNARY_TABLE_UPDATES *updates);
+
+void ternary_table_updates_apply(TERNARY_TABLE *table, TERNARY_TABLE_UPDATES *updates);
+
+void ternary_table_get_iter_by_cols_01(TERNARY_TABLE *table, TERNARY_TABLE_ITER *iter, uint32 value0, uint32 value1);
+void ternary_table_get_iter_by_cols_02(TERNARY_TABLE *table, TERNARY_TABLE_ITER *iter, uint32 value0, uint32 value2);
+void ternary_table_get_iter_by_cols_12(TERNARY_TABLE *table, TERNARY_TABLE_ITER *iter, uint32 value1, uint32 value2);
+void ternary_table_get_iter_by_col_0(TERNARY_TABLE *table, TERNARY_TABLE_ITER *iter, uint32 value);
+void ternary_table_get_iter_by_col_1(TERNARY_TABLE *table, TERNARY_TABLE_ITER *iter, uint32 value);
+void ternary_table_get_iter_by_col_2(TERNARY_TABLE *table, TERNARY_TABLE_ITER *iter, uint32 value);
+void ternary_table_get_iter(TERNARY_TABLE *table, TERNARY_TABLE_ITER *iter);
+
+bool ternary_table_iter_is_out_of_range(TERNARY_TABLE_ITER *iter);
+
+uint32 ternary_table_iter_get_left_field(TERNARY_TABLE_ITER *iter);
+uint32 ternary_table_iter_get_middle_field(TERNARY_TABLE_ITER *iter);
+uint32 ternary_table_iter_get_right_field(TERNARY_TABLE_ITER *iter);
+
+void ternary_table_iter_next(TERNARY_TABLE_ITER *iter);

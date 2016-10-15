@@ -418,7 +418,7 @@ SET_OBJ *get_set_ptr(OBJ obj)
 MAP_OBJ *get_map_ptr(OBJ obj)
 {
   assert(is_ne_map(obj));
-  
+
   return (MAP_OBJ *) obj.core_data.ptr;
 }
 
