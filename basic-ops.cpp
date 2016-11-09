@@ -43,13 +43,15 @@ bool has_elem(OBJ set, OBJ elem)
 
 int64 get_int_val(OBJ obj)
 {
-  fail_if_not(is_int(obj), "Not an integer");
+  assert(is_int(obj));
+
   return get_int(obj);
 }
 
 uint32 get_set_size(OBJ set)
 {
-  fail_if_not(is_set(set), "Not a set");
+  assert(is_set(set));
+
   if (is_empty_set(set))
     return 0;
   return get_set_ptr(set)->size;
@@ -57,13 +59,15 @@ uint32 get_set_size(OBJ set)
 
 uint32 get_seq_len(OBJ seq)
 {
-  fail_if_not(is_seq(seq), "Not a sequence");
+  assert(is_seq(seq));
+
   return get_seq_length(seq);
 }
 
 uint32 get_map_size(OBJ map)
 {
-  fail_if_not(is_map(map), "Not a map");
+  assert(is_map(map));
+
   if (is_empty_map(map))
     return 0;
   return get_map_ptr(map)->size;
@@ -108,7 +112,8 @@ OBJ obj_neg(OBJ obj)
 OBJ at(OBJ seq, int64 idx)
 {
   assert(is_seq(seq));
-  hard_fail_if_not(((uint64) idx) < get_seq_length(seq), "Invalid sequence index");
+  if (((uint64) idx) >= get_seq_length(seq))
+    soft_fail("Invalid sequence index");
   return get_seq_buffer_ptr(seq)[idx];
 }
 
@@ -156,9 +161,6 @@ OBJ search_or_lookup(OBJ coll, OBJ value)
   if (is_set(coll))
     return make_bool(has_elem(coll, value));
 
-  if (is_map(coll))
-    return lookup(coll, value);
-
-  hard_fail("Object being searched is not a collection");
-  throw;
+  assert(is_map(coll));
+  return lookup(coll, value);
 }

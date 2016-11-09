@@ -35,6 +35,13 @@ const uint32 MAX_INLINE_OBJ_TYPE_VALUE  = TYPE_FLOAT;
 const uint32 MAX_OBJ_TYPE_VALUE         = TYPE_SLICE;
 
 
+enum MEM_LAYOUT {
+  INLINE    = 0,
+  STD_MEM   = 1,
+  TRY_MEM   = 2
+};
+
+
 struct OBJ {
   union {
     int64   int_;
@@ -49,9 +56,8 @@ struct OBJ {
       uint16   tag;
       uint8    unused_byte;
       unsigned type        : 4;
-      unsigned has_ref     : 1;
+      unsigned mem_layout  : 2;
       unsigned num_tags    : 2;
-      unsigned unused_flag : 1;
     } std;
 
     struct {
@@ -59,18 +65,16 @@ struct OBJ {
       uint16   tag;
       uint8    unused_byte;
       unsigned type        : 4;
-      unsigned has_ref     : 1;
+      unsigned mem_layout  : 2;
       unsigned num_tags    : 2;
-      unsigned unused_flag : 1;
     } seq;
 
     struct {
       uint32   length;
       unsigned offset      : 24;
       unsigned type        : 4;
-      unsigned has_ref     : 1;
+      unsigned mem_layout  : 2;
       unsigned num_tags    : 2;
-      unsigned unused_flag : 1;
     } slice;
 
     uint64 word;
@@ -79,37 +83,42 @@ struct OBJ {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+// union REF_OBJ {
+//   uint32 ref_count;
+//   void *ptr;
+// };
+
 struct REF_OBJ {
   uint32 ref_count;
 };
 
 
 struct SEQ_OBJ {
-  uint32 ref_count;
-  uint32 capacity;
-  uint32 size;
-  OBJ    buffer[1];
+  REF_OBJ ref_obj;
+  uint32  capacity;
+  uint32  size;
+  OBJ     buffer[1];
 };
 
 
 struct SET_OBJ {
-  uint32 ref_count;
+  REF_OBJ ref_obj;
   uint32 size;
   OBJ    buffer[1];
 };
 
 
 struct MAP_OBJ {
-  uint32 ref_count;
+  REF_OBJ ref_obj;
   uint32 size;
   OBJ    buffer[1];
 };
 
 
 struct TAG_OBJ {
-  uint32 ref_count;
+  REF_OBJ ref_obj;
   uint16 tag_idx;
-  //## ADD SOME PADDING HERE?
+  uint16 unused_field;
   OBJ    obj;
 };
 
@@ -146,9 +155,18 @@ struct STREAM {
 
 struct VALUE_STORE {
   OBJ *slots;
-  uint32 size;
-  uint32 used;
+  uint32 capacity;
+  uint32 usage;
   uint32 first_free;
+};
+
+
+struct VALUE_STORE_UPDATES {
+  OBJ *slots;
+  uint32 capacity;
+  uint32 first_free;
+  vector<OBJ> values;
+  vector<uint32> indexes;
 };
 
 
@@ -240,11 +258,27 @@ const uint16 symb_idx_nil     = 2;
 const uint16 symb_idx_string  = 3;
 const uint16 symb_idx_just    = 4;
 
+///////////////////////////////// mem_alloc.cpp ////////////////////////////////
+
+bool is_in_normal_state();
+bool is_in_try_state();
+bool is_in_copying_state();
+
+void enter_try_state();
+void enter_copy_state();
+void restore_try_state();
+void return_to_normal_state();
+void abort_try_state();
+
+//////////////////////////////// mem-copying.cpp ///////////////////////////////
+
+OBJ copy_obj(OBJ obj);
+
 ///////////////////////////////// mem-core.cpp /////////////////////////////////
 
-void* new_obj(uint32 nblocks16);
-void* new_obj(uint32 nblocks16_requested, uint32 &nblocks16_returned);
-void  free_obj(void* obj, uint32 nblocks16);
+void* new_obj(uint32 byte_size);
+void* new_obj(uint32 requested_byte_size, uint32 &returned_byte_size);
+void  free_obj(void* obj, uint32 byte_size);
 
 bool is_alive(void* obj);
 
@@ -263,8 +297,6 @@ void print_all_live_objs();
 void add_ref(REF_OBJ *);
 void add_ref(OBJ);
 void release(OBJ);
-
-void mult_add_ref(OBJ obj, uint32 count);
 
 void vec_add_ref(OBJ* objs, uint32 len);
 void vec_release(OBJ* objs, uint32 len);
@@ -335,7 +367,7 @@ OBJ make_bool(bool b);
 OBJ make_int(uint64 value);
 OBJ make_float(double value);
 OBJ make_seq(SEQ_OBJ* ptr, uint32 length);
-OBJ make_slice(SEQ_OBJ* ptr, uint32 offset, uint32 length);
+OBJ make_slice(SEQ_OBJ* ptr, MEM_LAYOUT mem_layout, uint32 offset, uint32 length);
 OBJ make_set(SET_OBJ* ptr);
 OBJ make_map(MAP_OBJ* ptr);
 OBJ make_tag_obj(uint16 tag_idx, OBJ obj);
@@ -354,8 +386,21 @@ MAP_OBJ* get_map_ptr(OBJ);
 
 // Purely physical representation functions
 
+OBJ repoint_to_std_mem_copy(OBJ obj, void *new_ptr);
+
+OBJ_TYPE get_physical_type(OBJ obj);
+
+SEQ_OBJ* get_physical_seq_obj_ptr(OBJ);
+SET_OBJ* get_physical_set_obj_ptr(OBJ);
+MAP_OBJ* get_physical_map_obj_ptr(OBJ);
+TAG_OBJ *get_physical_tag_obj_ptr(OBJ obj);
+
+MEM_LAYOUT get_mem_layout(OBJ);
+
 bool is_inline_obj(OBJ);
 bool is_ref_obj(OBJ);
+bool uses_try_mem(OBJ obj);
+bool is_gc_obj(OBJ);
 
 OBJ_TYPE get_ref_obj_type(OBJ);
 REF_OBJ* get_ref_obj_ptr(OBJ);
@@ -452,18 +497,19 @@ OBJ build_const_int64_seq(const int64* buffer, uint32 len);
 
 /////////////////////////////////// debug.cpp //////////////////////////////////
 
+int get_call_stack_depth();
+
 void push_call_info(const char* fn_name, uint32 arity, OBJ* params);
 void pop_call_info();
+void pop_try_mode_call_info(int depth);
 void print_call_stack();
 void dump_var(const char* name, OBJ value);
 void print_assertion_failed_msg(const char* file, uint32 line, const char* text);
-void fail_if(bool condition, const char* message);
-void fail_if_not(bool condition, const char* message);
-void hard_fail(const char* message);
-void hard_fail_if(bool condition, const char* message);
-void hard_fail_if_not(bool condition, const char* message);
+
+void soft_fail(const char *msg);
+void impl_fail(const char *msg);
+// void physical_fail();
 void internal_fail();
-void internal_fail_if(bool condition);
 
 /////////////////////////////////// algs.cpp ///////////////////////////////////
 
@@ -482,7 +528,7 @@ OBJ to_str(OBJ);
 OBJ to_symb(OBJ);
 
 OBJ str_to_obj(const char* c_str);
-// void obj_to_str(OBJ str_obj, char* buffer, uint32 size);
+
 char* obj_to_str(OBJ str_obj);
 
 char* obj_to_byte_array(OBJ byte_seq_obj, uint32 &size);
@@ -504,10 +550,18 @@ uint64 get_tick_count();   // Impure
 void value_store_init(VALUE_STORE *store);
 void value_store_cleanup(VALUE_STORE *store);
 
+void value_store_updates_init(VALUE_STORE *store, VALUE_STORE_UPDATES *updates);
+void value_store_updates_cleanup(VALUE_STORE_UPDATES *updates);
+
+uint32 value_store_insert(VALUE_STORE_UPDATES *updates, OBJ value);
+
+void value_store_copy(VALUE_STORE *store, VALUE_STORE_UPDATES *updates);
+void value_store_apply(VALUE_STORE *store, VALUE_STORE_UPDATES *updates);
+
 OBJ lookup_surrogate(VALUE_STORE *store, int64 surr);
 int64 lookup_value(VALUE_STORE *store, OBJ value);
 
-int64 insert_value(VALUE_STORE *store, OBJ value);
+int64 lookup_value_ex(VALUE_STORE *store, VALUE_STORE_UPDATES *updates, OBJ value); //## FIND BETTER NAME...
 
 //////////////////////////////// unary-table.cpp ///////////////////////////////
 

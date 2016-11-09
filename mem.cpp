@@ -8,29 +8,29 @@ using namespace std;
 
 uint32 set_obj_mem_size(uint32 size)
 {
-  return nblocks16(sizeof(SET_OBJ) + (size - 1) * sizeof(OBJ));
+  return sizeof(SET_OBJ) + (size - 1) * sizeof(OBJ);
 }
 
 uint32 seq_obj_mem_size(uint32 capacity)
 {
-  return nblocks16(sizeof(SEQ_OBJ) + (capacity - 1) * sizeof(OBJ));
+  return sizeof(SEQ_OBJ) + (capacity - 1) * sizeof(OBJ);
 }
 
 uint32 map_obj_mem_size(uint32 size)
 {
-  return nblocks16(sizeof(MAP_OBJ) + (2 * size - 1) * sizeof(OBJ));
+  return sizeof(MAP_OBJ) + (2 * size - 1) * sizeof(OBJ);
 }
 
 uint32 tag_obj_mem_size()
 {
-  return nblocks16(sizeof(TAG_OBJ));
+  return sizeof(TAG_OBJ);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-uint32 seq_capacity(uint32 nblocks16)
+uint32 seq_capacity(uint32 byte_size)
 {
-  return (16 * nblocks16 - sizeof(SEQ_OBJ)) / sizeof(OBJ) + 1;
+  return (byte_size - sizeof(SEQ_OBJ)) / sizeof(OBJ) + 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -38,11 +38,11 @@ uint32 seq_capacity(uint32 nblocks16)
 SEQ_OBJ *new_seq(uint32 length)
 {
   assert(length > 0);
-  
-  uint32 actual_size_blocks;
-  SEQ_OBJ *seq = (SEQ_OBJ *) new_obj(seq_obj_mem_size(length), actual_size_blocks);
-  seq->ref_count = 1;
-  seq->capacity = seq_capacity(actual_size_blocks);
+
+  uint32 actual_byte_size;
+  SEQ_OBJ *seq = (SEQ_OBJ *) new_obj(seq_obj_mem_size(length), actual_byte_size);
+  seq->ref_obj.ref_count = 1;
+  seq->capacity = seq_capacity(actual_byte_size);
   seq->size = length;
   return seq;
 }
@@ -50,7 +50,7 @@ SEQ_OBJ *new_seq(uint32 length)
 SET_OBJ *new_set(uint32 size)
 {
   SET_OBJ *set = (SET_OBJ *) new_obj(set_obj_mem_size(size));
-  set->ref_count = 1;
+  set->ref_obj.ref_count = 1;
   set->size = size;
   return set;
 }
@@ -60,7 +60,7 @@ MAP_OBJ *new_map(uint32 size)
   assert(size > 0);
 
   MAP_OBJ *map = (MAP_OBJ *) new_obj(map_obj_mem_size(size));
-  map->ref_count = 1;
+  map->ref_obj.ref_count = 1;
   map->size = size;
   return map;
 }
@@ -68,7 +68,8 @@ MAP_OBJ *new_map(uint32 size)
 TAG_OBJ *new_tag_obj()
 {
   TAG_OBJ *tag_obj = (TAG_OBJ *) new_obj(tag_obj_mem_size());
-  tag_obj->ref_count = 1;
+  tag_obj->ref_obj.ref_count = 1;
+  tag_obj->unused_field = 0;
   return tag_obj;
 }
 
@@ -77,7 +78,7 @@ TAG_OBJ *new_tag_obj()
 SET_OBJ *shrink_set(SET_OBJ *set, uint32 new_size)
 {
   assert(new_size < set->size);
-  assert(set->ref_count == 1);
+  assert(set->ref_obj.ref_count == 1);
 
   uint32 size = set->size;
   uint32 mem_size = set_obj_mem_size(size);
@@ -102,32 +103,32 @@ SET_OBJ *shrink_set(SET_OBJ *set, uint32 new_size)
 
 OBJ *new_obj_array(uint32 size)
 {
-  return (OBJ *) new_obj(nblocks16(size * sizeof(OBJ)));
+  return (OBJ *) new_obj(size * sizeof(OBJ));
 }
 
 void delete_obj_array(OBJ *buffer, uint32 size)
 {
-  free_obj(buffer, nblocks16(size * sizeof(OBJ)));
+  free_obj(buffer, size * sizeof(OBJ));
 }
 
 uint32 *new_uint32_array(uint32 size)
 {
-  return (uint32 *) new_obj(nblocks16(size * sizeof(uint32)));
+  return (uint32 *) new_obj(size * sizeof(uint32));
 }
 
 void delete_uint32_array(uint32 *buffer, uint32 size)
 {
-  free_obj(buffer, nblocks16(size * sizeof(uint32)));
+  free_obj(buffer, size * sizeof(uint32));
 }
 
 void **new_ptr_array(uint32 size)
 {
-  return (void **) new_obj(nblocks16(size * sizeof(void *)));
+  return (void **) new_obj(size * sizeof(void *));
 }
 
 void delete_ptr_array(void **buffer, uint32 size)
 {
-  free_obj(buffer, nblocks16(size * sizeof(void *)));
+  free_obj(buffer, size * sizeof(void *));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -141,17 +142,17 @@ static void release(OBJ *objs, uint32 count, OBJ *queue, uint32 &queue_start, ui
   for (uint32 i=0 ; i < count ; i++)
   {
     OBJ obj = objs[i];
-    if (is_ref_obj(obj))
+    if (is_gc_obj(obj))
     {
       REF_OBJ *ptr = get_ref_obj_ptr(obj);
-      
+
       uint32 ref_count = ptr->ref_count;
       assert(ref_count > 0);
-      
+
       if (ref_count == 1)
       {
         assert(queue_size <= MAX_QUEUE_SIZE);
-        
+
         if (queue_size == MAX_QUEUE_SIZE)
         {
           uint32 idx = queue_start % MAX_QUEUE_SIZE;
@@ -165,7 +166,7 @@ static void release(OBJ *objs, uint32 count, OBJ *queue, uint32 &queue_start, ui
           uint32 idx = (queue_start + queue_size) % MAX_QUEUE_SIZE;
           queue[idx] = obj;
           queue_size++;
-        }       
+        }
       }
       else
       {
@@ -177,7 +178,7 @@ static void release(OBJ *objs, uint32 count, OBJ *queue, uint32 &queue_start, ui
 
 static void delete_obj(OBJ obj, OBJ *queue, uint32 &queue_start, uint32 &queue_size)
 {
-  assert(is_ref_obj(obj));
+  assert(is_gc_obj(obj));
 
   REF_OBJ *ref_obj = get_ref_obj_ptr(obj);
 
@@ -224,7 +225,7 @@ static void delete_obj(OBJ obj, OBJ *queue, uint32 &queue_start, uint32 &queue_s
 
 static void delete_obj(OBJ obj)
 {
-  assert(is_ref_obj(obj));
+  assert(is_gc_obj(obj));
 
   uint32 queue_start = 0;
   uint32 queue_size = 1;
@@ -236,9 +237,9 @@ static void delete_obj(OBJ obj)
     OBJ next_obj = queue[queue_start % MAX_QUEUE_SIZE];
     queue_size--;
     queue_start++;
-    
+
     delete_obj(next_obj, queue, queue_start, queue_size);
-  }  
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -254,7 +255,7 @@ void add_ref(REF_OBJ *ptr)
 void add_ref(OBJ obj)
 {
 #ifndef NOGC
-  if (is_ref_obj(obj))
+  if (is_gc_obj(obj))
     add_ref(get_ref_obj_ptr(obj));
 #endif
 }
@@ -262,7 +263,7 @@ void add_ref(OBJ obj)
 void release(OBJ obj)
 {
 #ifndef NOGC
-  if (is_ref_obj(obj))
+  if (is_gc_obj(obj))
   {
     REF_OBJ *ptr = get_ref_obj_ptr(obj);
     uint32 ref_count = ptr->ref_count;
@@ -273,20 +274,6 @@ void release(OBJ obj)
       ptr->ref_count = ref_count - 1;
   }
 #endif
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-void mult_add_ref(OBJ obj, uint32 count)
-{
-  assert(count > 0);
-  
-  if (is_ref_obj(obj))
-  {
-    REF_OBJ *ptr = get_ref_obj_ptr(obj);
-    assert(ptr->ref_count > 0);
-    ptr->ref_count += count;
-  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -17,11 +17,11 @@ void init(STREAM &s)
 void append(STREAM &s, OBJ obj) // obj must be already reference-counted
 {
   assert(s.count <= s.capacity);
-  
+
   uint32 count = s.count;
   uint32 capacity = s.capacity;
   OBJ *buffer = s.buffer;
-  
+
   if (count == capacity)
   {
     uint32 new_capacity = capacity == 0 ? 32 : 2 * capacity;
@@ -31,9 +31,9 @@ void append(STREAM &s, OBJ obj) // obj must be already reference-counted
     if (capacity != 0)
       delete_obj_array(buffer, capacity);
     s.buffer = new_buffer;
-    s.capacity = new_capacity;  
+    s.capacity = new_capacity;
   }
-  
+
   s.buffer[count] = obj;
   s.count++;
 }
@@ -44,12 +44,12 @@ OBJ build_set(OBJ *elems, uint32 size)
     return make_empty_set();
 
   size = sort_and_release_dups(elems, size);
-  
+
   SET_OBJ *set = new_set(size);
   OBJ *es = set->buffer;
   for (uint32 i=0 ; i < size ; i++)
     es[i] = elems[i];
-  
+
   return make_set(set);
 }
 
@@ -71,12 +71,12 @@ OBJ build_seq(OBJ *elems, uint32 length) // Objects in elems must be already ref
 {
   if (length == 0)
     return make_empty_seq();
-  
+
   SEQ_OBJ *seq = new_seq(length);
-  
+
   for (uint32 i=0 ; i < length ; i++)
     seq->buffer[i] = elems[i];
-  
+
   return make_seq(seq, length);
 }
 
@@ -86,9 +86,9 @@ OBJ build_seq(STREAM &s)
     return make_empty_seq();
 
   //## COULD IT BE OPTIMIZED?
-  
+
   OBJ seq = build_seq(s.buffer, s.count);
-  
+
   delete_obj_array(s.buffer, s.capacity);
 
   return seq;
@@ -98,42 +98,40 @@ OBJ build_map(OBJ *keys, OBJ *values, uint32 size)
 {
   if (size == 0)
     return make_empty_map();
-    
+
   sort_and_check_no_dups(keys, values, size);
-  
+
   MAP_OBJ *map = new_map(size);
   OBJ *ks  = map->buffer;
   OBJ *vs  = ks + map->size;
-  
+
   for (uint32 i=0 ; i < size ; i++)
   {
     ks[i] = keys[i];
     vs[i] = values[i];
   }
-  
+
   return make_map(map);
 }
 
 OBJ build_map(STREAM &key_stream, STREAM &value_stream)
 {
   assert(key_stream.count == value_stream.count);
-  
+
   if (key_stream.count == 0)
     return make_empty_map();
-    
+
   OBJ map = build_map(key_stream.buffer, value_stream.buffer, key_stream.count);
-  
+
   delete_obj_array(key_stream.buffer, key_stream.capacity);
   delete_obj_array(value_stream.buffer, value_stream.capacity);
-  
+
   return map;
 }
 
 OBJ build_tagged_obj(OBJ tag, OBJ obj)
 {
   assert(is_symb(tag));
-  fail_if_not(is_symb(tag), "Not a symbol");
-
   return make_tag_obj(get_symb_idx(tag), obj);
 }
 
@@ -169,12 +167,12 @@ OBJ square_root(OBJ obj)
 
 OBJ floor(OBJ obj)
 {
-  throw;
+  impl_fail("_floor_() not implemented");
 }
 
 OBJ ceiling(OBJ obj)
 {
-  throw;
+  impl_fail("_ceiling_() not implemented");
 }
 
 OBJ int_to_float(OBJ obj)
@@ -184,7 +182,8 @@ OBJ int_to_float(OBJ obj)
 
 OBJ blank_array(int64 size)
 {
-  hard_fail_if(size > 0xFFFFFFFF, "Maximum permitted array size exceeded");
+  if (size > 0xFFFFFFFF)
+    impl_fail("Maximum permitted array size exceeded");
 
   if (size <= 0) //## I DON'T LIKE THIS
     return make_empty_seq();
@@ -195,19 +194,16 @@ OBJ blank_array(int64 size)
 
   for (uint32 i=0 ; i < size ; i++)
     buffer[i] = blank_obj;
-  
+
   return make_seq(seq, size);
 }
 
 OBJ get_seq_slice(OBJ seq, int64 idx_first, int64 len)
 {
-  fail_if_not(is_seq(seq), "_slice_: First param is not a sequence");
-  hard_fail_if_not(
-    (((uint64) idx_first)         <  0xFFFFFFFF) &
-    (((uint64) len)               <  0xFFFFFFFF) &
-    (((uint64) (idx_first + len)) <= get_seq_length(seq)),
-    "_slice_: Invalid start index and/or subsequence length"
-  );
+  assert(is_seq(seq));
+
+  if (idx_first < 0 | len < 0 | idx_first + len > get_seq_length(seq))
+    soft_fail("_slice_(): Invalid start index and/or subsequence length");
 
   if (len == 0)
     return make_empty_seq();
@@ -216,7 +212,7 @@ OBJ get_seq_slice(OBJ seq, int64 idx_first, int64 len)
 
   SEQ_OBJ *ptr = get_seq_obj_ptr(seq);
   uint32 offset = get_seq_offset(seq);
-  return make_slice(ptr, offset+idx_first, len);
+  return make_slice(ptr, get_mem_layout(seq), offset+idx_first, len);
 }
 
 OBJ extend_sequence(OBJ seq, OBJ *new_elems, uint32 count)
@@ -243,7 +239,7 @@ OBJ extend_sequence(OBJ seq, OBJ *new_elems, uint32 count)
     seq_ptr->size = size + count;
     vec_add_ref(new_elems, count);
     add_ref(seq);
-    return make_slice(seq_ptr, offset, new_length);
+    return make_slice(seq_ptr, get_mem_layout(seq), offset, new_length);
   }
   else
   {
@@ -266,7 +262,9 @@ OBJ append_to_seq(OBJ seq, OBJ obj)
   if (is_empty_seq(seq))
     return build_seq(&obj, 1);
 
-  hard_fail_if_not(get_seq_length(seq) < 0xFFFFFFFF, "Resulting sequence is too large"); // Checking that the new sequence doesn't overflow
+  // Checking that the new sequence doesn't overflow
+  if (!(get_seq_length(seq) < 0xFFFFFFFF))
+    impl_fail("Resulting sequence is too large");
 
   OBJ res = extend_sequence(seq, &obj, 1);
   release(seq);
@@ -292,7 +290,8 @@ OBJ join_seqs(OBJ left, OBJ right)
     return right;
   }
 
-  hard_fail_if_not(left_len + right_len <= 0xFFFFFFFF, "_cat_(...): Resulting sequence is too large");
+  if (left_len + right_len > 0xFFFFFFFF)
+    impl_fail("_cat_(): Resulting sequence is too large");
 
   return extend_sequence(left, get_seq_buffer_ptr(right), right_len);
 }
@@ -349,7 +348,7 @@ OBJ rev_seq(OBJ seq)
       add_ref(seq);
     return seq;
   }
-  
+
   OBJ *elems = get_seq_buffer_ptr(seq);
   vec_add_ref(elems, len);
 
@@ -357,7 +356,7 @@ OBJ rev_seq(OBJ seq)
   OBJ *rev_elems = rs->buffer;
   for (uint32 i=0 ; i < len ; i++)
     rev_elems[len-i-1] = elems[i];
-  
+
   return make_seq(rs, len);
 }
 
@@ -389,18 +388,18 @@ OBJ lookup(OBJ map, OBJ key)
 
   if (is_empty_map(map))
   {
-    hard_fail("_lookup_(...): Key not found. Map is empty");
+    soft_fail("_lookup_(): Key not found. Map is empty");
   }
   else if (is_symb(key))
   {
     char buff[1024];
-    strcpy(buff, "_lookup_(...): Key not found: ");
+    strcpy(buff, "_lookup_(): Key not found: ");
     uint32 len = strlen(buff);
     printed_obj(key, buff+len, sizeof(buff)-len-1);
-    hard_fail(buff);
+    soft_fail(buff);
   }
   else
-    hard_fail("_lookup_(...): Key not found");
+    soft_fail("_lookup_(): Key not found");
 }
 
 OBJ lookup(OBJ map, OBJ key, bool &found)
@@ -423,7 +422,7 @@ OBJ lookup(OBJ map, OBJ key, bool &found)
     found = false;
     return make_blank_obj();
   }
-  
+
   OBJ *values = keys + size;
   return values[idx];
 }
@@ -439,7 +438,7 @@ OBJ ext_lookup(OBJ map_or_tag_obj, OBJ key)
   for (uint32 i=0 ; i < size ; i++)
     if (get_symb_idx(keys[i]) == key_idx)
       return values[i];
-  fail();
+  internal_fail();
 }
 
 OBJ ext_lookup(OBJ map_or_tag_obj, OBJ key, bool &found)
@@ -481,10 +480,10 @@ OBJ seq_to_set(OBJ seq)
 {
   if (is_empty_seq(seq))
     return make_empty_set();
-  
+
   OBJ *elems = get_seq_buffer_ptr(seq);
   uint32 len = get_seq_length(seq);
-  
+
   OBJ *elems_copy = new_obj_array(len);
   for (uint32 i=0 ; i < len ; i++)
   {
@@ -511,11 +510,11 @@ OBJ seq_to_mset(OBJ seq)
   OBJ *counters = new_obj_array(len); //## WHY OBJECTS AND NOT INTEGERS?
 
   uint32 n = sort_group_and_count(elems, len, idxs, counters);
-  
+
   MAP_OBJ *res = new_map(n);
   OBJ *keys = res->buffer;
   OBJ *values = keys + n;
-  
+
   for (uint32 i=0 ; i < n ; i++)
   {
     OBJ obj = elems[idxs[i]];
@@ -523,10 +522,10 @@ OBJ seq_to_mset(OBJ seq)
     keys[i] = obj;
     values[i] = counters[i];
   }
-  
+
   delete_uint32_array(idxs, len);
   delete_obj_array(counters, len);
-  
+
   return make_map(res);
 }
 
@@ -538,18 +537,18 @@ OBJ seq_to_mset(OBJ seq)
 //   uint32 len = 0;
 //   for (OBJ tail=list ; tail != empty_seq ; tail=at(tail, 1))
 //     len++;
-  
+
 //   SEQ_OBJ *seq = new_full_seq(len);
-  
+
 //   OBJ *elems = seq->elems;
 //   OBJ tail = list;
-  
+
 //   for (uint32 i=0 ; i < len ; i++)
 //   {
 //     elems[i] = get_at(tail, 0);
 //     tail = at(tail, 1);
 //   }
-  
+
 //   return make_obj(seq);
 // }
 
@@ -561,13 +560,13 @@ OBJ internal_sort(OBJ set)
   SET_OBJ *s = get_set_ptr(set);
   uint32 size = s->size;
   OBJ *src = s->buffer;
-  
+
   SEQ_OBJ *seq = new_seq(size);
   OBJ *dest = seq->buffer;
   for (uint32 i=0 ; i < size ; i++)
     dest[i] = src[i];
   vec_add_ref(dest, size);
-  
+
   return make_seq(seq, size);
 }
 
@@ -706,13 +705,12 @@ void move_forward(MAP_ITER &it)
 void fail()
 {
 #ifndef NDEBUG
-  std::fputs("\nFail statement reached. Call stack:\n\n", stderr);
+  const char *MSG = "\nFail statement reached. Call stack:\n\n";
 #else
-  std::fputs("\nFail statement reached\n", stderr);
+  const char *MSG = "\nFail statement reached\n";
 #endif
-  std::fflush(stderr);
-  print_call_stack();
-  *(char *)0 = 0; // Causing a runtime crash, useful for debugging
+
+  soft_fail(MSG);
 }
 
 void runtime_check(OBJ cond)

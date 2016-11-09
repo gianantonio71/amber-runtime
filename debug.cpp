@@ -33,6 +33,17 @@ void pop_call_info()
 #endif
 }
 
+void pop_try_mode_call_info(int depth)
+{
+  while (function_names.size() > depth)
+    pop_call_info();
+}
+
+int get_call_stack_depth()
+{
+  return function_names.size();
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void printed_obj_or_filename(OBJ obj, bool add_path, char *buffer, uint32 buff_size)
@@ -159,39 +170,24 @@ void print_assertion_failed_msg(const char *file, uint32 line, const char *text)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void hard_fail(const char *message)
+void soft_fail(const char *msg)
 {
-  if (message != NULL)
-    fprintf(stderr, "%s\n\n", message);
+  if (is_in_try_state())
+    throw 0;
+
+  if (msg != NULL)
+    fprintf(stderr, "%s\n\n", msg);
   print_call_stack();
   *(char *)0 = 0;
 }
 
-void hard_fail_if(bool condition, const char *message)
+void impl_fail(const char *msg)
 {
-  if (condition)
-    hard_fail(message);
+  if (msg != NULL)
+    fprintf(stderr, "%s\n\n", msg);
+  print_call_stack();
+  *(char *)0 = 0;
 }
-
-void hard_fail_if_not(bool condition, const char *message)
-{
-  if (!condition)
-    hard_fail(message);
-}
-
-void fail_if(bool condition, const char *message)
-{
-#ifndef NOCHECKS
-  hard_fail_if(condition, message);
-#endif
-}
-
-void fail_if_not(bool condition, const char *message)
-{
-  fail_if(!condition, message);
-}
-
-////////////////////////////////////////////////////////////////////////////////
 
 void internal_fail()
 {
@@ -199,10 +195,4 @@ void internal_fail()
   fflush(stderr);
   print_call_stack();
   *(char *)0 = 0;
-}
-
-void internal_fail_if(bool condition)
-{
-  if (condition)
-    internal_fail();
 }

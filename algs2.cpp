@@ -33,7 +33,7 @@ OBJ merge_sets_impl(OBJ set_of_sets)
   uint32 size = set_of_sets_ptr->size;
 
   assert(size > 0);
-  
+
   OBJ *sets = set_of_sets_ptr->buffer;
 
   for (uint32 i=1 ; i < size ; i++)
@@ -75,7 +75,8 @@ OBJ merge_sets_impl(OBJ set_of_sets)
 
   // Checking that we are not exceeding the maximum set size
   //## THE ACTUAL SIZE OF THE RESULTING SET COULD BE LOWER, IF SOME ELEMENTS ARE EQUAL
-  hard_fail_if_not(elem_count <= 0xFFFFFFFF, "Maximum set size exceeded");
+  if (elem_count > 0xFFFFFFFF)
+    impl_fail("Maximum set size exceeded");
 
   // Creating and initializing the priority queue
   // by inserting the first element of each set/array
@@ -206,7 +207,8 @@ OBJ merge_maps_impl(OBJ set_of_maps)
 
   // Checking that we are not exceeding the maximum map size
   //## THE ACTUAL SIZE OF THE RESULTING MAP COULD BE LOWER, IF SOME KEY/VALUE PAIRS ARE EQUAL
-  hard_fail_if_not(pair_count <= 0xFFFFFFFF, "Maximum map size exceeded");
+  if (pair_count > 0xFFFFFFFF)
+    impl_fail("Maximum map size exceeded");
 
   // Creating and initializing the priority queue
   // by inserting the first key of each map
@@ -246,7 +248,8 @@ OBJ merge_maps_impl(OBJ set_of_maps)
     OBJ value = value_arrays[array_idx][src_idx-1];
 
     // Checking that this key is not a duplicate
-    hard_fail_if(dest_idx > 0 and are_eq(key, dest_key_array[dest_idx-1]), "_merge_: Maps have common keys");
+    if (dest_idx > 0 && are_eq(key, dest_key_array[dest_idx-1]))
+      soft_fail("_merge_(): Maps have common keys");
 
     // Storing key and value in the target arrays and updating the cursor
     dest_key_array[dest_idx] = key;

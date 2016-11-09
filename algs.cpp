@@ -9,7 +9,7 @@ uint32 find_obj(OBJ *sorted_array, uint32 len, OBJ obj, bool &found) // The arra
   {
     int64 low_idx = 0;
     int64 high_idx = len - 1;
-    
+
     while (low_idx <= high_idx)
     {
       int64 middle_idx = (low_idx + high_idx) / 2;
@@ -134,31 +134,31 @@ struct obj_idx_less
 uint32 sort_group_and_count(OBJ *objs, uint32 len, uint32 *idxs, OBJ *counters)
 {
   assert(len > 0);
-  
+
   for (uint32 i=0 ; i < len ; i++)
     idxs[i] = i;
-  
+
   std::sort(idxs, idxs+len, obj_idx_less(objs));
-  
+
   uint32 n = 0;
-  
+
   for (uint32 i=0 ; i < len ; )
   {
     assert(i >= n);
-    
+
     uint32 j = i + 1;
     while (j < len && comp_objs(objs[idxs[i]], objs[idxs[j]]) == 0)
       j++;
-    
+
     uint32 count = j - i;
-    
+
     idxs[n] = idxs[i];
     counters[n] = make_int(count);
     n++;
-    
+
     i = j;
   }
-  
+
   return n;
 }
 
@@ -167,11 +167,11 @@ void sort_and_check_no_dups(OBJ *keys, OBJ *values, uint32 size)
 {
   if (size < 2)
     return;
-  
+
   uint32 *idxs = new_uint32_array(size);
   for (uint32 i=0 ; i < size ; i++)
     idxs[i] = i;
-  
+
   std::sort(idxs, idxs+size, obj_idx_less(keys));
 
   for (uint32 i=0 ; i < size ; i++)
@@ -179,12 +179,12 @@ void sort_and_check_no_dups(OBJ *keys, OBJ *values, uint32 size)
     {
       OBJ key = keys[i];
       OBJ value = values[i];
-      
+
       for (uint32 j = i ; ; )
       {
         uint32 k = idxs[j];
         idxs[j] = j;
-        
+
         if (k == i)
         {
           keys[j]   = key;
@@ -199,7 +199,7 @@ void sort_and_check_no_dups(OBJ *keys, OBJ *values, uint32 size)
         }
       }
     }
-  
+
   delete_uint32_array(idxs, size);
 }
 

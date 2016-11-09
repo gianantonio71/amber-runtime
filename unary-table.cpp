@@ -159,7 +159,7 @@ void unary_table_get_iter(UNARY_TABLE *table, UNARY_TABLE_ITER *iter)
             return;
           }
     }
-    throw;
+    internal_fail();
   }
   else
   {

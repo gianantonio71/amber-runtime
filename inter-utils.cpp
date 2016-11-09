@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include <vector>
 #include <map>
@@ -37,7 +38,7 @@ void obj_to_str(OBJ str_obj, char *buffer, uint32 size)
   {
     OBJ *seq_buffer = get_seq_buffer_ptr(raw_str_obj);
     uint32 len = get_seq_length(raw_str_obj);
-    internal_fail_if(len >= size);
+    assert(len < size);
     for (uint32 i=0 ; i < len ; i++)
       buffer[i] = get_int_val(seq_buffer[i]);
     buffer[len] = '\0';
@@ -58,7 +59,7 @@ char *obj_to_byte_array(OBJ byte_seq_obj, uint32 &size)
 
   uint32 len = get_seq_length(byte_seq_obj);
   OBJ *elems = get_seq_buffer_ptr(byte_seq_obj);
-  char *buffer = new char[len];
+  char *buffer = (char *) malloc(len);
   for (uint32 i=0 ; i < len ; i++)
   {
     long long val = get_int_val(elems[i]);
@@ -72,7 +73,7 @@ char *obj_to_byte_array(OBJ byte_seq_obj, uint32 &size)
 char *obj_to_str(OBJ str_obj)
 {
   uint32 size = get_seq_length(get_inner_obj(str_obj)) + 1;
-  char *buffer = new char[size];
+  char *buffer = (char *) malloc(size);
   obj_to_str(str_obj, buffer, size);
   return buffer;
 }
@@ -97,87 +98,46 @@ void release_all_cached_objs()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct str_obj_cmp
+bool str_ord(const char *str1, const char *str2)
 {
-  bool operator() (const OBJ &str1, const OBJ &str2) const
-  {
-    OBJ raw_str_1 = get_inner_obj(str1);
-    OBJ raw_str_2 = get_inner_obj(str2);
-
-    uint32 len1 = get_seq_length(raw_str_1);
-    uint32 len2 = get_seq_length(raw_str_2);
-
-    if (len1 != len2)
-      return len1 < len2;
-
-    if (len1 == 0)
-      return false;
-
-    OBJ *elems1 = get_seq_buffer_ptr(raw_str_1);
-    OBJ *elems2 = get_seq_buffer_ptr(raw_str_2);
-
-    for (uint32 i=0 ; i < len1 ; i++)
-    {
-      int64 ch1 = get_int(elems1[i]);
-      int64 ch2 = get_int(elems2[i]);
-      if (ch1 != ch2)
-        return ch1 < ch2;
-    }
-
-    return false;
-  }
-};
-
-
-std::map<OBJ, uint32, str_obj_cmp> str_to_symb_map;
-std::vector<OBJ> symb_strs;
-
-
-static void initialize_symb_strs()
-{
-  static bool initialized = false;
-
-  if (initialized)
-    return;
-
-  initialized = true;
-
-  for (uint32 i=0 ; i < generated::EMB_SYMB_COUNT ; i++)
-  {
-    OBJ str_obj = str_to_obj(generated::map_symb_to_str[i]);
-    add_obj_to_cache(str_obj);
-    str_to_symb_map[str_obj] = i;
-    symb_strs.push_back(str_obj);
-  }
+  return strcmp(str1, str2) > 0;
 }
 
+typedef std::map<const char *, uint32, bool(*)(const char *, const char *)> str_idx_map_type;
+
+str_idx_map_type str_to_symb_map(str_ord);
+//## THESE STRINGS ARE NEVER CLEANED UP. NOT MUCH OF A PROBLEM IN PRACTICE, BUT STILL A BUG...
+std::vector<const char *> dynamic_symbs_strs;
 
 OBJ to_str(OBJ obj)
 {
-  initialize_symb_strs();
   assert(is_symb(obj));
   uint16 idx = get_symb_idx(obj);
-  assert(idx < symb_strs.size());
-  OBJ str = symb_strs[idx];
-  add_ref(str);
-  return str;
+  const char *str = idx < generated::EMB_SYMB_COUNT ?
+    generated::map_symb_to_str[idx] :
+    dynamic_symbs_strs[idx - generated::EMB_SYMB_COUNT];
+  return str_to_obj(str);
 }
-
 
 OBJ to_symb(OBJ obj)
 {
-  initialize_symb_strs();
+  if (str_to_symb_map.size() == 0)
+    for (uint32 i=0 ; i < generated::EMB_SYMB_COUNT ; i++)
+      str_to_symb_map[generated::map_symb_to_str[i]] = i;
 
-  std::map<OBJ, uint32, str_obj_cmp>::iterator it = str_to_symb_map.find(obj);
+  char *str = obj_to_str(obj);
+
+  str_idx_map_type::iterator it = str_to_symb_map.find(str);
   if (it != str_to_symb_map.end())
+  {
+    free(str);
     return make_symb(it->second);
+  }
 
-  add_ref(obj);
-  add_obj_to_cache(obj);
-
-  uint32 next_symb_id = symb_strs.size();
-  hard_fail_if(next_symb_id > 0xFFFF, "Exceeded maximum permitted number of symbols (= 2^16)");
-  symb_strs.push_back(obj);
-  str_to_symb_map[obj] = next_symb_id;
+  uint32 next_symb_id = generated::EMB_SYMB_COUNT + dynamic_symbs_strs.size();
+  if (next_symb_id > 0xFFFF)
+    impl_fail("Exceeded maximum permitted number of symbols (= 2^16)");
+  dynamic_symbs_strs.push_back(str);
+  str_to_symb_map[str] = next_symb_id;
   return make_symb(next_symb_id);
 }
