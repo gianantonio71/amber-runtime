@@ -404,3 +404,83 @@ OBJ build_const_int64_seq(const int64* buffer, uint32 len);
 int get_tag_idx(OBJ obj);
 
 OBJ search_or_lookup(OBJ coll, OBJ value);
+
+
+inline bool is_in_try_state() {
+  return false;
+}
+
+inline void enter_copy_state() {
+  throw -1;
+}
+
+inline void restore_try_state() {
+  throw -1;
+}
+
+inline void soft_fail(int) {
+  fail();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct BIN_REL_ITER
+{
+  MAP_ITER iter;
+  bool by_arg_0;
+  bool found;
+};
+
+inline void get_bin_rel_iter(BIN_REL_ITER &it, OBJ bin_rel)
+{
+  get_map_iter(it.iter, bin_rel);
+  it.by_arg_0 = false;
+  it.found = false;
+}
+
+inline void get_bin_rel_iter_0(BIN_REL_ITER &it, OBJ bin_rel, OBJ arg0)
+{
+  it.by_arg_0 = true;
+  lookup(bin_rel, arg0, it.found);
+}
+
+inline OBJ get_curr_left_arg(BIN_REL_ITER &it)
+{
+  assert(!it.by_arg_0);
+  return get_curr_key(it.iter);
+}
+
+inline OBJ get_curr_right_arg(BIN_REL_ITER &it)
+{
+  assert(!it.by_arg_0);
+  return get_curr_value(it.iter);
+}
+
+inline bool is_out_of_range(BIN_REL_ITER &it)
+{
+  if (it.by_arg_0)
+    return !it.found;
+  else
+    return is_out_of_range(it.iter);
+}
+
+inline void move_forward(BIN_REL_ITER &it)
+{
+  assert(!it.by_arg_0);
+  move_forward(it.iter);
+}
+
+inline OBJ make_empty_bin_rel()
+{
+  return make_empty_map();
+}
+
+inline bool is_ne_bin_rel(OBJ obj)
+{
+  return is_ne_map(obj);
+}
+
+inline bool is_empty_bin_rel(OBJ obj)
+{
+  return is_empty_map(obj);
+}
