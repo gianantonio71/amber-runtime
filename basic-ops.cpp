@@ -24,9 +24,14 @@ bool is_out_of_range(SEQ_ITER &it)
   return it.idx >= it.len;
 }
 
-bool is_out_of_range(MAP_ITER &it)
+bool is_out_of_range(BIN_REL_ITER &it)
 {
-  return it.idx >= it.size;
+  return it.idx >= it.end;
+}
+
+bool is_out_of_range(TERN_REL_ITER &it)
+{
+  return it.idx >= it.end;
 }
 
 bool has_elem(OBJ set, OBJ elem)
@@ -39,6 +44,63 @@ bool has_elem(OBJ set, OBJ elem)
   return found;
 }
 
+bool has_pair(OBJ rel, OBJ arg0, OBJ arg1)
+{
+  if (is_empty_bin_rel(rel))
+    return false;
+
+  BIN_REL_OBJ *ptr = get_bin_rel_ptr(rel);
+  uint32 size = ptr->size;
+  OBJ *left_col = get_left_col_array_ptr(ptr);
+  OBJ *right_col = get_right_col_array_ptr(ptr);
+
+  if (is_ne_map(rel))
+  {
+    bool found;
+    uint32 idx = find_obj(left_col, size, arg0, found);
+    if (!found)
+      return false;
+    return comp_objs(right_col[idx], arg1) == 0;
+  }
+
+  uint32 count;
+  uint32 idx = find_objs_range(left_col, size, arg0, count);
+  if (count == 0)
+    return false;
+  bool found;
+  find_obj(right_col+idx, count, arg1, found);
+  return found;
+}
+
+bool has_triple(OBJ rel, OBJ arg1, OBJ arg2, OBJ arg3)
+{
+  assert(is_tern_rel(rel));
+
+  if (is_empty_bin_rel(rel))
+    return false;
+
+  TERN_REL_OBJ *ptr = get_tern_rel_ptr(rel);
+  uint32 size = ptr->size;
+  OBJ *col1 = get_col_array_ptr(ptr, 0);
+
+  uint32 count;
+  uint32 first = find_objs_range(col1, size, arg1, count);
+  if (count == 0)
+    return false;
+
+  OBJ *col2 = get_col_array_ptr(ptr, 1);
+
+  first = first + find_objs_range(col2+first, count, arg2, count);
+  if (count == 0)
+    return false;
+
+  OBJ *col3 = get_col_array_ptr(ptr, 2);
+
+  bool found;
+  find_obj(col3+first, count, arg3, found);
+  return found;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 int64 get_int_val(OBJ obj)
@@ -48,15 +110,6 @@ int64 get_int_val(OBJ obj)
   return get_int(obj);
 }
 
-uint32 get_set_size(OBJ set)
-{
-  assert(is_set(set));
-
-  if (is_empty_set(set))
-    return 0;
-  return get_set_ptr(set)->size;
-}
-
 uint32 get_seq_len(OBJ seq)
 {
   assert(is_seq(seq));
@@ -64,13 +117,17 @@ uint32 get_seq_len(OBJ seq)
   return get_seq_length(seq);
 }
 
-uint32 get_map_size(OBJ map)
+uint32 get_size(OBJ coll)
 {
-  assert(is_map(map));
+  assert(is_set(coll) | is_bin_rel(coll) | is_tern_rel(coll));
 
-  if (is_empty_map(map))
-    return 0;
-  return get_map_ptr(map)->size;
+  if (is_set(coll))
+    return is_empty_set(coll) ? 0 : get_set_ptr(coll)->size;
+
+  if (is_bin_rel(coll))
+    return is_empty_bin_rel(coll) ? 0 : get_bin_rel_ptr(coll)->size;
+
+  return is_empty_tern_rel(coll) ? 0 : get_tern_rel_ptr(coll)->size;
 }
 
 int64 mantissa(OBJ obj)
@@ -124,26 +181,49 @@ OBJ get_tag(OBJ obj)
 
 OBJ get_curr_obj(SEQ_ITER &it)
 {
-  assert(it.idx < it.len);
+  assert(!is_out_of_range(it));
   return it.buffer[it.idx];
 }
 
 OBJ get_curr_obj(SET_ITER &it)
 {
-  assert(it.idx < it.size);
+  assert(!is_out_of_range(it));
   return it.buffer[it.idx];
 }
 
-OBJ get_curr_key(MAP_ITER &it)
+OBJ get_curr_left_arg(BIN_REL_ITER &it)
 {
-  assert(it.idx < it.size);
-  return it.buffer[it.idx];
+  assert(!is_out_of_range(it));
+  uint32 idx = it.rev_idxs != NULL ? it.rev_idxs[it.idx] : it.idx;
+  return it.left_col[idx];
 }
 
-OBJ get_curr_value(MAP_ITER &it)
+OBJ get_curr_right_arg(BIN_REL_ITER &it)
 {
-  assert(it.idx < it.size);
-  return it.buffer[it.idx+it.size];
+  assert(!is_out_of_range(it));
+  uint32 idx = it.rev_idxs != NULL ? it.rev_idxs[it.idx] : it.idx;
+  return it.right_col[idx];
+}
+
+OBJ tern_rel_it_get_left_arg(TERN_REL_ITER &it)
+{
+  assert(!is_out_of_range(it));
+  uint32 idx = it.ordered_idxs != NULL ? it.ordered_idxs[it.idx] : it.idx;
+  return it.col1[idx];
+}
+
+OBJ tern_rel_it_get_mid_arg(TERN_REL_ITER &it)
+{
+  assert(!is_out_of_range(it));
+  uint32 idx = it.ordered_idxs != NULL ? it.ordered_idxs[it.idx] : it.idx;
+  return it.col2[idx];
+}
+
+OBJ tern_rel_it_get_right_arg(TERN_REL_ITER &it)
+{
+  assert(!is_out_of_range(it));
+  uint32 idx = it.ordered_idxs != NULL ? it.ordered_idxs[it.idx] : it.idx;
+  return it.col3[idx];
 }
 
 OBJ rand_set_elem(OBJ set)
@@ -161,6 +241,6 @@ OBJ search_or_lookup(OBJ coll, OBJ value)
   if (is_set(coll))
     return make_bool(has_elem(coll, value));
 
-  assert(is_map(coll));
+  assert(is_empty_bin_rel(coll) | is_ne_map(coll));
   return lookup(coll, value);
 }

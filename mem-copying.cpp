@@ -1,5 +1,7 @@
 #include "lib.h"
 
+#include <string.h>
+
 
 SEQ_OBJ *make_or_get_seq_obj_copy(SEQ_OBJ *seq)
 {
@@ -65,13 +67,47 @@ SET_OBJ *make_or_get_set_obj_copy(SET_OBJ *set)
   }
 }
 
-MAP_OBJ *make_or_get_map_obj_copy(MAP_OBJ *map)
+BIN_REL_OBJ *make_or_get_bin_rel_obj_copy(BIN_REL_OBJ *rel)
+{
+  uint32 size = rel->size;
+  if (size > 0)
+  {
+    // The object has not been copied yet, so we do it now.
+    BIN_REL_OBJ *rel_copy = new_bin_rel(size);
+    // Now we copy all the elements of the collection
+    OBJ *buff = rel->buffer;
+    OBJ *buff_copy = rel_copy->buffer;
+    for (int i=0 ; i < 2 * size ; i++)
+      buff_copy[i] = copy_obj(buff[i]);
+    // Now we copy the extra data at the end
+    uint32 *rev_idxs = get_right_to_left_indexes(rel);
+    uint32 *rev_idxs_copy = get_right_to_left_indexes(rel_copy);
+    memcpy(rev_idxs_copy, rev_idxs, size * sizeof(uint32));
+    // We mark the old object as "copied", and we store a pointer to the copy
+    // into it. The fields of the original object are never going to be used again,
+    // even by the memory manager, so we can safely overwrite them.
+    rel->size = 0;
+    * (BIN_REL_OBJ **) buff = rel_copy;
+    // Returning the new object
+    return rel_copy;
+  }
+  else
+  {
+    // The object has already been copied. We just return a (reference-counted) pointer to the copy
+    BIN_REL_OBJ *rel_copy = * (BIN_REL_OBJ **) rel->buffer;
+    add_ref((REF_OBJ *) rel_copy);
+    return rel_copy;
+  }
+
+}
+
+BIN_REL_OBJ *make_or_get_map_obj_copy(BIN_REL_OBJ *map)
 {
   uint32 size = map->size;
   if (size > 0)
   {
     // The object has not been copied yet, so we do it now.
-    MAP_OBJ *map_copy = new_map(size);
+    BIN_REL_OBJ *map_copy = new_map(size);
     // Now we copy all the elements of the sequence
     OBJ *buff = map->buffer;
     OBJ *buff_copy = map_copy->buffer;
@@ -81,14 +117,14 @@ MAP_OBJ *make_or_get_map_obj_copy(MAP_OBJ *map)
     // into it. The fields of the original object are never going to be used again,
     // even by the memory manager, so we can safely overwrite them.
     map->size = 0;
-    * (MAP_OBJ **) buff = map_copy;
+    * (BIN_REL_OBJ **) buff = map_copy;
     // Returning the new object
     return map_copy;
   }
   else
   {
     // The object has already been copied. We just return a (reference-counted) pointer to the copy
-    MAP_OBJ *map_copy = * (MAP_OBJ **) map->buffer;
+    BIN_REL_OBJ *map_copy = * (BIN_REL_OBJ **) map->buffer;
     add_ref((REF_OBJ *) map_copy);
     return map_copy;
   }
@@ -138,32 +174,38 @@ OBJ copy_obj(OBJ obj)
   {
     case TYPE_SEQUENCE:
     {
-      SEQ_OBJ *seq_copy = make_or_get_seq_obj_copy(get_physical_seq_obj_ptr(obj));
+      SEQ_OBJ *seq_copy = make_or_get_seq_obj_copy(get_seq_ptr(obj));
       return repoint_to_std_mem_copy(obj, seq_copy->buffer);
     }
 
     case TYPE_SLICE:
     {
-      SEQ_OBJ *seq_copy = make_or_get_seq_obj_copy(get_physical_seq_obj_ptr(obj));
+      SEQ_OBJ *seq_copy = make_or_get_seq_obj_copy(get_seq_ptr(obj));
       OBJ *seq_copy_buffer = seq_copy->buffer;
       return repoint_to_std_mem_copy(obj, seq_copy_buffer + get_seq_offset(obj));
     }
 
     case TYPE_SET:
     {
-      SET_OBJ *set_copy = make_or_get_set_obj_copy(get_physical_set_obj_ptr(obj));
+      SET_OBJ *set_copy = make_or_get_set_obj_copy(get_set_ptr(obj));
       return repoint_to_std_mem_copy(obj, set_copy);
+    }
+
+    case TYPE_BIN_REL: case TYPE_LOG_MAP:
+    {
+      BIN_REL_OBJ *rel_copy = make_or_get_bin_rel_obj_copy(get_bin_rel_ptr(obj));
+      return repoint_to_std_mem_copy(obj, rel_copy);
     }
 
     case TYPE_MAP:
     {
-      MAP_OBJ *map_copy = make_or_get_map_obj_copy(get_physical_map_obj_ptr(obj));
+      BIN_REL_OBJ *map_copy = make_or_get_map_obj_copy(get_bin_rel_ptr(obj));
       return repoint_to_std_mem_copy(obj, map_copy);
     }
 
     case TYPE_TAG_OBJ:
     {
-      TAG_OBJ *tag_obj_copy = make_or_get_tag_obj_copy(get_physical_tag_obj_ptr(obj));
+      TAG_OBJ *tag_obj_copy = make_or_get_tag_obj_copy(get_tag_obj_ptr(obj));
       return repoint_to_std_mem_copy(obj, tag_obj_copy);
     }
 

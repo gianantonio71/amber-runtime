@@ -156,7 +156,7 @@ OBJ merge_sets_impl(OBJ set_of_sets)
 OBJ merge_maps_impl(OBJ set_of_maps)
 {
   if (is_empty_set(set_of_maps))
-    return make_empty_map();
+    return make_empty_bin_rel();
 
   SET_OBJ *set_of_maps_ptr = get_set_ptr(set_of_maps);
   uint32 size = set_of_maps_ptr->size;
@@ -166,10 +166,10 @@ OBJ merge_maps_impl(OBJ set_of_maps)
   OBJ *maps = set_of_maps_ptr->buffer;
 
   for (uint32 i=1 ; i < size ; i++)
-    assert(!is_empty_map(maps[i]));
+    assert(!is_empty_bin_rel(maps[i]));
 
   // Skipping the empty map (if any), which can only be the first item in the set
-  if (is_empty_map(maps[0]))
+  if (is_empty_bin_rel(maps[0]))
   {
     maps++;
     size--;
@@ -178,7 +178,7 @@ OBJ merge_maps_impl(OBJ set_of_maps)
   //## HERE I SHOULD CHECK THAT ALL REMAINING MAPS ARE NOT EMPTY
 
   if (size == 0)
-    return make_empty_map();
+    return make_empty_bin_rel();
 
   if (size == 1)
   {
@@ -195,13 +195,13 @@ OBJ merge_maps_impl(OBJ set_of_maps)
   OBJ **value_arrays = (OBJ **) new_ptr_array(size);  // Pointers to the value arrays in each of the maps
   for (uint32 i=0 ; i < size ; i++)
   {
-    MAP_OBJ *map_ptr = get_map_ptr(maps[i]);
-    assert(map_ptr != 0);
-    uint32 map_size = map_ptr->size;
+    BIN_REL_OBJ *rel_ptr = get_bin_rel_ptr(maps[i]);
+    assert(rel_ptr != 0);
+    uint32 map_size = rel_ptr->size;
     assert(map_size > 0);
     sizes[i] = map_size;
-    key_arrays[i] = get_key_array_ptr(map_ptr);
-    value_arrays[i] = get_value_array_ptr(map_ptr);
+    key_arrays[i] = get_left_col_array_ptr(rel_ptr);
+    value_arrays[i] = get_right_col_array_ptr(rel_ptr);
     pair_count += map_size;
   }
 
@@ -228,9 +228,9 @@ OBJ merge_maps_impl(OBJ set_of_maps)
     idxs[i] = 1;
 
   // Allocating the output object and initializing its cursor
-  MAP_OBJ *res_map = new_map(pair_count);
-  OBJ *dest_key_array = get_key_array_ptr(res_map);
-  OBJ *dest_value_array = get_value_array_ptr(res_map);
+  BIN_REL_OBJ *res_map = new_map(pair_count);
+  OBJ *dest_key_array = get_left_col_array_ptr(res_map);
+  OBJ *dest_value_array = get_right_col_array_ptr(res_map);
   uint32 dest_idx = 0;
 
   // Main loop: popping elements from the priority queue,

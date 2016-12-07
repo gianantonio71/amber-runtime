@@ -3,6 +3,20 @@
 #include <algorithm>
 
 
+struct obj_less {
+  bool operator () (OBJ obj1, OBJ obj2) {
+    return comp_objs(obj1, obj2) > 0;
+  }
+};
+
+struct obj_inline_less {
+  bool operator () (OBJ obj1, OBJ obj2) {
+    return shallow_cmp(obj1, obj2) > 0;
+  }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
 uint32 find_obj(OBJ *sorted_array, uint32 len, OBJ obj, bool &found) // The array mustn't contain duplicates
 {
   if (len > 0)
@@ -34,18 +48,222 @@ uint32 find_obj(OBJ *sorted_array, uint32 len, OBJ obj, bool &found) // The arra
   return -1;
 }
 
-struct obj_less {
-  bool operator () (OBJ obj1, OBJ obj2) {
-    return comp_objs(obj1, obj2) > 0;
-  }
-};
+////////////////////////////////////////////////////////////////////////////////
 
-struct obj_inline_less {
-  bool operator () (OBJ obj1, OBJ obj2) {
-    return shallow_cmp(obj1, obj2) > 0;
-  }
-};
+uint32 count_at_start(uint32 *sorted_idx_array, OBJ *values, uint32 len, OBJ obj)
+{
+  //## IMPLEMENT FOR REAL...
+  int c = 0;
+  while (c < len && comp_objs(obj, values[sorted_idx_array[c]]) == 0)
+    c++;
+  return c;
+}
 
+uint32 count_at_end(uint32 *sorted_idx_array, OBJ *values, uint32 len, OBJ obj)
+{
+  //## IMPLEMENT FOR REAL...
+  int c = 0;
+  while (c < len && comp_objs(obj, values[sorted_idx_array[len-1-c]]) == 0)
+    c++;
+  return c;
+}
+
+uint32 find_idxs_range(uint32 *sorted_idx_array, OBJ *values, uint32 len, OBJ obj, uint32 &count)
+{
+  int64 low_idx = 0;
+  int64 high_idx = len - 1;
+
+  while (low_idx <= high_idx)
+  {
+    int64 middle_idx = (low_idx + high_idx) / 2;
+    OBJ middle_obj = values[sorted_idx_array[middle_idx]];
+
+    int cr = comp_objs(obj, middle_obj);
+
+    if (cr == 0)
+    {
+      int count_up = count_at_start(sorted_idx_array + middle_idx + 1, values, len - middle_idx - 1, obj);
+      int count_down = count_at_end(sorted_idx_array, values, middle_idx, obj);
+      count = 1 + count_up + count_down;
+      return middle_idx - count_down;
+    }
+
+    if (cr > 0)
+      high_idx = middle_idx - 1;
+    else
+      low_idx = middle_idx + 1;
+  }
+
+  count = 0;
+  return INVALID_INDEX;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+uint32 count_at_start(OBJ *sorted_array, uint32 len, OBJ obj)
+{
+  //## IMPLEMENT FOR REAL...
+  int c = 0;
+  while (c < len && comp_objs(obj, sorted_array[c]) == 0)
+    c++;
+  return c;
+}
+
+uint32 count_at_end(OBJ *sorted_array, uint32 len, OBJ obj)
+{
+  //## IMPLEMENT FOR REAL...
+  int c = 0;
+  while (c < len && comp_objs(obj, sorted_array[len-1-c]) == 0)
+    c++;
+  return c;
+}
+
+uint32 find_objs_range(OBJ *sorted_array, uint32 len, OBJ obj, uint32 &count)
+{
+  int64 low_idx = 0;
+  int64 high_idx = len - 1;
+
+  while (low_idx <= high_idx)
+  {
+    int64 middle_idx = (low_idx + high_idx) / 2;
+    OBJ middle_obj = sorted_array[middle_idx];
+
+    int cr = comp_objs(obj, middle_obj);
+
+    if (cr == 0)
+    {
+      int count_up = count_at_start(sorted_array + middle_idx + 1, len - middle_idx - 1, obj);
+      int count_down = count_at_end(sorted_array, middle_idx, obj);
+      count = 1 + count_up + count_down;
+      return middle_idx - count_down;
+    }
+
+    if (cr > 0)
+      high_idx = middle_idx - 1;
+    else
+      low_idx = middle_idx + 1;
+  }
+
+  count = 0;
+  return INVALID_INDEX;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+uint32 count_at_start(OBJ *major_col, OBJ *minor_col, uint32 len, OBJ major_arg, OBJ minor_arg)
+{
+  //## IMPLEMENT FOR REAL...
+  int c = 0;
+  while (c < len && comp_objs(major_arg, major_col[c]) == 0 && comp_objs(minor_arg, minor_col[c]) == 0)
+    c++;
+  return c;
+}
+
+uint32 count_at_end(OBJ *major_col, OBJ *minor_col, uint32 len, OBJ major_arg, OBJ minor_arg)
+{
+  //## IMPLEMENT FOR REAL...
+  int c = 0;
+  while (c < len && comp_objs(major_arg, major_col[len-1-c]) == 0 && comp_objs(minor_arg, minor_col[len-1-c]) == 0)
+    c++;
+  return c;
+}
+
+uint32 find_objs_range(OBJ *major_col, OBJ *minor_col, uint32 len, OBJ major_arg, OBJ minor_arg, uint32 &count)
+{
+  int64 low_idx = 0;
+  int64 high_idx = len - 1;
+
+  while (low_idx <= high_idx)
+  {
+    int64 idx = (low_idx + high_idx) / 2;
+
+    int cr = comp_objs(major_arg, major_col[idx]);
+    if (cr == 0)
+      cr = comp_objs(minor_arg, minor_col[idx]);
+
+    if (cr == 0)
+    {
+      int count_up = count_at_start(major_col+idx+1, minor_col+idx+1, len-idx-1, major_arg, minor_arg);
+      int count_down = count_at_end(major_col, minor_col, idx, major_arg, minor_arg);
+      count = 1 + count_up + count_down;
+      return idx - count_down;
+    }
+
+    if (cr > 0)
+      high_idx = idx - 1;
+    else
+      low_idx = idx + 1;
+  }
+
+  count = 0;
+  return INVALID_INDEX;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+uint32 count_at_start(uint32 *index, OBJ *major_col, OBJ *minor_col, uint32 len, OBJ major_arg, OBJ minor_arg)
+{
+  //## IMPLEMENT FOR REAL...
+  int c = 0;
+  while (c < len)
+  {
+    uint32 idx = index[c];
+    if (comp_objs(major_arg, major_col[idx]) == 0 && comp_objs(minor_arg, minor_col[idx]) == 0)
+      c++;
+    else
+      break;
+  }
+  return c;
+}
+
+uint32 count_at_end(uint32 *index, OBJ *major_col, OBJ *minor_col, uint32 len, OBJ major_arg, OBJ minor_arg)
+{
+  //## IMPLEMENT FOR REAL...
+  int c = 0;
+  while (c < len)
+  {
+    uint32 idx = index[len-c-1];
+    if (comp_objs(major_arg, major_col[idx]) == 0 and comp_objs(minor_arg, minor_col[idx]) == 0)
+      c++;
+    else
+      break;
+  }
+  return c;
+}
+
+uint32 find_idxs_range(uint32 *index, OBJ *major_col, OBJ *minor_col, uint32 len, OBJ major_arg, OBJ minor_arg, uint32 &count)
+{
+  int64 low_idx = 0;
+  int64 high_idx = len - 1;
+
+  while (low_idx <= high_idx)
+  {
+    int64 idx = (low_idx + high_idx) / 2;
+    uint32 dr_idx = index[idx];
+
+    int cr = comp_objs(major_arg, major_col[dr_idx]);
+    if (cr == 0)
+      cr = comp_objs(minor_arg, minor_col[dr_idx]);
+
+    if (cr == 0)
+    {
+      int count_up = count_at_start(index+idx+1, major_col, minor_col, len-idx-1, major_arg, minor_arg);
+      int count_down = count_at_end(index, major_col, minor_col, idx, major_arg, minor_arg);
+      count = 1 + count_up + count_down;
+      return idx - count_down;
+    }
+
+    if (cr > 0)
+      high_idx = idx - 1;
+    else
+      low_idx = idx + 1;
+  }
+
+  count = 0;
+  return INVALID_INDEX;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 uint32 sort_and_release_dups(OBJ *objs, uint32 size)
 {
@@ -118,27 +336,11 @@ uint32 sort_and_release_dups(OBJ *objs, uint32 size)
   return idx + 1;
 }
 
-
-struct obj_idx_less
-{
-  OBJ *objs;
-
-  obj_idx_less(OBJ *objs) : objs(objs) {}
-
-  bool operator () (uint32 idx1, uint32 idx2)
-  {
-    return comp_objs(objs[idx1], objs[idx2]) > 0;
-  }
-};
-
 uint32 sort_group_and_count(OBJ *objs, uint32 len, uint32 *idxs, OBJ *counters)
 {
   assert(len > 0);
 
-  for (uint32 i=0 ; i < len ; i++)
-    idxs[i] = i;
-
-  std::sort(idxs, idxs+len, obj_idx_less(objs));
+  index_sort(idxs, objs, len);
 
   uint32 n = 0;
 
@@ -169,10 +371,7 @@ void sort_and_check_no_dups(OBJ *keys, OBJ *values, uint32 size)
     return;
 
   uint32 *idxs = new_uint32_array(size);
-  for (uint32 i=0 ; i < size ; i++)
-    idxs[i] = i;
-
-  std::sort(idxs, idxs+size, obj_idx_less(keys));
+  index_sort(idxs, keys, size);
 
   for (uint32 i=0 ; i < size ; i++)
     if (idxs[i] != i)
@@ -244,7 +443,7 @@ int comp_objs(OBJ obj1, OBJ obj2)
       uint32 len1 = get_seq_length(obj1);
       uint32 len2 = get_seq_length(obj2);
       if (len1 != len2)
-        return len2 - len1;
+        return len2 - len1; //## BUG BUG BUG
       count = len1;
       elems1 = get_seq_buffer_ptr(obj1);
       elems2 = get_seq_buffer_ptr(obj2);
@@ -258,24 +457,38 @@ int comp_objs(OBJ obj1, OBJ obj2)
       uint32 size1 = set1->size;
       uint32 size2 = set2->size;
       if (size1 != size2)
-        return size2 - size1;
+        return size2 - size1; //## BUG BUG BUG
       count = size1;
       elems1 = set1->buffer;
       elems2 = set2->buffer;
       break;
     }
 
-    case TYPE_MAP:
+    case TYPE_BIN_REL:
     {
-      MAP_OBJ *map1 = get_map_ptr(obj1);
-      MAP_OBJ *map2 = get_map_ptr(obj2);
-      uint32 size1 = map1->size;
-      uint32 size2 = map2->size;
+      BIN_REL_OBJ *rel1 = get_bin_rel_ptr(obj1);
+      BIN_REL_OBJ *rel2 = get_bin_rel_ptr(obj2);
+      uint32 size1 = rel1->size;
+      uint32 size2 = rel2->size;
       if (size1 != size2)
-        return size2 - size1;
+        return size2 - size1; //## BUG BUG BUG
       count = 2 * size1;
-      elems1 = map1->buffer;
-      elems2 = map2->buffer;
+      elems1 = rel1->buffer;
+      elems2 = rel2->buffer;
+      break;
+    }
+
+    case TYPE_TERN_REL:
+    {
+      TERN_REL_OBJ *rel1 = get_tern_rel_ptr(obj1);
+      TERN_REL_OBJ *rel2 = get_tern_rel_ptr(obj2);
+      uint32 size1 = rel1->size;
+      uint32 size2 = rel2->size;
+      if (size1 != size2)
+        return size2 - size1; //## BUG BUG BUG
+      count = 3 * size1;
+      elems1 = rel1->buffer;
+      elems2 = rel2->buffer;
       break;
     }
 

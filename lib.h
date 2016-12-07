@@ -12,8 +12,6 @@ typedef unsigned int        uint32;
 typedef unsigned long long  uint64;
 
 
-
-
 enum OBJ_TYPE {
   // Always inline
   TYPE_BLANK_OBJ  = 0,
@@ -24,12 +22,17 @@ enum OBJ_TYPE {
   // Inline if empty, references otherwise
   TYPE_SEQUENCE   = 5,
   TYPE_SET        = 6,
-  TYPE_MAP        = 7,
+  TYPE_BIN_REL    = 7,
+  TYPE_TERN_REL   = 8,
   // Always references
-  TYPE_TAG_OBJ    = 8,
-  TYPE_SLICE      = 9,
+  TYPE_TAG_OBJ    = 9,
+  TYPE_SLICE      = 10,
+  TYPE_MAP        = 11,
+  TYPE_LOG_MAP    = 12
 };
 
+// Heap object can never be of the following types: TYPE_SLICE, TYPE_LOG_MAP
+// Never returned by get_logical_type(): TYPE_SLICE, TYPE_MAP, TYPE_LOG_MAP.
 
 const uint32 MAX_INLINE_OBJ_TYPE_VALUE  = TYPE_FLOAT;
 const uint32 MAX_OBJ_TYPE_VALUE         = TYPE_SLICE;
@@ -83,11 +86,6 @@ struct OBJ {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// union REF_OBJ {
-//   uint32 ref_count;
-//   void *ptr;
-// };
-
 struct REF_OBJ {
   uint32 ref_count;
 };
@@ -103,17 +101,23 @@ struct SEQ_OBJ {
 
 struct SET_OBJ {
   REF_OBJ ref_obj;
-  uint32 size;
-  OBJ    buffer[1];
+  uint32  size;
+  OBJ     buffer[1];
 };
 
 
-struct MAP_OBJ {
+struct BIN_REL_OBJ {
   REF_OBJ ref_obj;
-  uint32 size;
-  OBJ    buffer[1];
+  uint32  size;
+  OBJ     buffer[1];
 };
 
+
+struct TERN_REL_OBJ {
+  REF_OBJ ref_obj;
+  uint32  size;
+  OBJ     buffer[1];
+};
 
 struct TAG_OBJ {
   REF_OBJ ref_obj;
@@ -138,12 +142,23 @@ struct SET_ITER {
 };
 
 
-struct MAP_ITER {
-  OBJ    *buffer;
+struct BIN_REL_ITER {
+  OBJ    *left_col;
+  OBJ    *right_col;
+  uint32 *rev_idxs; // If this is not null, we are iterating in right column order
   uint32  idx;
-  uint32  size;
+  uint32  end; // Non-inclusive upper bound
 };
 
+
+struct TERN_REL_ITER {
+  OBJ    *col1;
+  OBJ    *col2;
+  OBJ    *col3;
+  uint32 *ordered_idxs; // If this is null, we iterate directly over the columns
+  uint32  idx;
+  uint32  end; // Non-inclusive upper bound
+};
 
 struct STREAM {
   OBJ    *buffer;
@@ -252,6 +267,8 @@ struct TERNARY_TABLE_ITER {
 
 const uint64 MAX_SEQ_LEN = 0xFFFFFFFF;
 
+const uint32 INVALID_INDEX = 0xFFFFFFFFU;
+
 const uint16 symb_idx_false   = 0;
 const uint16 symb_idx_true    = 1;
 const uint16 symb_idx_nil     = 2;
@@ -301,10 +318,19 @@ void release(OBJ);
 void vec_add_ref(OBJ* objs, uint32 len);
 void vec_release(OBJ* objs, uint32 len);
 
-SET_OBJ* new_set(uint32 size);      // Sets ref_count and size
-SEQ_OBJ* new_seq(uint32 length);    // Sets ref_count, length, capacity, used_capacity and elems
-MAP_OBJ* new_map(uint32 size);      // Sets ref_count and size
-TAG_OBJ* new_tag_obj();             // Sets ref_count
+OBJ* get_left_col_array_ptr(BIN_REL_OBJ*);
+OBJ* get_right_col_array_ptr(BIN_REL_OBJ*);
+uint32 *get_right_to_left_indexes(BIN_REL_OBJ*);
+
+OBJ *get_col_array_ptr(TERN_REL_OBJ *rel, int idx);
+uint32 *get_rotated_index(TERN_REL_OBJ *rel, int amount);
+
+SET_OBJ*      new_set(uint32 size);       // Sets ref_count and size
+SEQ_OBJ*      new_seq(uint32 length);     // Sets ref_count, length, capacity, used_capacity and elems
+BIN_REL_OBJ*  new_map(uint32 size);       // Sets ref_count and size, and clears rev_idxs
+BIN_REL_OBJ*  new_bin_rel(uint32 size);   // Sets ref_count and size
+TERN_REL_OBJ* new_tern_rel(uint32 size);  // Sets ref_count and size
+TAG_OBJ*      new_tag_obj();              // Sets ref_count
 
 SET_OBJ* shrink_set(SET_OBJ* set, uint32 new_size);
 
@@ -327,7 +353,7 @@ void delete_ptr_array(void** buffer, uint32 size);
 
 //////////////////////////////// mem-utils.cpp /////////////////////////////////
 
-OBJ_TYPE get_logical_type(OBJ); //## RENAME TO JUST get_type() WHEN ALL IS DONE
+OBJ_TYPE get_logical_type(OBJ); //## SHOULD IT EXPOSE THE DIFFERENCE BETWEEN MAPS AND NON-MAP BINARY RELATIONS?
 
 bool is_blank_obj(OBJ);
 bool is_null_obj(OBJ);
@@ -341,9 +367,13 @@ bool is_ne_seq(OBJ);
 bool is_set(OBJ);
 bool is_empty_set(OBJ);
 bool is_ne_set(OBJ);
-bool is_map(OBJ);
-bool is_empty_map(OBJ);
+bool is_bin_rel(OBJ);
+bool is_empty_bin_rel(OBJ);
+bool is_ne_bin_rel(OBJ);
 bool is_ne_map(OBJ);
+bool is_tern_rel(OBJ);
+bool is_empty_tern_rel(OBJ);
+bool is_ne_tern_rel(OBJ);
 bool is_tag_obj(OBJ);
 
 bool is_symb(OBJ, uint16);
@@ -361,28 +391,25 @@ OBJ make_blank_obj();
 OBJ make_null_obj();
 OBJ make_empty_seq();
 OBJ make_empty_set();
-OBJ make_empty_map();
+OBJ make_empty_bin_rel();
+OBJ make_empty_tern_rel();
 OBJ make_symb(uint16 symb_idx);
 OBJ make_bool(bool b);
 OBJ make_int(uint64 value);
 OBJ make_float(double value);
 OBJ make_seq(SEQ_OBJ* ptr, uint32 length);
 OBJ make_slice(SEQ_OBJ* ptr, MEM_LAYOUT mem_layout, uint32 offset, uint32 length);
-OBJ make_set(SET_OBJ* ptr);
-OBJ make_map(MAP_OBJ* ptr);
+OBJ make_set(SET_OBJ*);
+OBJ make_bin_rel(BIN_REL_OBJ*);
+OBJ make_tern_rel(TERN_REL_OBJ*);
+OBJ make_log_map(BIN_REL_OBJ*);
+OBJ make_map(BIN_REL_OBJ*);
 OBJ make_tag_obj(uint16 tag_idx, OBJ obj);
 
 // These functions exist in a limbo between the logical and physical world
 
-uint32 get_seq_offset(OBJ seq);
+uint32 get_seq_offset(OBJ);
 OBJ* get_seq_buffer_ptr(OBJ);
-
-OBJ* get_key_array_ptr(MAP_OBJ* map);
-OBJ* get_value_array_ptr(MAP_OBJ* map);
-
-SEQ_OBJ* get_seq_obj_ptr(OBJ);
-SET_OBJ* get_set_ptr(OBJ);
-MAP_OBJ* get_map_ptr(OBJ);
 
 // Purely physical representation functions
 
@@ -390,10 +417,11 @@ OBJ repoint_to_std_mem_copy(OBJ obj, void *new_ptr);
 
 OBJ_TYPE get_physical_type(OBJ obj);
 
-SEQ_OBJ* get_physical_seq_obj_ptr(OBJ);
-SET_OBJ* get_physical_set_obj_ptr(OBJ);
-MAP_OBJ* get_physical_map_obj_ptr(OBJ);
-TAG_OBJ *get_physical_tag_obj_ptr(OBJ obj);
+SEQ_OBJ*      get_seq_ptr(OBJ);
+SET_OBJ*      get_set_ptr(OBJ);
+BIN_REL_OBJ*  get_bin_rel_ptr(OBJ);
+TERN_REL_OBJ* get_tern_rel_ptr(OBJ);
+TAG_OBJ*      get_tag_obj_ptr(OBJ);
 
 MEM_LAYOUT get_mem_layout(OBJ);
 
@@ -414,13 +442,15 @@ bool inline_eq(OBJ obj1, OBJ obj2);
 bool are_eq(OBJ obj1, OBJ obj2);
 bool is_out_of_range(SET_ITER &it);
 bool is_out_of_range(SEQ_ITER &it);
-bool is_out_of_range(MAP_ITER &it);
+bool is_out_of_range(BIN_REL_ITER &it);
+bool is_out_of_range(TERN_REL_ITER &it);
 bool has_elem(OBJ set, OBJ elem);
+bool has_pair(OBJ rel, OBJ arg1, OBJ arg2);
+bool has_triple(OBJ rel, OBJ arg1, OBJ arg2, OBJ arg3);
 
 int64 get_int_val(OBJ);
-uint32 get_set_size(OBJ set);
 uint32 get_seq_len(OBJ seq);
-uint32 get_map_size(OBJ map);
+uint32 get_size(OBJ set);
 int64 mantissa(OBJ);
 int64 dec_exp(OBJ);
 int64 rand_nat(int64 max);  // Non-deterministic
@@ -431,8 +461,11 @@ OBJ at(OBJ seq, int64 idx);
 OBJ get_tag(OBJ);
 OBJ get_curr_obj(SET_ITER &it);
 OBJ get_curr_obj(SEQ_ITER &it);
-OBJ get_curr_key(MAP_ITER &it);
-OBJ get_curr_value(MAP_ITER &it);
+OBJ get_curr_left_arg(BIN_REL_ITER &it);
+OBJ get_curr_right_arg(BIN_REL_ITER &it);
+OBJ tern_rel_it_get_left_arg(TERN_REL_ITER &it);
+OBJ tern_rel_it_get_mid_arg(TERN_REL_ITER &it);
+OBJ tern_rel_it_get_right_arg(TERN_REL_ITER &it);
 OBJ rand_set_elem(OBJ set);   // Non-deterministic
 
 OBJ search_or_lookup(OBJ coll, OBJ value);
@@ -441,13 +474,11 @@ OBJ search_or_lookup(OBJ coll, OBJ value);
 
 void init(STREAM &s);
 void append(STREAM &s, OBJ obj);                // obj must be already reference-counted
+OBJ build_seq(OBJ* elems, uint32 length);       // Objects in elems must be already reference-counted
+OBJ build_seq(STREAM &s);
 OBJ build_set(OBJ* elems, uint32 size);
 OBJ build_set(STREAM &s);
-OBJ build_seq(OBJ* elems, uint32 length);           // Objects in elems must be already reference-counted
-OBJ build_seq(STREAM &s);
-OBJ build_map(OBJ* keys, OBJ* values, uint32 size);
-OBJ build_map(STREAM &key_stream, STREAM &value_stream);
-OBJ build_tagged_obj(OBJ tag, OBJ obj);          // obj must be already reference-counted
+OBJ build_tagged_obj(OBJ tag, OBJ obj);         // obj must be already reference-counted
 // OBJ make_float(double val); // Already defined in mem_utils.cpp
 OBJ neg_float(OBJ val);
 OBJ add_floats(OBJ val1, OBJ val2);
@@ -464,8 +495,8 @@ OBJ append_to_seq(OBJ seq, OBJ obj);            // Both seq and obj must already
 OBJ join_seqs(OBJ left, OBJ right);
 // OBJ join_mult_seqs(OBJ seqs);
 OBJ rev_seq(OBJ seq);
-OBJ get_at(OBJ seq, uint32 idx);                   // Increases reference count
-void set_at(OBJ seq, uint32 idx, OBJ value);       // Value must be already reference counted
+OBJ get_at(OBJ seq, uint32 idx);                // Increases reference count
+void set_at(OBJ seq, uint32 idx, OBJ value);    // Value must be already reference counted
 OBJ lookup(OBJ map, OBJ key);                   // Does not increase reference count
 OBJ lookup(OBJ map, OBJ key, bool &found);      // Does not increase reference count
 OBJ ext_lookup(OBJ map, OBJ key);               // Does not increase reference count
@@ -474,16 +505,15 @@ OBJ merge_sets(OBJ sets);
 OBJ merge_maps(OBJ maps);
 OBJ seq_to_set(OBJ seq);
 OBJ seq_to_mset(OBJ seq);
-// OBJ list_to_seq(OBJ list);
 OBJ internal_sort(OBJ set);
 OBJ add_attachment(OBJ target, OBJ data);
 OBJ fetch_attachments(OBJ);
 void get_set_iter(SET_ITER &it, OBJ set);
 void get_seq_iter(SEQ_ITER &it, OBJ seq);
-void get_map_iter(MAP_ITER &it, OBJ map);
 void move_forward(SET_ITER &it);
 void move_forward(SEQ_ITER &it);
-void move_forward(MAP_ITER &it);
+void move_forward(BIN_REL_ITER &it);
+void move_forward(TERN_REL_ITER &it);
 void fail();
 void runtime_check(OBJ cond);
 
@@ -494,6 +524,27 @@ OBJ build_const_int8_seq(const int8* buffer, uint32 len);
 OBJ build_const_int16_seq(const int16* buffer, uint32 len);
 OBJ build_const_int32_seq(const int32* buffer, uint32 len);
 OBJ build_const_int64_seq(const int64* buffer, uint32 len);
+
+//////////////////////////////// bin-rel-obj.cpp ///////////////////////////////
+
+OBJ build_bin_rel(OBJ *col1, OBJ *col2, uint32 size);
+OBJ build_bin_rel(STREAM &strm1, STREAM &strm2);
+
+OBJ build_map(OBJ* keys, OBJ* values, uint32 size);
+OBJ build_map(STREAM &key_stream, STREAM &value_stream);
+
+void get_bin_rel_iter(BIN_REL_ITER &it, OBJ rel);
+void get_bin_rel_iter_0(BIN_REL_ITER &it, OBJ rel, OBJ arg1);
+void get_bin_rel_iter_1(BIN_REL_ITER &it, OBJ rel, OBJ arg2);
+
+/////////////////////////////// tern-rel-obj.cpp ///////////////////////////////
+
+OBJ build_tern_rel(OBJ *col1, OBJ *col2, OBJ *col3, uint32 size);
+OBJ build_tern_rel(STREAM &strm1, STREAM &strm2, STREAM &strm3);
+
+void get_tern_rel_iter(TERN_REL_ITER &it, OBJ rel);
+void get_tern_rel_iter_by(TERN_REL_ITER &it, OBJ rel, int col_idx, OBJ arg);
+void get_tern_rel_iter_by(TERN_REL_ITER &it, OBJ rel, int major_col_idx, OBJ major_arg, OBJ minor_arg);
 
 /////////////////////////////////// debug.cpp //////////////////////////////////
 
@@ -511,12 +562,28 @@ void impl_fail(const char *msg);
 // void physical_fail();
 void internal_fail();
 
+////////////////////////////////// sorting.cpp /////////////////////////////////
+
+void stable_index_sort(uint32 *index, OBJ *values, uint32 count);
+void stable_index_sort(uint32 *index, OBJ *major_sort, OBJ *minor_sort, uint32 count);
+void stable_index_sort(uint32 *index, OBJ *major_sort, OBJ *middle_sort, OBJ *minor_sort, uint32 count);
+
+void index_sort(uint32 *index, OBJ *values, uint32 count);
+void index_sort(uint32 *index, OBJ *major_sort, OBJ *minor_sort, uint32 count);
+void index_sort(uint32 *index, OBJ *major_sort, OBJ *middle_sort, OBJ *minor_sort, uint32 count);
+
 /////////////////////////////////// algs.cpp ///////////////////////////////////
 
 uint32 sort_group_and_count(OBJ* objs, uint32 len, uint32* idxs, OBJ* counters);
 uint32 sort_and_release_dups(OBJ* objs, uint32 size);
 void sort_and_check_no_dups(OBJ* keys, OBJ* values, uint32 size);
+
 uint32 find_obj(OBJ* sorted_array, uint32 len, OBJ obj, bool &found); //## WHAT SHOULD THIS RETURN? ANY VALUE IN THE [0, 2^32-1] IS A VALID SEQUENCE INDEX, SO WHAT COULD BE USED TO REPRESENT "NOT FOUND"?
+uint32 find_objs_range(OBJ *sorted_array, uint32 len, OBJ obj, uint32 &count);
+uint32 find_idxs_range(uint32 *sorted_idx_array, OBJ *values, uint32 len, OBJ obj, uint32 &count);
+uint32 find_objs_range(OBJ *major_col, OBJ *minor_col, uint32 len, OBJ major_arg, OBJ minor_arg, uint32 &count);
+uint32 find_idxs_range(uint32 *index, OBJ *major_col, OBJ *minor_col, uint32 len, OBJ major_arg, OBJ minor_arg, uint32 &count);
+
 int comp_objs(OBJ obj1, OBJ obj2);
 
 /////////////////////////////// inter-utils.cpp ////////////////////////////////

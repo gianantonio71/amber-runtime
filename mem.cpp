@@ -6,29 +6,77 @@
 using namespace std;
 
 
-uint32 set_obj_mem_size(uint32 size)
+uint64 set_obj_mem_size(uint64 size)
 {
+  assert(size > 0);
   return sizeof(SET_OBJ) + (size - 1) * sizeof(OBJ);
 }
 
-uint32 seq_obj_mem_size(uint32 capacity)
+uint64 seq_obj_mem_size(uint64 capacity)
 {
+  assert(capacity > 0);
   return sizeof(SEQ_OBJ) + (capacity - 1) * sizeof(OBJ);
 }
 
-uint32 map_obj_mem_size(uint32 size)
+uint64 bin_rel_obj_mem_size(uint64 size)
 {
-  return sizeof(MAP_OBJ) + (2 * size - 1) * sizeof(OBJ);
+  assert(size > 0);
+  return sizeof(BIN_REL_OBJ) + (2 * size - 1) * sizeof(OBJ) + size * sizeof(uint32);
 }
 
-uint32 tag_obj_mem_size()
+uint32 tern_rel_obj_mem_size(uint64 size)
+{
+  assert(size > 0);
+  return sizeof(TERN_REL_OBJ) + (3 * size - 1) * sizeof(OBJ) + 2 * size * sizeof(uint32);
+}
+
+uint64 map_obj_mem_size(uint64 size)
+{
+  assert(size > 0);
+  return bin_rel_obj_mem_size(size);
+}
+
+uint64 tag_obj_mem_size()
 {
   return sizeof(TAG_OBJ);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-uint32 seq_capacity(uint32 byte_size)
+OBJ *get_left_col_array_ptr(BIN_REL_OBJ *rel)
+{
+  return rel->buffer;
+}
+
+OBJ *get_right_col_array_ptr(BIN_REL_OBJ *rel)
+{
+  return rel->buffer + rel->size;
+}
+
+uint32 *get_right_to_left_indexes(BIN_REL_OBJ *rel)
+{
+  return (uint32 *) (rel->buffer + 2 * rel->size);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+OBJ *get_col_array_ptr(TERN_REL_OBJ *rel, int idx)
+{
+  assert(idx >= 0 & idx <= 2);
+  return rel->buffer + idx * rel->size;
+}
+
+uint32 *get_rotated_index(TERN_REL_OBJ *rel, int amount)
+{
+  assert(amount == 1 | amount == 2);
+  uint32 size = rel->size;
+  uint32 *base_ptr = (uint32 *) (rel->buffer + 3 * size);
+  return base_ptr + (amount-1) * size;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+uint32 seq_capacity(uint64 byte_size)
 {
   return (byte_size - sizeof(SEQ_OBJ)) / sizeof(OBJ) + 1;
 }
@@ -55,14 +103,36 @@ SET_OBJ *new_set(uint32 size)
   return set;
 }
 
-MAP_OBJ *new_map(uint32 size)
+BIN_REL_OBJ *new_map(uint32 size)
 {
   assert(size > 0);
 
-  MAP_OBJ *map = (MAP_OBJ *) new_obj(map_obj_mem_size(size));
+  BIN_REL_OBJ *map = (BIN_REL_OBJ *) new_obj(map_obj_mem_size(size));
   map->ref_obj.ref_count = 1;
   map->size = size;
+  uint32 *rev_idxs = get_right_to_left_indexes(map);
+  rev_idxs[0] = INVALID_INDEX;
   return map;
+}
+
+BIN_REL_OBJ *new_bin_rel(uint32 size)
+{
+  assert(size > 0);
+
+  BIN_REL_OBJ *rel = (BIN_REL_OBJ *) new_obj(bin_rel_obj_mem_size(size));
+  rel->ref_obj.ref_count = 1;
+  rel->size = size;
+  return rel;
+}
+
+TERN_REL_OBJ *new_tern_rel(uint32 size)
+{
+  assert(size > 0);
+
+  TERN_REL_OBJ *rel = (TERN_REL_OBJ *) new_obj(tern_rel_obj_mem_size(size));
+  rel->ref_obj.ref_count = 1;
+  rel->size = size;
+  return rel;
 }
 
 TAG_OBJ *new_tag_obj()
@@ -74,6 +144,8 @@ TAG_OBJ *new_tag_obj()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+//## WHY ISN'T THERE A shrink_map()?
 
 SET_OBJ *shrink_set(SET_OBJ *set, uint32 new_size)
 {
@@ -181,8 +253,9 @@ static void delete_obj(OBJ obj, OBJ *queue, uint32 &queue_start, uint32 &queue_s
   assert(is_gc_obj(obj));
 
   REF_OBJ *ref_obj = get_ref_obj_ptr(obj);
+  OBJ_TYPE obj_type = get_ref_obj_type(obj);
 
-  switch (get_ref_obj_type(obj))
+  switch (obj_type)
   {
     case TYPE_SEQUENCE:
     {
@@ -201,12 +274,21 @@ static void delete_obj(OBJ obj, OBJ *queue, uint32 &queue_start, uint32 &queue_s
       break;
     }
 
-    case TYPE_MAP:
+    case TYPE_BIN_REL: case TYPE_LOG_MAP: case TYPE_MAP:
     {
-      MAP_OBJ *map = (MAP_OBJ *) ref_obj;
-      uint32 size = map->size;
-      release(map->buffer, 2*size, queue, queue_start, queue_size);
-      free_obj(map, map_obj_mem_size(size));
+      BIN_REL_OBJ *rel = (BIN_REL_OBJ *) ref_obj;
+      uint32 size = rel->size;
+      release(rel->buffer, 2*size, queue, queue_start, queue_size);
+      free_obj(rel, obj_type == TYPE_MAP ? map_obj_mem_size(size) : bin_rel_obj_mem_size(size));
+      break;
+    }
+
+    case TYPE_TERN_REL:
+    {
+      TERN_REL_OBJ *rel = (TERN_REL_OBJ *) ref_obj;
+      uint32 size = rel->size;
+      release(rel->buffer, 3*size, queue, queue_start, queue_size);
+      free_obj(rel, tern_rel_obj_mem_size(size));
       break;
     }
 

@@ -38,35 +38,6 @@ void append(STREAM &s, OBJ obj) // obj must be already reference-counted
   s.count++;
 }
 
-OBJ build_set(OBJ *elems, uint32 size)
-{
-  if (size == 0)
-    return make_empty_set();
-
-  size = sort_and_release_dups(elems, size);
-
-  SET_OBJ *set = new_set(size);
-  OBJ *es = set->buffer;
-  for (uint32 i=0 ; i < size ; i++)
-    es[i] = elems[i];
-
-  return make_set(set);
-}
-
-OBJ build_set(STREAM &s)
-{
-  assert((s.count == 0 && s.capacity == 0 && s.buffer == NULL) || (s.count > 0 && s.capacity > 0 && s.buffer != NULL));
-
-  uint32 count = s.count;
-  if (count == 0)
-    return make_empty_set();
-
-  OBJ *buffer = s.buffer;
-  OBJ set = build_set(buffer, count);
-  delete_obj_array(buffer, s.capacity);
-  return set;
-}
-
 OBJ build_seq(OBJ *elems, uint32 length) // Objects in elems must be already reference-counted
 {
   if (length == 0)
@@ -94,39 +65,33 @@ OBJ build_seq(STREAM &s)
   return seq;
 }
 
-OBJ build_map(OBJ *keys, OBJ *values, uint32 size)
+OBJ build_set(OBJ *elems, uint32 size)
 {
   if (size == 0)
-    return make_empty_map();
+    return make_empty_set();
 
-  sort_and_check_no_dups(keys, values, size);
+  size = sort_and_release_dups(elems, size);
 
-  MAP_OBJ *map = new_map(size);
-  OBJ *ks  = map->buffer;
-  OBJ *vs  = ks + map->size;
-
+  SET_OBJ *set = new_set(size);
+  OBJ *es = set->buffer;
   for (uint32 i=0 ; i < size ; i++)
-  {
-    ks[i] = keys[i];
-    vs[i] = values[i];
-  }
+    es[i] = elems[i];
 
-  return make_map(map);
+  return make_set(set);
 }
 
-OBJ build_map(STREAM &key_stream, STREAM &value_stream)
+OBJ build_set(STREAM &s)
 {
-  assert(key_stream.count == value_stream.count);
+  assert((s.count == 0 && s.capacity == 0 && s.buffer == NULL) || (s.count > 0 && s.capacity > 0 && s.buffer != NULL));
 
-  if (key_stream.count == 0)
-    return make_empty_map();
+  uint32 count = s.count;
+  if (count == 0)
+    return make_empty_set();
 
-  OBJ map = build_map(key_stream.buffer, value_stream.buffer, key_stream.count);
-
-  delete_obj_array(key_stream.buffer, key_stream.capacity);
-  delete_obj_array(value_stream.buffer, value_stream.capacity);
-
-  return map;
+  OBJ *buffer = s.buffer;
+  OBJ set = build_set(buffer, count);
+  delete_obj_array(buffer, s.capacity);
+  return set;
 }
 
 OBJ build_tagged_obj(OBJ tag, OBJ obj)
@@ -210,7 +175,7 @@ OBJ get_seq_slice(OBJ seq, int64 idx_first, int64 len)
 
   add_ref(seq);
 
-  SEQ_OBJ *ptr = get_seq_obj_ptr(seq);
+  SEQ_OBJ *ptr = get_seq_ptr(seq);
   uint32 offset = get_seq_offset(seq);
   return make_slice(ptr, get_mem_layout(seq), offset+idx_first, len);
 }
@@ -220,7 +185,7 @@ OBJ extend_sequence(OBJ seq, OBJ *new_elems, uint32 count)
   assert(!is_empty_seq(seq));
   assert(((uint64) get_seq_length(seq) + count <= 0xFFFFFFFF));
 
-  SEQ_OBJ *seq_ptr = get_seq_obj_ptr(seq);
+  SEQ_OBJ *seq_ptr = get_seq_ptr(seq);
   uint32 offset = get_seq_offset(seq);
   uint32 length = get_seq_length(seq);
 
@@ -386,7 +351,7 @@ OBJ lookup(OBJ map, OBJ key)
   if (found)
     return res;
 
-  if (is_empty_map(map))
+  if (is_empty_bin_rel(map))
   {
     soft_fail("_lookup_(): Key not found. Map is empty");
   }
@@ -406,13 +371,15 @@ OBJ lookup(OBJ map, OBJ key, bool &found)
 {
   // No need to check the parameters
 
-  if (is_empty_map(map))
+  if (is_empty_bin_rel(map))
   {
     found = false;
     return make_blank_obj();
   }
 
-  MAP_OBJ *m = get_map_ptr(map);
+  assert(get_physical_type(map) == TYPE_MAP | get_physical_type(map) == TYPE_LOG_MAP);
+
+  BIN_REL_OBJ *m = get_bin_rel_ptr(map);
   uint32 size = m->size;
   OBJ *keys = m->buffer;
 
@@ -431,7 +398,7 @@ OBJ ext_lookup(OBJ map_or_tag_obj, OBJ key)
 {
   uint16 key_idx = get_symb_idx(key);
   OBJ map = is_tag_obj(map_or_tag_obj) ? get_inner_obj(map_or_tag_obj) : map_or_tag_obj;
-  MAP_OBJ *ptr = get_map_ptr(map);
+  BIN_REL_OBJ *ptr = get_bin_rel_ptr(map);
   uint32 size = ptr->size;
   OBJ *keys = ptr->buffer;
   OBJ *values = keys + size;
@@ -445,9 +412,9 @@ OBJ ext_lookup(OBJ map_or_tag_obj, OBJ key, bool &found)
 {
   uint16 key_idx = get_symb_idx(key);
   OBJ map = is_tag_obj(map_or_tag_obj) ? get_inner_obj(map_or_tag_obj) : map_or_tag_obj;
-  if (!is_empty_map(map))
+  if (!is_empty_bin_rel(map))
   {
-    MAP_OBJ *ptr = get_map_ptr(map);
+    BIN_REL_OBJ *ptr = get_bin_rel_ptr(map);
     uint32 size = ptr->size;
     OBJ *keys = ptr->buffer;
     OBJ *values = keys + size;
@@ -501,7 +468,7 @@ OBJ seq_to_set(OBJ seq)
 OBJ seq_to_mset(OBJ seq)
 {
   if (is_empty_seq(seq))
-    return make_empty_map();
+    return make_empty_bin_rel();
 
   OBJ *elems = get_seq_buffer_ptr(seq);
   uint32 len = get_seq_length(seq);
@@ -511,7 +478,7 @@ OBJ seq_to_mset(OBJ seq)
 
   uint32 n = sort_group_and_count(elems, len, idxs, counters);
 
-  MAP_OBJ *res = new_map(n);
+  BIN_REL_OBJ *res = new_map(n);
   OBJ *keys = res->buffer;
   OBJ *values = keys + n;
 
@@ -528,29 +495,6 @@ OBJ seq_to_mset(OBJ seq)
 
   return make_map(res);
 }
-
-// OBJ list_to_seq(OBJ list)
-// {
-//   if (is_empty_seq(list))
-//     return empty_seq;
-
-//   uint32 len = 0;
-//   for (OBJ tail=list ; tail != empty_seq ; tail=at(tail, 1))
-//     len++;
-
-//   SEQ_OBJ *seq = new_full_seq(len);
-
-//   OBJ *elems = seq->elems;
-//   OBJ tail = list;
-
-//   for (uint32 i=0 ; i < len ; i++)
-//   {
-//     elems[i] = get_at(tail, 0);
-//     tail = at(tail, 1);
-//   }
-
-//   return make_obj(seq);
-// }
 
 OBJ internal_sort(OBJ set)
 {
@@ -668,22 +612,6 @@ void get_seq_iter(SEQ_ITER &it, OBJ seq)
   }
 }
 
-void get_map_iter(MAP_ITER &it, OBJ map)
-{
-  it.idx = 0;
-  if (!is_empty_map(map))
-  {
-    MAP_OBJ *ptr = get_map_ptr(map);
-    it.buffer = ptr->buffer;
-    it.size = ptr->size;
-  }
-  else
-  {
-    it.buffer = 0;  //## NOT STRICTLY NECESSARY
-    it.size = 0;
-  }
-}
-
 void move_forward(SET_ITER &it)
 {
   assert(!is_out_of_range(it));
@@ -696,7 +624,13 @@ void move_forward(SEQ_ITER &it)
   it.idx++;
 }
 
-void move_forward(MAP_ITER &it)
+void move_forward(BIN_REL_ITER &it)
+{
+  assert(!is_out_of_range(it));
+  it.idx++;
+}
+
+void move_forward(TERN_REL_ITER &it)
 {
   assert(!is_out_of_range(it));
   it.idx++;
