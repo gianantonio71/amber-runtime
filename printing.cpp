@@ -8,7 +8,6 @@ typedef enum {TEXT, SUB_START, SUB_END} EMIT_ACTION;
 
 
 void print_obj(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data);
-void print_obj_inline(OBJ obj, bool print_delimiters, void (*emit)(void *, const void *, EMIT_ACTION), void *data);
 
 
 bool is_str(uint16 tag_idx, OBJ obj)
@@ -152,7 +151,7 @@ void print_set(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *d
     for (uint32 i=0 ; i < size ; i++)
     {
       if (i > 0)
-        emit(data, ", ", TEXT);
+        emit(data, "; ", TEXT);
       print_obj(elems[i], emit, data);
     }
   }
@@ -178,10 +177,10 @@ void print_bin_rel(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), voi
   for (uint32 i=0 ; i < size ; i++)
   {
     if (i > 0)
-      emit(data, ", ", TEXT);
+      emit(data, "; ", TEXT);
     emit(data, NULL, SUB_START);
     print_obj(left_col[i], emit, data);
-    emit(data, ": ", TEXT);
+    emit(data, ", ", TEXT);
     print_obj(right_col[i], emit, data);
     emit(data, NULL, SUB_END);
   }
@@ -190,10 +189,34 @@ void print_bin_rel(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), voi
 }
 
 
-void print_map(OBJ obj, bool print_brackets, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
+void print_map(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
 {
-  if (print_brackets)
-    emit(data, "[", TEXT);
+  BIN_REL_OBJ *map = get_bin_rel_ptr(obj);
+  uint32 size = map->size;
+  OBJ *keys = get_left_col_array_ptr(map);
+  OBJ *values = get_right_col_array_ptr(map);
+
+  emit(data, "[", TEXT);
+
+  for (uint32 i=0 ; i < size ; i++)
+  {
+    if (i > 0)
+      emit(data, "; ", TEXT);
+    emit(data, NULL, SUB_START);
+    print_obj(keys[i], emit, data);
+    emit(data, " -> ", TEXT);
+    print_obj(values[i], emit, data);
+    emit(data, NULL, SUB_END);
+  }
+
+  emit(data, "]", TEXT);
+}
+
+
+void print_record(OBJ obj, bool print_parentheses, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
+{
+  if (print_parentheses)
+    emit(data, "(", TEXT);
 
   BIN_REL_OBJ *map = get_bin_rel_ptr(obj);
   uint32 size = map->size;
@@ -205,23 +228,14 @@ void print_map(OBJ obj, bool print_brackets, void (*emit)(void *, const void *, 
     if (i > 0)
       emit(data, ", ", TEXT);
     emit(data, NULL, SUB_START);
-    if (is_record(obj))
-    {
-      print_symb(keys[i], emit, data);
-      emit(data, ": ", TEXT);
-      print_obj_inline(values[i], true, emit, data);
-    }
-    else
-    {
-      print_obj(keys[i], emit, data);
-      emit(data, " -> ", TEXT);
-      print_obj(values[i], emit, data);
-    }
+    print_symb(keys[i], emit, data);
+    emit(data, ": ", TEXT);
+    print_obj(values[i], emit, data);
     emit(data, NULL, SUB_END);
   }
 
-  if (print_brackets)
-    emit(data, "]", TEXT);
+  if (print_parentheses)
+    emit(data, ")", TEXT);
 }
 
 
@@ -244,12 +258,12 @@ void print_tern_rel(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), vo
   for (uint32 i=0 ; i < size ; i++)
   {
     if (i > 0)
-      emit(data, ", ", TEXT);
+      emit(data, "; ", TEXT);
     emit(data, NULL, SUB_START);
     print_obj(col1[i], emit, data);
-    emit(data, ": ", TEXT);
+    emit(data, ", ", TEXT);
     print_obj(col2[i], emit, data);
-    emit(data, ": ", TEXT);
+    emit(data, ", ", TEXT);
     print_obj(col3[i], emit, data);
     emit(data, NULL, SUB_END);
   }
@@ -272,25 +286,16 @@ void print_tag_obj(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), voi
   {
     print_symb(make_symb(tag_idx), emit, data);
     emit(data, "(", TEXT);
-    bool skip_delimiters = is_record(inner_obj) || (is_ne_seq(inner_obj) && get_seq_length(inner_obj) > 1);
-    print_obj_inline(inner_obj, !skip_delimiters, emit, data);
+
+    if (is_record(inner_obj))
+      print_record(inner_obj, false, emit, data);
+    else if (is_ne_seq(inner_obj) && get_seq_length(inner_obj) > 1)
+      print_seq(inner_obj, false, emit, data);
+    else
+      print_obj(inner_obj, emit, data);
+
     emit(data, ")", TEXT);
   }
-}
-
-
-void print_obj_inline(OBJ obj, bool print_delimiters, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
-{
-  if (is_set(obj))
-    print_set(obj, emit, data);
-  else if (is_seq(obj))
-    print_seq(obj, print_delimiters, emit, data);
-  else if (is_ne_map(obj)) //## SHOULD I PRINT IT AS A MAP ONLY WHEN IT'S A PHYSICAL ONE?
-    print_map(obj, print_delimiters, emit, data);
-  else if (is_bin_rel(obj))
-    print_bin_rel(obj, emit, data);
-  else
-    print_obj(obj, emit, data);
 }
 
 
@@ -319,8 +324,11 @@ void print_obj(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *d
   else if (is_set(obj))
     print_set(obj, emit, data);
 
+  else if (is_record(obj))
+    print_record(obj, true, emit, data);
+
   else if (is_ne_map(obj)) //## SHOULD I PRINT IT AS A MAP ONLY WHEN IT'S A PHYSICAL ONE?
-    print_map(obj, true, emit, data);
+    print_map(obj, emit, data);
 
   else if (is_bin_rel(obj))
     print_bin_rel(obj, emit, data);
