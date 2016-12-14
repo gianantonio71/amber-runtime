@@ -20,8 +20,8 @@ void init_new_slots(OBJ *slots, uint32 start, uint32 end)
   {
     OBJ *slot = slots + i;
     slot->core_data.int_ = i + 1;
-    slot->extra_data.word = 0; // Should not be necessary
-    assert(slot->extra_data.std.type == TYPE_BLANK_OBJ);
+    slot->extra_data = 0; // Should not be necessary
+    assert(get_physical_type(*slot) == TYPE_BLANK_OBJ);
   }
 }
 
@@ -136,7 +136,7 @@ int64 lookup_value(VALUE_STORE *store, OBJ value)
   for (uint32 i=0 ; i < capacity ; i++)
   {
     OBJ curr_value = slots[i];
-    if (curr_value.extra_data.std.type != TYPE_BLANK_OBJ && comp_objs(value, curr_value) == 0)
+    if (get_physical_type(curr_value) != TYPE_BLANK_OBJ && comp_objs(value, curr_value) == 0)
       return i;
   }
   return -1;

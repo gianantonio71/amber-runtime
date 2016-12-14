@@ -52,36 +52,38 @@ struct OBJ {
     void*   ptr;
   } core_data;
 
-  union {
-    struct {
-      uint16   symb_idx;
-      uint16   inner_tag;
-      uint16   tag;
-      uint8    unused_byte;
-      unsigned type        : 4;
-      unsigned mem_layout  : 2;
-      unsigned num_tags    : 2;
-    } std;
+  uint64 extra_data;
 
-    struct {
-      uint32   length;
-      uint16   tag;
-      uint8    unused_byte;
-      unsigned type        : 4;
-      unsigned mem_layout  : 2;
-      unsigned num_tags    : 2;
-    } seq;
-
-    struct {
-      uint32   length;
-      unsigned offset      : 24;
-      unsigned type        : 4;
-      unsigned mem_layout  : 2;
-      unsigned num_tags    : 2;
-    } slice;
-
-    uint64 word;
-  } extra_data;
+  // union {
+  //   struct {
+  //     uint16   symb_idx;
+  //     uint16   inner_tag;
+  //     uint16   tag;
+  //     uint8    unused_byte;
+  //     unsigned type        : 4;
+  //     unsigned mem_layout  : 2;
+  //     unsigned num_tags    : 2;
+  //   } std;
+  //
+  //   struct {
+  //     uint32   length;
+  //     uint16   tag;
+  //     uint8    unused_byte;
+  //     unsigned type        : 4;
+  //     unsigned mem_layout  : 2;
+  //     unsigned num_tags    : 2;
+  //   } seq;
+  //
+  //   struct {
+  //     uint32   length;
+  //     unsigned offset      : 24;
+  //     unsigned type        : 4;
+  //     unsigned mem_layout  : 2;
+  //     unsigned num_tags    : 2;
+  //   } slice;
+  //
+  //   uint64 word;
+  // } extra_data;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
