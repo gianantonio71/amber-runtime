@@ -51,13 +51,13 @@ struct col_1 {
   static uint32 key(uint64 tuple) {
     return right(tuple);
   }
-  static uint32 key_shifted(uint64 flipped_tuple){
+  static uint32 key_shifted(uint64 flipped_tuple) {
     return left(flipped_tuple);
   }
   static uint64 lower_bound(uint32 key) {
     return pack(key, 0);
   }
-  static const bool SORTED = true;
+  static const bool SORTED = false;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -107,7 +107,7 @@ struct cols_12 {
   static tuple3 lower_bound(uint64 key) {
     return ::lower_bound(key);
   }
-  static const bool SORTED = true;
+  static const bool SORTED = false;
 };
 
 struct cols_20 {
@@ -135,7 +135,7 @@ struct col_2 {
   static tuple3 lower_bound(uint32 key) {
     return ::lower_bound(pack(key, 0));
   }
-  static const bool SORTED = true;
+  static const bool SORTED = false;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

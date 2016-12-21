@@ -326,3 +326,95 @@ bool ternary_table_updates_check_01_12_20(TERNARY_TABLE *table, TERNARY_TABLE_UP
   return ternary_table_updates_check_01_12(table, updates) &&
     table_updates_check_key<cols_20>(updates->inserts, updates->deletes, table->shifted_twice);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+OBJ copy_ternary_table(TERNARY_TABLE *table, VALUE_STORE *vs1, VALUE_STORE *vs2, VALUE_STORE *vs3, int idx1, int idx2, int idx3)
+{
+  OBJ *slots1 = vs1->slots;
+  OBJ *slots2 = vs2->slots;
+  OBJ *slots3 = vs3->slots;
+
+  set<tuple3> &rows = table->unshifted;
+  uint32 size = rows.size();
+
+  if (size == 0)
+    return make_empty_tern_rel();
+
+  OBJ *col1 = new_obj_array(3 * size);
+  OBJ *col2 = col1 + size;
+  OBJ *col3 = col2 + size;
+
+  uint32 idx = 0;
+  for (set<tuple3>::iterator it=rows.begin() ; it != rows.end() ; it++)
+  {
+    tuple3 row = *it;
+    col1[idx] = slots1[left(row.fields01)];
+    col2[idx] = slots2[right(row.fields01)];
+    col3[idx++] = slots3[row.field2];
+  }
+  assert(idx == size);
+
+  for (int64 i=0 ; i < 3 * size ; i++)
+    add_ref(col1[i]);
+
+  OBJ *rec_cols[3];
+  rec_cols[idx1] = col1;
+  rec_cols[idx2] = col2;
+  rec_cols[idx3] = col3;
+  OBJ rel = build_tern_rel(rec_cols[0], rec_cols[1], rec_cols[2], size);
+
+  delete_obj_array(col1, 3 * size);
+
+  return rel;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void set_ternary_table(
+  TERNARY_TABLE *table, TERNARY_TABLE_UPDATES *updates,
+  VALUE_STORE *vs1, VALUE_STORE *vs2, VALUE_STORE *vs3,
+  VALUE_STORE_UPDATES *vsu1, VALUE_STORE_UPDATES *vsu2, VALUE_STORE_UPDATES *vsu3,
+  OBJ rel, int idx1, int idx2, int idx3
+)
+{
+  ternary_table_clear(table, updates);
+
+  if (is_empty_tern_rel(rel))
+    return;
+
+  TERN_REL_OBJ *ptr = get_tern_rel_ptr(rel);
+  uint32 size = ptr->size;
+  OBJ *col1 = get_col_array_ptr(ptr, idx1);
+  OBJ *col2 = get_col_array_ptr(ptr, idx2);
+  OBJ *col3 = get_col_array_ptr(ptr, idx3);
+
+  for (uint32 i=0 ; i < size ; i++)
+  {
+    OBJ obj = col1[i];
+    uint32 ref1 = lookup_value_ex(vs1, vsu1, obj);
+    if (ref1 == -1)
+    {
+      add_ref(obj);
+      ref1 = value_store_insert(vsu1, obj);
+    }
+
+    obj = col2[i];
+    uint32 ref2 = lookup_value_ex(vs2, vsu2, obj);
+    if (ref2 == -1)
+    {
+      add_ref(obj);
+      ref2 = value_store_insert(vsu2, obj);
+    }
+
+    obj = col3[i];
+    uint32 ref3 = lookup_value_ex(vs3, vsu3, obj);
+    if (ref3 == -1)
+    {
+      add_ref(obj);
+      ref3 = value_store_insert(vsu3, obj);
+    }
+
+    ternary_table_insert(updates, ref1, ref2, ref3);
+  }
+}

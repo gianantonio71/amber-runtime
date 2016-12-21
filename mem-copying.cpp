@@ -159,8 +159,6 @@ TAG_OBJ *make_or_get_tag_obj_copy(TAG_OBJ *tag_obj)
 
 OBJ copy_obj(OBJ obj)
 {
-  assert(is_in_copying_state());
-
   if (is_inline_obj(obj))
     return obj;
 
@@ -169,6 +167,8 @@ OBJ copy_obj(OBJ obj)
     add_ref(obj);
     return obj;
   }
+
+  assert(is_in_copying_state());
 
   switch (get_physical_type(obj))
   {

@@ -579,6 +579,7 @@ void index_sort(uint32 *index, OBJ *major_sort, OBJ *middle_sort, OBJ *minor_sor
 uint32 sort_group_and_count(OBJ* objs, uint32 len, uint32* idxs, OBJ* counters);
 uint32 sort_and_release_dups(OBJ* objs, uint32 size);
 void sort_and_check_no_dups(OBJ* keys, OBJ* values, uint32 size);
+void sort_obj_array(OBJ* objs, uint32 len);
 
 uint32 find_obj(OBJ* sorted_array, uint32 len, OBJ obj, bool &found); //## WHAT SHOULD THIS RETURN? ANY VALUE IN THE [0, 2^32-1] IS A VALID SEQUENCE INDEX, SO WHAT COULD BE USED TO REPRESENT "NOT FOUND"?
 uint32 find_objs_range(OBJ *sorted_array, uint32 len, OBJ obj, uint32 &count);
@@ -657,6 +658,10 @@ bool unary_table_iter_is_out_of_range(UNARY_TABLE_ITER *iter);
 
 uint32 unary_table_iter_get_field(UNARY_TABLE_ITER *iter);
 
+OBJ copy_unary_table(UNARY_TABLE *table, VALUE_STORE *vs);
+
+void set_unary_table(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates, VALUE_STORE *vs, VALUE_STORE_UPDATES *vsu, OBJ set);
+
 /////////////////////////////// binary-table.cpp ///////////////////////////////
 
 void binary_table_init(BINARY_TABLE *table);
@@ -690,6 +695,11 @@ uint32 binary_table_iter_get_left_field(BINARY_TABLE_ITER *iter);
 uint32 binary_table_iter_get_right_field(BINARY_TABLE_ITER *iter);
 
 void binary_table_iter_next(BINARY_TABLE_ITER *iter);
+
+OBJ copy_binary_table(BINARY_TABLE *table, VALUE_STORE *vs1, VALUE_STORE *vs2, bool flip_cols);
+
+void set_binary_table(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates, VALUE_STORE *vs1, VALUE_STORE *vs2,
+  VALUE_STORE_UPDATES *vsu1, VALUE_STORE_UPDATES *vsu2, OBJ rel, bool flip_cols);
 
 /////////////////////////////// ternary-table.cpp ///////////////////////////////
 
@@ -734,3 +744,12 @@ uint32 ternary_table_iter_get_middle_field(TERNARY_TABLE_ITER *iter);
 uint32 ternary_table_iter_get_right_field(TERNARY_TABLE_ITER *iter);
 
 void ternary_table_iter_next(TERNARY_TABLE_ITER *iter);
+
+OBJ copy_ternary_table(TERNARY_TABLE *table, VALUE_STORE *vs1, VALUE_STORE *vs2, VALUE_STORE *vs3, int idx1, int idx2, int idx3);
+
+void set_ternary_table(
+  TERNARY_TABLE *table, TERNARY_TABLE_UPDATES *updates,
+  VALUE_STORE *vs1, VALUE_STORE *vs2, VALUE_STORE *vs3,
+  VALUE_STORE_UPDATES *vsu1, VALUE_STORE_UPDATES *vsu2, VALUE_STORE_UPDATES *vsu3,
+  OBJ rel, int idx1, int idx2, int idx3
+);

@@ -222,3 +222,64 @@ bool unary_table_iter_is_out_of_range(UNARY_TABLE_ITER *iter)
 {
   return iter->bitmap == NULL;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+OBJ copy_unary_table(UNARY_TABLE *table, VALUE_STORE *vs)
+{
+  assert(table->size % 64 == 0);
+
+  OBJ *slots = vs->slots;
+  uint64 *bitmap = table->bitmap;
+  uint32 size = table->size;
+  uint32 count = table->count;
+
+  if (count == 0)
+    return make_empty_set();
+
+  SET_OBJ *set = new_set(count);
+  OBJ *buffer = set->buffer;
+
+  uint32 idx = 0;
+  for (uint32 i=0 ; i < size/64 ; i++)
+  {
+    uint64 word = bitmap[i];
+    for (int j=0 ; j < 64 ; j++)
+      if ((word >> j) & 1)
+      {
+        OBJ obj = slots[64 * i + j];
+        add_ref(obj);
+        buffer[idx++] = obj;
+      }
+  }
+  assert(idx == count);
+
+  sort_obj_array(buffer, count);
+  return make_set(set);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void set_unary_table(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates, VALUE_STORE *vs, VALUE_STORE_UPDATES *vsu, OBJ set)
+{
+  unary_table_clear(table, updates);
+
+  if (is_empty_set(set))
+    return;
+
+  SET_OBJ *ptr = get_set_ptr(set);
+  uint32 size = ptr->size;
+  OBJ *buffer = ptr->buffer;
+
+  for (uint32 i=0 ; i < size ; i++)
+  {
+    OBJ obj = buffer[i];
+    uint32 ref = lookup_value_ex(vs, vsu, obj);
+    if (ref == -1)
+    {
+      add_ref(obj);
+      ref = value_store_insert(vsu, obj);
+    }
+    unary_table_insert(updates, ref);
+  }
+}
