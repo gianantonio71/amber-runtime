@@ -151,7 +151,7 @@ void print_set(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *d
     for (uint32 i=0 ; i < size ; i++)
     {
       if (i > 0)
-        emit(data, "; ", TEXT);
+        emit(data, ", ", TEXT);
       print_obj(elems[i], emit, data);
     }
   }
@@ -185,6 +185,9 @@ void print_bin_rel(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), voi
     emit(data, NULL, SUB_END);
   }
 
+  if (size == 1)
+    emit(data, ";", TEXT);
+
   emit(data, "]", TEXT);
 }
 
@@ -201,7 +204,7 @@ void print_map(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *d
   for (uint32 i=0 ; i < size ; i++)
   {
     if (i > 0)
-      emit(data, "; ", TEXT);
+      emit(data, ", ", TEXT);
     emit(data, NULL, SUB_START);
     print_obj(keys[i], emit, data);
     emit(data, " -> ", TEXT);
@@ -267,6 +270,9 @@ void print_tern_rel(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), vo
     print_obj(col3[i], emit, data);
     emit(data, NULL, SUB_END);
   }
+
+  if (size == 1)
+    emit(data, ";", TEXT);
 
   emit(data, "]", TEXT);
 }
