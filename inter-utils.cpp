@@ -119,19 +119,18 @@ OBJ to_str(OBJ obj)
   return str_to_obj(str);
 }
 
-OBJ to_symb(OBJ obj)
+uint16 lookup_symb_idx(const char *str_, uint32 len)
 {
   if (str_to_symb_map.size() == 0)
     for (uint32 i=0 ; i < generated::EMB_SYMB_COUNT ; i++)
       str_to_symb_map[generated::map_symb_to_str[i]] = i;
 
-  char *str = obj_to_str(obj);
+  char *str = strndup(str_, len);
 
   str_idx_map_type::iterator it = str_to_symb_map.find(str);
-  if (it != str_to_symb_map.end())
-  {
+  if (it != str_to_symb_map.end()) {
     free(str);
-    return make_symb(it->second);
+    return it->second;
   }
 
   uint32 next_symb_id = generated::EMB_SYMB_COUNT + dynamic_symbs_strs.size();
@@ -139,5 +138,13 @@ OBJ to_symb(OBJ obj)
     impl_fail("Exceeded maximum permitted number of symbols (= 2^16)");
   dynamic_symbs_strs.push_back(str);
   str_to_symb_map[str] = next_symb_id;
-  return make_symb(next_symb_id);
+  return next_symb_id;
+}
+
+OBJ to_symb(OBJ obj)
+{
+  char *str = obj_to_str(obj);
+  uint16 symb_idx = lookup_symb_idx(str, strlen(str));
+  free(str);
+  return make_symb(symb_idx);
 }

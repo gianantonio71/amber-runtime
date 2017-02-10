@@ -5,7 +5,8 @@
 
 bool inline_eq(OBJ obj1, OBJ obj2)
 {
-  assert(is_inline_obj(obj2) & !is_float(obj2));
+  // assert(is_inline_obj(obj2) & !is_float(obj2));
+  assert(is_inline_obj(obj2));
   return are_shallow_eq(obj1, obj2);
 }
 

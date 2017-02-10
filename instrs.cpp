@@ -514,6 +514,19 @@ OBJ internal_sort(OBJ set)
   return make_seq(seq, size);
 }
 
+OBJ parse_value(OBJ str_obj)
+{
+  char *raw_str = obj_to_str(str_obj);
+  OBJ obj;
+  uint32 error_offset;
+  bool ok = parse(raw_str, strlen(raw_str), &obj, &error_offset);
+  delete [] raw_str;
+  if (ok)
+    return make_tag_obj(symb_idx_success, obj);
+  else
+    return make_tag_obj(symb_idx_failure, make_int(error_offset));
+}
+
 static std::map<REF_OBJ*, OBJ> attachments_map;
 
 OBJ add_attachment(OBJ target_obj, OBJ data)

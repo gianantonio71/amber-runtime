@@ -85,6 +85,10 @@ void print_bare_str(OBJ str, void (*emit)(void *, const void *, EMIT_ACTION), vo
     {
       emit(data, "\\n", TEXT);
     }
+    else if (ch == '\t')
+    {
+      emit(data, "\\t", TEXT);
+    }
     else
     {
       sprintf(buffer, "\\%04llx", ch);

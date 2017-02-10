@@ -276,6 +276,8 @@ const uint16 symb_idx_true    = 1;
 const uint16 symb_idx_nil     = 2;
 const uint16 symb_idx_string  = 3;
 const uint16 symb_idx_just    = 4;
+const uint16 symb_idx_success = 5;
+const uint16 symb_idx_failure = 6;
 
 ///////////////////////////////// mem_alloc.cpp ////////////////////////////////
 
@@ -508,6 +510,7 @@ OBJ merge_maps(OBJ maps);
 OBJ seq_to_set(OBJ seq);
 OBJ seq_to_mset(OBJ seq);
 OBJ internal_sort(OBJ set);
+OBJ parse_value(OBJ str);
 OBJ add_attachment(OBJ target, OBJ data);
 OBJ fetch_attachments(OBJ);
 void get_set_iter(SET_ITER &it, OBJ set);
@@ -594,6 +597,8 @@ int comp_objs(OBJ obj1, OBJ obj2);
 void add_obj_to_cache(OBJ);
 void release_all_cached_objs();
 
+uint16 lookup_symb_idx(const char *, uint32);
+
 OBJ to_str(OBJ);
 OBJ to_symb(OBJ);
 
@@ -605,11 +610,15 @@ char* obj_to_byte_array(OBJ byte_seq_obj, uint32 &size);
 
 uint64 char_buffer_size(OBJ str_obj);
 
-//////////////////////////////// printing.cpp //////////////////////////////////
+///////////////////////////////// printing.cpp /////////////////////////////////
 
 void print(OBJ);
 void print_to_buffer_or_file(OBJ obj, char* buffer, uint32 max_size, const char* fname);
 void printed_obj(OBJ obj, char* buffer, uint32 max_size);
+
+////////////////////////////////// parsing.cpp /////////////////////////////////
+
+bool parse(const char *text, uint32 size, OBJ *var, uint32 *error_offset);
 
 ///////////////////////////// os-interface-xxx.cpp /////////////////////////////
 
