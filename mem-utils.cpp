@@ -872,14 +872,23 @@ int shallow_cmp(OBJ obj1, OBJ obj2)
 {
   assert(is_inline_obj(obj1) & is_inline_obj(obj2));
 
-  int64 extra_data_1 = obj1.extra_data;
-  int64 extra_data_2 = obj2.extra_data;
+  uint64 extra_data_1 = obj1.extra_data;
+  uint64 extra_data_2 = obj2.extra_data;
 
-  int64 diff;
-  if (extra_data_1 != extra_data_2)
-    diff = extra_data_2 - extra_data_1;
-  else
-    diff = obj2.core_data.int_ - obj1.core_data.int_;
+  if (extra_data_1 < extra_data_2)
+    return 1;
 
-  return (diff > 0) - (diff < 0);
+  if (extra_data_1 > extra_data_2)
+    return -1;
+
+  int64 core_data_1 = obj1.core_data.int_;
+  int64 core_data_2 = obj2.core_data.int_;
+
+  if (core_data_1 < core_data_2)
+    return 1;
+
+  if (core_data_1 > core_data_2)
+    return -1;
+
+  return 0;
 }
