@@ -599,22 +599,41 @@ void release_all_cached_objs();
 
 uint16 lookup_symb_idx(const char *, uint32);
 
+const char *symb_to_raw_str(OBJ);
+
 OBJ to_str(OBJ);
 OBJ to_symb(OBJ);
+
+OBJ extern_str_to_symb(const char *);
 
 OBJ str_to_obj(const char* c_str);
 
 char* obj_to_str(OBJ str_obj);
+void obj_to_str(OBJ str_obj, char *buffer, uint32 size);
 
 char* obj_to_byte_array(OBJ byte_seq_obj, uint32 &size);
 
 uint64 char_buffer_size(OBJ str_obj);
 
+//////////////////////////////// conversion.cpp ////////////////////////////////
+
+OBJ convert_bool_seq(const bool *array, uint32 size);
+OBJ convert_int32_seq(const int32 *array, uint32 size);
+OBJ convert_int_seq(const int64 *array, uint32 size);
+OBJ convert_float_seq(const double *array, uint32 size);
+OBJ convert_text(const char *buffer);
+
+void export_as_c_string(OBJ obj, char *buffer, uint32 capacity);
+uint32 export_as_bool_array(OBJ obj, bool *array, uint32 capacity);
+uint32 export_as_long_long_array(OBJ obj, int64 *array, uint32 capacity);
+uint32 export_as_float_array(OBJ obj, double *array, uint32 capacity);
+uint32 export_as_text(OBJ obj, char *buffer, uint32 capacity);
+
 ///////////////////////////////// printing.cpp /////////////////////////////////
 
 void print(OBJ);
 void print_to_buffer_or_file(OBJ obj, char* buffer, uint32 max_size, const char* fname);
-void printed_obj(OBJ obj, char* buffer, uint32 max_size);
+void printed_obj(OBJ obj, char* buffer, uint32 max_size, bool truncate);
 
 ////////////////////////////////// parsing.cpp /////////////////////////////////
 

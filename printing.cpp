@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "lib.h"
 
@@ -624,7 +625,7 @@ void calc_length(void *ptr, const char *text, uint32 len)
 
 void print_to_buffer_or_file(OBJ obj, char *buffer, uint32 max_size, const char *fname)
 {
-  PRINT_BUFFER *pb = new PRINT_BUFFER;
+  PRINT_BUFFER *pb = (PRINT_BUFFER *) malloc(sizeof(PRINT_BUFFER));
 
   init(pb);
   print_obj(obj, emit_store, pb);
@@ -643,12 +644,14 @@ void print_to_buffer_or_file(OBJ obj, char *buffer, uint32 max_size, const char 
     emit_known(pb, write_to_file, fp);
     fclose(fp);
   }
+
+  free(pb);
 }
 
 
-void printed_obj(OBJ obj, char *buffer, uint32 max_size)
+void printed_obj(OBJ obj, char *buffer, uint32 max_size, bool truncate)
 {
-  PRINT_BUFFER *pb = new PRINT_BUFFER;
+  PRINT_BUFFER *pb = (PRINT_BUFFER *) malloc(sizeof(PRINT_BUFFER));
 
   init(pb);
   print_obj(obj, emit_store, pb);
@@ -656,13 +659,16 @@ void printed_obj(OBJ obj, char *buffer, uint32 max_size)
   uint32 len = 0;
   emit_known(pb, calc_length, &len);
 
-  if (len + 1 < max_size)
-  {
+  if (len + 1 < max_size) {
     memcpy(buffer, pb->buffer, len + 1);
   }
-  else
-  {
+  else if (truncate) {
     memcpy(buffer, pb->buffer, max_size - 1);
     buffer[max_size-1] = '\0';
   }
+  else {
+    free(pb);
+    throw (long long) len;
+  }
+  free(pb);
 }

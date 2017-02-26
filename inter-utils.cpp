@@ -6,7 +6,6 @@
 #include <map>
 
 #include "lib.h"
-#include "generated.h"
 
 
 OBJ str_to_obj(const char *c_str)
@@ -109,21 +108,32 @@ str_idx_map_type str_to_symb_map(str_ord);
 //## THESE STRINGS ARE NEVER CLEANED UP. NOT MUCH OF A PROBLEM IN PRACTICE, BUT STILL A BUG...
 std::vector<const char *> dynamic_symbs_strs;
 
-OBJ to_str(OBJ obj)
+const char *symb_repr(uint16);
+uint32 embedded_symbs_count();
+
+const char *symb_to_raw_str(OBJ obj)
 {
   assert(is_symb(obj));
   uint16 idx = get_symb_idx(obj);
-  const char *str = idx < generated::EMB_SYMB_COUNT ?
-    generated::map_symb_to_str[idx] :
-    dynamic_symbs_strs[idx - generated::EMB_SYMB_COUNT];
-  return str_to_obj(str);
+  uint32 count = embedded_symbs_count();
+  if (idx < count)
+    return symb_repr(idx);
+  else
+    return dynamic_symbs_strs[idx - count];
+}
+
+OBJ to_str(OBJ obj)
+{
+  return str_to_obj(symb_to_raw_str(obj));
 }
 
 uint16 lookup_symb_idx(const char *str_, uint32 len)
 {
+  uint32 count = embedded_symbs_count();
+
   if (str_to_symb_map.size() == 0)
-    for (uint32 i=0 ; i < generated::EMB_SYMB_COUNT ; i++)
-      str_to_symb_map[generated::map_symb_to_str[i]] = i;
+    for (uint32 i=0 ; i < count ; i++)
+      str_to_symb_map[symb_repr(i)] = i;
 
   char *str = strndup(str_, len);
 
@@ -133,7 +143,7 @@ uint16 lookup_symb_idx(const char *str_, uint32 len)
     return it->second;
   }
 
-  uint32 next_symb_id = generated::EMB_SYMB_COUNT + dynamic_symbs_strs.size();
+  uint32 next_symb_id = count + dynamic_symbs_strs.size();
   if (next_symb_id > 0xFFFF)
     impl_fail("Exceeded maximum permitted number of symbols (= 2^16)");
   dynamic_symbs_strs.push_back(str);
@@ -147,4 +157,10 @@ OBJ to_symb(OBJ obj)
   uint16 symb_idx = lookup_symb_idx(str, strlen(str));
   free(str);
   return make_symb(symb_idx);
+}
+
+OBJ extern_str_to_symb(const char *str)
+{
+  //## CHECK THAT IT'S A VALID SYMBOL, AND THAT IT'S AMONG THE "STATIC" ONES
+  return make_symb(lookup_symb_idx(str, strlen(str)));
 }

@@ -360,7 +360,7 @@ OBJ lookup(OBJ map, OBJ key)
     char buff[1024];
     strcpy(buff, "_lookup_(): Key not found: ");
     uint32 len = strlen(buff);
-    printed_obj(key, buff+len, sizeof(buff)-len-1);
+    printed_obj(key, buff+len, sizeof(buff)-len-1, true);
     soft_fail(buff);
   }
   else
