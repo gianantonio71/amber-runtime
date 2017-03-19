@@ -77,27 +77,49 @@ void binary_table_insert(BINARY_TABLE_UPDATES *updates, uint32 left_val, uint32 
   updates->inserts.push_back(pack(left_val, right_val));
 }
 
-void binary_table_updates_apply(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates)
+void binary_table_updates_apply(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates, VALUE_STORE *vs0, VALUE_STORE *vs1)
 {
   set<uint64> &left_to_right = table->left_to_right;
   set<uint64> &right_to_left = table->right_to_left;
 
-  vector<uint64>::iterator it = updates->deletes.begin();
-  vector<uint64>::iterator end = updates->deletes.end();
-  for ( ; it != end ; it++)
-  {
-    uint64 pair = *it;
-    left_to_right.erase(pair);
-    right_to_left.erase(swap(pair));
+  if (!updates->deletes.empty()) {
+    uint32 count = updates->deletes.size();
+    uint64 *deletes = &updates->deletes.front();
+    for (uint32 i=0 ; i < count ; i++) {
+      uint64 pair = deletes[i];
+      if (left_to_right.erase(pair) > 0)
+        right_to_left.erase(swap(pair));
+      else
+        deletes[i] = 0xFFFFFFFFFFFFFFFFULL;
+    }
   }
 
-  it = updates->inserts.begin();
-  end = updates->inserts.end();
-  for ( ; it != end ; it++)
-  {
-    uint64 pair = *it;
-    left_to_right.insert(pair);
-    right_to_left.insert(swap(pair));
+  if (!updates->inserts.empty()) {
+    uint32 count = updates->inserts.size();
+    uint64 *inserts = &updates->inserts.front();
+    for (uint32 i=0 ; i < count ; i++) {
+      uint64 pair = inserts[i];
+      if (left_to_right.insert(pair).second) {
+        right_to_left.insert(swap(pair));
+        value_store_add_ref(vs0, left(pair));
+        value_store_add_ref(vs1, right(pair));
+      }
+    }
+  }
+}
+
+void binary_table_updates_finish(BINARY_TABLE_UPDATES *updates, VALUE_STORE *vs0, VALUE_STORE *vs1)
+{
+  if (!updates->deletes.empty()) {
+    uint32 count = updates->deletes.size();
+    uint64 *deletes = &updates->deletes.front();
+    for (uint32 i=0 ; i < count ; i++) {
+      uint64 pair = deletes[i];
+      if (pair != 0xFFFFFFFFFFFFFFFFULL) {
+        value_store_release(vs0, left(pair));
+        value_store_release(vs1, right(pair));
+      }
+    }
   }
 }
 
@@ -178,8 +200,8 @@ bool binary_table_updates_check_0_1(BINARY_TABLE *table, BINARY_TABLE_UPDATES *u
 
 OBJ copy_binary_table(BINARY_TABLE *table, VALUE_STORE *vs1, VALUE_STORE *vs2, bool flip_cols)
 {
-  OBJ *slots1 = vs1->slots;
-  OBJ *slots2 = vs2->slots;
+  OBJ *slots1 = value_store_slot_array(vs1);
+  OBJ *slots2 = value_store_slot_array(vs2);
 
   set<uint64> &rows = table->left_to_right;
   uint32 size = rows.size();
@@ -231,7 +253,7 @@ void set_binary_table(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates, VALUE_
     if (ref1 == -1)
     {
       add_ref(obj);
-      ref1 = value_store_insert(vsu1, obj);
+      ref1 = value_store_insert(vs1, vsu1, obj);
     }
 
     obj = col2[i];
@@ -239,7 +261,7 @@ void set_binary_table(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates, VALUE_
     if (ref2 == -1)
     {
       add_ref(obj);
-      ref2 = value_store_insert(vsu2, obj);
+      ref2 = value_store_insert(vs2, vsu2, obj);
     }
 
     binary_table_insert(updates, ref1, ref2);

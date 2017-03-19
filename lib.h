@@ -171,7 +171,7 @@ struct STREAM {
 ////////////////////////////////////////////////////////////////////////////////
 
 struct VALUE_STORE {
-  OBJ *slots;
+  void *ptr;
   uint32 capacity;
   uint32 usage;
   uint32 first_free;
@@ -179,11 +179,10 @@ struct VALUE_STORE {
 
 
 struct VALUE_STORE_UPDATES {
-  OBJ *slots;
+  void *ptr;
   uint32 capacity;
+  uint32 count;
   uint32 first_free;
-  vector<OBJ> values;
-  vector<uint32> indexes;
 };
 
 
@@ -195,8 +194,10 @@ struct UNARY_TABLE {
 
 
 struct UNARY_TABLE_UPDATES {
-  vector<uint32> deletes;
-  vector<uint32> inserts;
+  uint32 capacity;
+  uint32 deletes_count;
+  uint32 inserts_count;
+  uint32 *buffer; // Deletes are stored at the front, inserts at the back
 };
 
 
@@ -643,6 +644,10 @@ bool parse(const char *text, uint32 size, OBJ *var, uint32 *error_offset);
 
 uint64 get_tick_count();   // Impure
 
+////////////////////////////////// hashing.cpp /////////////////////////////////
+
+uint32 compute_hash_code(OBJ obj);
+
 //////////////////////////////// value-store.cpp ///////////////////////////////
 
 void value_store_init(VALUE_STORE *store);
@@ -651,15 +656,20 @@ void value_store_cleanup(VALUE_STORE *store);
 void value_store_updates_init(VALUE_STORE *store, VALUE_STORE_UPDATES *updates);
 void value_store_updates_cleanup(VALUE_STORE_UPDATES *updates);
 
-uint32 value_store_insert(VALUE_STORE_UPDATES *updates, OBJ value);
+uint32 value_store_insert(VALUE_STORE *store, VALUE_STORE_UPDATES *updates, OBJ value);
 
 void value_store_copy(VALUE_STORE *store, VALUE_STORE_UPDATES *updates);
 void value_store_apply(VALUE_STORE *store, VALUE_STORE_UPDATES *updates);
+
+void value_store_add_ref(VALUE_STORE *store, uint32 surr);
+void value_store_release(VALUE_STORE *store, uint32 surr);
 
 OBJ lookup_surrogate(VALUE_STORE *store, int64 surr);
 int64 lookup_value(VALUE_STORE *store, OBJ value);
 
 int64 lookup_value_ex(VALUE_STORE *store, VALUE_STORE_UPDATES *updates, OBJ value); //## FIND BETTER NAME...
+
+OBJ *value_store_slot_array(VALUE_STORE *store);
 
 //////////////////////////////// unary-table.cpp ///////////////////////////////
 
@@ -677,7 +687,8 @@ void unary_table_delete(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates, uint32
 void unary_table_clear(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates);
 
 bool unary_table_updates_check(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates);
-void unary_table_updates_apply(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates);
+void unary_table_updates_apply(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates, VALUE_STORE *vs);
+void unary_table_updates_finish(UNARY_TABLE_UPDATES *updates, VALUE_STORE *vs);
 
 void unary_table_get_iter(UNARY_TABLE *table, UNARY_TABLE_ITER *iter);
 void unary_table_iter_next(UNARY_TABLE_ITER *iter);
@@ -711,7 +722,8 @@ bool binary_table_updates_check_0(BINARY_TABLE *table, BINARY_TABLE_UPDATES *upd
 bool binary_table_updates_check_1(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates);
 bool binary_table_updates_check_0_1(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates);
 
-void binary_table_updates_apply(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates);
+void binary_table_updates_apply(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates, VALUE_STORE *vs0, VALUE_STORE *vs1);
+void binary_table_updates_finish(BINARY_TABLE_UPDATES *updates, VALUE_STORE *vs0, VALUE_STORE *vs1);
 
 void binary_table_get_iter_by_col_0(BINARY_TABLE *table, BINARY_TABLE_ITER *iter, uint32 value);
 void binary_table_get_iter_by_col_1(BINARY_TABLE *table, BINARY_TABLE_ITER *iter, uint32 value);
@@ -755,7 +767,8 @@ bool ternary_table_updates_check_01_2(TERNARY_TABLE *table, TERNARY_TABLE_UPDATE
 bool ternary_table_updates_check_01_12(TERNARY_TABLE *table, TERNARY_TABLE_UPDATES *updates);
 bool ternary_table_updates_check_01_12_20(TERNARY_TABLE *table, TERNARY_TABLE_UPDATES *updates);
 
-void ternary_table_updates_apply(TERNARY_TABLE *table, TERNARY_TABLE_UPDATES *updates);
+void ternary_table_updates_apply(TERNARY_TABLE *table, TERNARY_TABLE_UPDATES *updates, VALUE_STORE *vs0, VALUE_STORE *vs1, VALUE_STORE *vs2);
+void ternary_table_updates_finish(TERNARY_TABLE_UPDATES *updates, VALUE_STORE *vs0, VALUE_STORE *vs1, VALUE_STORE *vs2);
 
 void ternary_table_get_iter_by_cols_01(TERNARY_TABLE *table, TERNARY_TABLE_ITER *iter, uint32 value0, uint32 value1);
 void ternary_table_get_iter_by_cols_02(TERNARY_TABLE *table, TERNARY_TABLE_ITER *iter, uint32 value0, uint32 value2);

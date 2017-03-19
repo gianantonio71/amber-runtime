@@ -139,34 +139,59 @@ void ternary_table_insert(TERNARY_TABLE_UPDATES *updates, uint32 left_val, uint3
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ternary_table_updates_apply(TERNARY_TABLE *table, TERNARY_TABLE_UPDATES *updates)
+void ternary_table_updates_apply(TERNARY_TABLE *table, TERNARY_TABLE_UPDATES *updates, VALUE_STORE *vs0, VALUE_STORE *vs1, VALUE_STORE *vs2)
 {
   set<tuple3> &unshifted = table->unshifted;
   set<tuple3> &shifted_once = table->shifted_once;
   set<tuple3> &shifted_twice = table->shifted_twice;
 
-  vector<tuple3>::iterator it = updates->deletes.begin();
-  vector<tuple3>::iterator end = updates->deletes.end();
-  for ( ; it != end ; it++)
-  {
-    tuple3 entry = *it;
-    unshifted.erase(entry);
-    shift(entry);
-    shifted_once.erase(entry);
-    shift(entry);
-    shifted_twice.erase(entry);
+  uint32 count = updates->deletes.size();
+  if (count > 0) {
+    tuple3 *deletes = &updates->deletes.front();
+    for (uint32 i=0 ; i < count ; i++) {
+      tuple3 entry = deletes[i];
+      if (unshifted.erase(entry) > 0) {
+        shift(entry);
+        shifted_once.erase(entry);
+        shift(entry);
+        shifted_twice.erase(entry);
+      }
+      else
+        deletes[i].fields01 = 0xFFFFFFFFFFFFFFFFULL;
+    }
   }
 
-  it = updates->inserts.begin();
-  end = updates->inserts.end();
-  for ( ; it != end ; it++)
-  {
-    tuple3 entry = *it;
-    unshifted.insert(entry);
-    shift(entry);
-    shifted_once.insert(entry);
-    shift(entry);
-    shifted_twice.insert(entry);
+  count = updates->inserts.size();
+  if (count > 0) {
+    tuple3 *inserts = &updates->inserts.front();
+    for (uint32 i=0 ; i < count ; i++) {
+      tuple3 entry = inserts[i];
+      if (unshifted.insert(entry).second) {
+        value_store_add_ref(vs0, left(entry.fields01));
+        value_store_add_ref(vs1, right(entry.fields01));
+        value_store_add_ref(vs2, entry.field2);
+        shift(entry);
+        shifted_once.insert(entry);
+        shift(entry);
+        shifted_twice.insert(entry);
+      }
+    }
+  }
+}
+
+void ternary_table_updates_finish(TERNARY_TABLE_UPDATES *updates, VALUE_STORE *vs0, VALUE_STORE *vs1, VALUE_STORE *vs2)
+{
+  uint32 count = updates->deletes.size();
+  if (count > 0) {
+    tuple3 *deletes = &updates->deletes.front();
+    for (uint32 i=0 ; i < count ; i++) {
+      tuple3 entry = deletes[i];
+      if (entry.fields01 != 0xFFFFFFFFFFFFFFFFULL) {
+        value_store_release(vs0, left(entry.fields01));
+        value_store_release(vs1, right(entry.fields01));
+        value_store_release(vs2, entry.field2);
+      }
+    }
   }
 }
 
@@ -331,9 +356,9 @@ bool ternary_table_updates_check_01_12_20(TERNARY_TABLE *table, TERNARY_TABLE_UP
 
 OBJ copy_ternary_table(TERNARY_TABLE *table, VALUE_STORE *vs1, VALUE_STORE *vs2, VALUE_STORE *vs3, int idx1, int idx2, int idx3)
 {
-  OBJ *slots1 = vs1->slots;
-  OBJ *slots2 = vs2->slots;
-  OBJ *slots3 = vs3->slots;
+  OBJ *slots1 = value_store_slot_array(vs1);
+  OBJ *slots2 = value_store_slot_array(vs2);
+  OBJ *slots3 = value_store_slot_array(vs3);
 
   set<tuple3> &rows = table->unshifted;
   uint32 size = rows.size();
@@ -396,7 +421,7 @@ void set_ternary_table(
     if (ref1 == -1)
     {
       add_ref(obj);
-      ref1 = value_store_insert(vsu1, obj);
+      ref1 = value_store_insert(vs1, vsu1, obj);
     }
 
     obj = col2[i];
@@ -404,7 +429,7 @@ void set_ternary_table(
     if (ref2 == -1)
     {
       add_ref(obj);
-      ref2 = value_store_insert(vsu2, obj);
+      ref2 = value_store_insert(vs2, vsu2, obj);
     }
 
     obj = col3[i];
@@ -412,7 +437,7 @@ void set_ternary_table(
     if (ref3 == -1)
     {
       add_ref(obj);
-      ref3 = value_store_insert(vsu3, obj);
+      ref3 = value_store_insert(vs3, vsu3, obj);
     }
 
     ternary_table_insert(updates, ref1, ref2, ref3);

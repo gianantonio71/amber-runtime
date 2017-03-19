@@ -6,11 +6,11 @@
 #include <algorithm>
 
 
-using std::malloc;
-using std::free;
+// using std::malloc;
+// using std::free;
 using std::memset;
 using std::max_element;
-using std::size_t;
+// using std::size_t;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -31,9 +31,14 @@ void unary_table_cleanup(UNARY_TABLE *table)
 
 void unary_table_updates_init(UNARY_TABLE_UPDATES *table)
 {
-
+  table->capacity = 0;
+  table->deletes_count = 0;
+  table->inserts_count = 0;
+  table->buffer = NULL;
 }
 
+// Inserts and deletes are stored in the same buffer,
+// deletes at the front and inserts at the back
 void unary_table_updates_cleanup(UNARY_TABLE_UPDATES *table)
 {
 
@@ -53,27 +58,72 @@ bool unary_table_contains(UNARY_TABLE *table, uint32 value)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void unary_table_insert(UNARY_TABLE_UPDATES *updates, uint32 value)
+// Returns new capacity
+uint32 unary_table_updates_resize(UNARY_TABLE_UPDATES *updates)
 {
-  updates->inserts.push_back(value);
+  uint32 capacity = updates->capacity;
+  uint32 new_capacity = capacity > 0 ? 2 * capacity : 32;
+  uint32 *new_buffer = (uint32 *) malloc(new_capacity * sizeof(uint32));
+  // uint32 *new_buffer = new_uint32_array(new_capacity);
+
+  if (capacity > 0) {
+    uint32 deletes_count = updates->deletes_count;
+    uint32 inserts_count = updates->inserts_count;
+    uint32 *buffer = updates->buffer;
+
+    if (deletes_count > 0)
+      memcpy(new_buffer, buffer, deletes_count * sizeof(uint32));
+    if (inserts_count > 0) {
+      uint32 *new_inserts = new_buffer + new_capacity - inserts_count;
+      uint32 *inserts = buffer + capacity - inserts_count;
+      memcpy(new_inserts, inserts, inserts_count * sizeof(uint32));
+    }
+    free(buffer);
+    // delete_uint32_array(buffer, capacity);
+  }
+
+  updates->capacity = new_capacity;
+  updates->buffer = new_buffer;
+  return new_capacity;
 }
 
-void unary_table_delete(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates, uint32 value)
+void unary_table_insert(UNARY_TABLE_UPDATES *updates, uint32 value)
 {
-  updates->deletes.push_back(value);
+  uint32 capacity = updates->capacity;
+  uint32 deletes_count = updates->deletes_count;
+  uint32 inserts_count = updates->inserts_count;
+
+  if (deletes_count + inserts_count >= capacity)
+    capacity = unary_table_updates_resize(updates);
+
+  uint32 *next_slot = updates->buffer + capacity - 1 - inserts_count;
+  *next_slot = value;
+  updates->inserts_count = inserts_count + 1;
+}
+
+void unary_table_delete(UNARY_TABLE *, UNARY_TABLE_UPDATES *updates, uint32 value)
+{
+  uint32 capacity = updates->capacity;
+  uint32 deletes_count = updates->deletes_count;
+  uint32 inserts_count = updates->inserts_count;
+
+  if (deletes_count + inserts_count >= capacity)
+    capacity = unary_table_updates_resize(updates);
+
+  uint32 *next_slot = updates->buffer + deletes_count;
+  *next_slot = value;
+  updates->deletes_count = deletes_count + 1;
 }
 
 void unary_table_clear(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates)
 {
   uint64 *bitmap = table->bitmap;
-  vector<uint32> &deletes = updates->deletes;
   uint32 cell_count = table->size / 64;
-  for (int i=0 ; i < cell_count ; i++)
-  {
+  for (int i=0 ; i < cell_count ; i++) {
     uint64 cell = bitmap[i];
     for (int j=0 ; j < 64 ; j++)
       if ((cell >> j) & 1)
-        deletes.push_back(64 * i + j);
+        unary_table_delete(table, updates, 64 * i + j);
   }
 }
 
@@ -82,57 +132,77 @@ bool unary_table_updates_check(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates)
   return true;
 }
 
-void unary_table_updates_apply(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates)
+void unary_table_updates_apply(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates, VALUE_STORE *vs)
 {
-  vector<uint32> &deletes = updates->deletes;
-  vector<uint32> &inserts = updates->inserts;
+  uint32 inserts_count = updates->inserts_count;
+  uint32 deletes_count = updates->deletes_count;
 
-  uint32 max_val = inserts.empty() ? 0 : *max_element(inserts.begin(), inserts.end());
-
-  uint32 size = table->size;
-  uint64 *bitmap = table->bitmap;
-  if (max_val >= size)
-  {
-    // Reallocating the table
-    uint32 new_size = 2 * size;
-    while (max_val >= new_size)
-      new_size *= 2;
-    uint64 *bitmap = (uint64 *) realloc(bitmap, new_size / 8);
-    memset(bitmap + (size / 64), 0, (new_size - size) / 8);
-    size = new_size;
-    table->size = size;
-    table->bitmap = bitmap;
-  }
-
-  size_t count = deletes.size();
-  for (int i=0 ; i < count ; i++)
-  {
-    uint32 value = deletes[i];
-    uint32 idx = value >> 6;
-    uint64 mask = 1ULL << (value % 64);
-    uint64 cell = bitmap[idx];
-    if (cell & mask)
-    {
-      cell &= ~mask;
-      bitmap[idx] = cell;
-      table->count--;
+  if (deletes_count > 0) {
+    uint32 *deletes = updates->buffer;
+    uint64 *bitmap = table->bitmap;
+    for (uint32 i=0 ; i < deletes_count ; i++) {
+      uint32 value = deletes[i];
+      uint32 idx = value >> 6;
+      uint64 mask = 1ULL << (value % 64);
+      uint64 cell = bitmap[idx];
+      if (cell & mask) {
+        cell &= ~mask;
+        bitmap[idx] = cell;
+        table->count--;
+      }
+      else
+        deletes[i] = 0xFFFFFFFFU;
     }
   }
 
-  count = inserts.size();
-  for (int i=0 ; i < count ; i++)
-  {
-    uint32 value = inserts[i];
-    uint32 idx = value >> 6;
-    uint64 mask = 1ULL << (value % 64);
-    uint64 cell = bitmap[idx];
-    if (!(cell & mask))
-    {
-      cell |= mask;
-      bitmap[idx] = cell;
-      table->count++;
+  if (inserts_count > 0) {
+    uint32 *inserts = updates->buffer + updates->capacity - inserts_count;
+    uint32 max_val = *max_element(inserts, inserts + inserts_count);
+    uint32 size = table->size;
+    uint64 *bitmap = table->bitmap;
+    if (max_val >= size) {
+      // Reallocating the table
+      uint32 new_size = 2 * size;
+      while (max_val >= new_size)
+        new_size *= 2;
+      uint64 *bitmap = (uint64 *) realloc(bitmap, new_size / 8);
+      memset(bitmap + (size / 64), 0, (new_size - size) / 8);
+      size = new_size;
+      table->size = size;
+      table->bitmap = bitmap;
+    }
+
+    for (uint32 i=0 ; i < inserts_count ; i++) {
+      uint32 value = inserts[i];
+      uint32 idx = value >> 6;
+      uint64 mask = 1ULL << (value % 64);
+      uint64 cell = bitmap[idx];
+      if (!(cell & mask)) {
+        cell |= mask;
+        bitmap[idx] = cell;
+        table->count++;
+        value_store_add_ref(vs, value);
+      }
     }
   }
+}
+
+void unary_table_updates_finish(UNARY_TABLE_UPDATES *updates, VALUE_STORE *vs) {
+  uint32 count = updates->deletes_count;
+  uint32 *buffer = updates->buffer;
+  if (count > 0) {
+    for (uint32 i=0 ; i < count ; i++) {
+      uint32 value = buffer[i];
+      if (value != 0xFFFFFFFFU)
+        value_store_release(vs, value);
+    }
+  }
+  if (buffer != NULL)
+    free(buffer);
+  // // No need to delete anything for now, this memory is allocated in "temporary" memory, it is
+  // // cleaned up automatically. An attempt to free it at this stage would actually cause a crash.
+  // //## BUT WHY IS IT COUNTED AMONG THE LEAKED BLOCKS OF MEMORY?
+  //   delete_uint32_array(buffer, updates->capacity);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -229,7 +299,7 @@ OBJ copy_unary_table(UNARY_TABLE *table, VALUE_STORE *vs)
 {
   assert(table->size % 64 == 0);
 
-  OBJ *slots = vs->slots;
+  OBJ *slots = value_store_slot_array(vs);
   uint64 *bitmap = table->bitmap;
   uint32 size = table->size;
   uint32 count = table->count;
@@ -278,7 +348,7 @@ void set_unary_table(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates, VALUE_STO
     if (ref == -1)
     {
       add_ref(obj);
-      ref = value_store_insert(vsu, obj);
+      ref = value_store_insert(vs, vsu, obj);
     }
     unary_table_insert(updates, ref);
   }
