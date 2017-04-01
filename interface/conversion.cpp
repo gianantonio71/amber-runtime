@@ -1,7 +1,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <string>
+
 #include "lib.h"
+
+
+using std::string;
 
 
 OBJ convert_bool_seq(const bool *array, uint32 size) {
@@ -93,6 +98,37 @@ uint32 export_as_float_array(OBJ obj, double *array, uint32 capacity) {
   return len;
 }
 
-uint32 export_as_text(OBJ obj, char *buffer, uint32 capacity) {
+void export_literal_as_c_string(OBJ obj, char *buffer, uint32 capacity) {
   printed_obj(obj, buffer, capacity, false);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+string export_as_std_string(OBJ obj) {
+  string result;
+  OBJ raw_str_obj = get_inner_obj(obj);
+  if (!is_empty_seq(raw_str_obj)) {
+    OBJ *seq_buffer = get_seq_buffer_ptr(raw_str_obj);
+    uint32 len = get_seq_length(raw_str_obj);
+    result.resize(len);
+    for (uint32 i=0 ; i < len ; i++)
+      result[i] = get_int_val(seq_buffer[i]);
+  }
+  return result;
+}
+
+// #include <sstream>
+//
+// using std::ostringstream;
+//
+// void emit_stream(void *ptr, const void *data, EMIT_ACTION action) {
+//   ostringstream &stream = *(ostringstream *) ptr;
+//   if (action == TEXT)
+//     stream << (char *) data;
+// }
+//
+// string export_literal_as_std_string(OBJ obj) {
+//   ostringstream stream;
+//   print_obj(obj, emit_stream, &stream);
+//   return stream.str();
+// }

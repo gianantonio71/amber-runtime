@@ -7,7 +7,7 @@
 
 unsigned int size_code_size(int size_code);
 void *alloc_mem_block(int byte_size);
-void *release_mem_block(void *ptr, int byte_size);
+void release_mem_block(void *ptr, int byte_size);
 
 ////////////////////////////////////////////////////////////////////////////////
 

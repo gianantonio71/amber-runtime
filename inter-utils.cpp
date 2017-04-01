@@ -37,7 +37,8 @@ void obj_to_str(OBJ str_obj, char *buffer, uint32 size)
   {
     OBJ *seq_buffer = get_seq_buffer_ptr(raw_str_obj);
     uint32 len = get_seq_length(raw_str_obj);
-    assert(len < size);
+    if (len >= size)
+      throw 0;
     for (uint32 i=0 ; i < len ; i++)
       buffer[i] = get_int_val(seq_buffer[i]);
     buffer[len] = '\0';

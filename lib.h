@@ -628,9 +628,13 @@ void export_as_c_string(OBJ obj, char *buffer, uint32 capacity);
 uint32 export_as_bool_array(OBJ obj, bool *array, uint32 capacity);
 uint32 export_as_long_long_array(OBJ obj, int64 *array, uint32 capacity);
 uint32 export_as_float_array(OBJ obj, double *array, uint32 capacity);
-uint32 export_as_text(OBJ obj, char *buffer, uint32 capacity);
+void export_literal_as_c_string(OBJ obj, char *buffer, uint32 capacity);
 
 ///////////////////////////////// printing.cpp /////////////////////////////////
+
+typedef enum {TEXT, SUB_START, SUB_END} EMIT_ACTION;
+
+void print_obj(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data);
 
 void print(OBJ);
 void print_to_buffer_or_file(OBJ obj, char* buffer, uint32 max_size, const char* fname);

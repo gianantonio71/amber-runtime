@@ -665,6 +665,11 @@ void parse_string(TOKEN *token, OBJ *var)
   const char *text = token->value.string.ptr;
   uint32 length = token->value.string.length;
 
+  if (length == 0) {
+    *var = make_tag_obj(symb_idx_string, make_empty_seq());
+    return;
+  }
+
   SEQ_OBJ *raw_str = new_seq(length);
   *var = make_tag_obj(symb_idx_string, make_seq(raw_str, length));
 

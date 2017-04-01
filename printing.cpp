@@ -5,12 +5,6 @@
 #include "lib.h"
 
 
-typedef enum {TEXT, SUB_START, SUB_END} EMIT_ACTION;
-
-
-void print_obj(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data);
-
-
 bool is_str(uint16 tag_idx, OBJ obj)
 {
   if (tag_idx != symb_idx_string)

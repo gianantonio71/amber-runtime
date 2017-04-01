@@ -208,7 +208,7 @@ void *alloc_mem_block(int size_code)
   }
 }
 
-void *release_mem_block(void *ptr, int size_code)
+void release_mem_block(void *ptr, int size_code)
 {
   assert(size_code <= 5);
 
