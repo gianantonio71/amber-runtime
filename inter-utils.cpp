@@ -8,45 +8,116 @@
 #include "lib.h"
 
 
-OBJ str_to_obj(const char *c_str)
-{
-  uint32 n = strlen(c_str);
+int64 from_utf8(const char *input, OBJ *output) {
+  uint32 idx = 0;
+  for (uint32 count=0 ; ; count++) {
+    unsigned char ch = input[idx++];
+    if (ch == 0)
+      return count;
+    uint32 val;
+    int size;
+    if (ch >> 7 == 0) { // 0xxxxxxx
+      size = 0;
+      val = ch;
+    }
+    else if (ch >> 5 == 6) { // 110xxxxx  10xxxxxx
+      val = (ch & 0x1F) << 6;
+      size = 1;
+    }
+    else if (ch >> 4 == 0xE) { // 1110xxxx  10xxxxxx  10xxxxxx
+      val = (ch & 0xF) << 12;
+      size = 2;
+    }
+    else if (ch >> 3 == 0x1E) { // 11110xxx  10xxxxxx  10xxxxxx  10xxxxxx
+      val = (ch & 0xF) << 18;
+      size = 3;
+    }
+    else
+      return -idx;
 
+    for (int i=0 ; i < size ; i++) {
+      ch = input[idx++];
+      if (ch >> 6 != 2)
+        return -idx;
+      val |= (ch & 0x3F) << (6 * (size - i - 1));
+    }
+
+    if (output != NULL)
+      output[count] = make_int(val);
+  }
+}
+
+OBJ str_to_obj(const char *c_str) {
   OBJ raw_str_obj;
 
-  if (n == 0)
-  {
+  if (c_str[0] == 0) {
     raw_str_obj = make_empty_seq();
   }
-  else
-  {
-    SEQ_OBJ *raw_str = new_seq(n);
-    for (uint32 i=0 ; i < n ; i++)
-      raw_str->buffer[i] = make_int((uint8) c_str[i]);
-    raw_str_obj = make_seq(raw_str, n);
+  else {
+    int64 size = from_utf8(c_str, NULL);
+    SEQ_OBJ *raw_str = new_seq(size);
+    from_utf8(c_str, raw_str->buffer);
+    raw_str_obj = make_seq(raw_str, size);
   }
 
   return make_tag_obj(symb_idx_string, raw_str_obj);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+int64 to_utf8(const OBJ *chars, uint32 len, char *output) {
+  int offset = 0;
+  for (uint32 i=0 ; i < len ; i++) {
+    int64 cp = get_int_val(chars[i]);
+    if (cp < 0x80) {
+      if (output != NULL)
+        output[offset] = cp;
+      offset++;
+    }
+    else if (cp < 0x800) {
+      if (output != NULL) {
+        output[offset]   = 0xC0 | (cp >> 6);
+        output[offset+1] = 0x80 | (cp & 0x3F);
+      }
+      offset += 2;
+    }
+    else if (cp < 0x10000) {
+      if (output != NULL) {
+        output[offset]   = 0xE0 | (cp >> 12);
+        output[offset+1] = 0x80 | ((cp >> 6) & 0x3F);
+        output[offset+2] = 0x80 | (cp & 0x3F);
+      }
+      offset += 3;
+    }
+    else {
+      if (output != NULL) {
+        output[offset]   = 0xF0 | (cp >> 18);
+        output[offset+1] = 0x80 | ((cp >> 12) & 0x3F);
+        output[offset+2] = 0x80 | ((cp >> 6) & 0x3F);
+        output[offset+3] = 0x80 | (cp & 0x3F);
+      }
+      offset += 4;
+    }
+  }
+  if (output != NULL)
+    output[offset] = 0;
+  return offset + 1;
 }
 
 void obj_to_str(OBJ str_obj, char *buffer, uint32 size)
 {
   OBJ raw_str_obj = get_inner_obj(str_obj);
 
-  if (!is_empty_seq(raw_str_obj))
-  {
+  if (!is_empty_seq(raw_str_obj)) {
     OBJ *seq_buffer = get_seq_buffer_ptr(raw_str_obj);
     uint32 len = get_seq_length(raw_str_obj);
-    if (len >= size)
+    int64 min_size = to_utf8(seq_buffer, len, NULL);
+    if (size < min_size)
       throw 0;
-    for (uint32 i=0 ; i < len ; i++)
-      buffer[i] = get_int_val(seq_buffer[i]);
-    buffer[len] = '\0';
+    to_utf8(seq_buffer, len, buffer);
   }
   else
-  {
     buffer[0] = '\0';
-  }
 }
 
 char *obj_to_byte_array(OBJ byte_seq_obj, uint32 &size)
