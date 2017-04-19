@@ -498,7 +498,6 @@ OBJ blank_array(int64 size);
 OBJ get_seq_slice(OBJ seq, int64 idx_first, int64 len);
 OBJ append_to_seq(OBJ seq, OBJ obj);            // Both seq and obj must already be reference counted
 OBJ join_seqs(OBJ left, OBJ right);
-// OBJ join_mult_seqs(OBJ seqs);
 OBJ rev_seq(OBJ seq);
 OBJ get_at(OBJ seq, uint32 idx);                // Increases reference count
 void set_at(OBJ seq, uint32 idx, OBJ value);    // Value must be already reference counted
@@ -506,14 +505,8 @@ OBJ lookup(OBJ map, OBJ key);                   // Does not increase reference c
 OBJ lookup(OBJ map, OBJ key, bool &found);      // Does not increase reference count
 OBJ ext_lookup(OBJ map, OBJ key);               // Does not increase reference count
 OBJ ext_lookup(OBJ map, OBJ key, bool &found);  // Does not increase reference count
-OBJ merge_sets(OBJ sets);
-OBJ merge_maps(OBJ maps);
-OBJ seq_to_set(OBJ seq);
-OBJ seq_to_mset(OBJ seq);
 OBJ internal_sort(OBJ set);
 OBJ parse_value(OBJ str);
-OBJ add_attachment(OBJ target, OBJ data);
-OBJ fetch_attachments(OBJ);
 void get_set_iter(SET_ITER &it, OBJ set);
 void get_seq_iter(SEQ_ITER &it, OBJ seq);
 void move_forward(SET_ITER &it);
