@@ -18,7 +18,7 @@ OBJ FileRead_P(OBJ filename, generated::ENV &)
   delete [] fname;
 
   if (size == -1)
-    return make_symb(symb_idx_nil);
+    return make_symb(symb_idx_nothing);
 
   OBJ seq_obj = make_empty_seq();
   if (size > 0)
@@ -70,6 +70,6 @@ OBJ GetChar_P(generated::ENV &env)
 {
   int ch = getchar();
   if (ch == EOF)
-    return make_symb(symb_idx_nil);
+    return make_symb(symb_idx_nothing);
   return make_int(ch);
 }

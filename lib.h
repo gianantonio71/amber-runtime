@@ -274,11 +274,12 @@ const uint32 INVALID_INDEX = 0xFFFFFFFFU;
 
 const uint16 symb_idx_false   = 0;
 const uint16 symb_idx_true    = 1;
-const uint16 symb_idx_nil     = 2;
+const uint16 symb_idx_void    = 2;
 const uint16 symb_idx_string  = 3;
-const uint16 symb_idx_just    = 4;
-const uint16 symb_idx_success = 5;
-const uint16 symb_idx_failure = 6;
+const uint16 symb_idx_nothing = 4;
+const uint16 symb_idx_just    = 5;
+const uint16 symb_idx_success = 6;
+const uint16 symb_idx_failure = 7;
 
 ///////////////////////////////// mem_alloc.cpp ////////////////////////////////
 
