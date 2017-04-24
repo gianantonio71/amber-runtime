@@ -451,6 +451,7 @@ bool is_out_of_range(SEQ_ITER &it);
 bool is_out_of_range(BIN_REL_ITER &it);
 bool is_out_of_range(TERN_REL_ITER &it);
 bool has_elem(OBJ set, OBJ elem);
+bool has_key(OBJ rel, OBJ arg1);
 bool has_pair(OBJ rel, OBJ arg1, OBJ arg2);
 bool has_triple(OBJ rel, OBJ arg1, OBJ arg2, OBJ arg3);
 

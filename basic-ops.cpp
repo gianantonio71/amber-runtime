@@ -73,6 +73,26 @@ bool has_pair(OBJ rel, OBJ arg0, OBJ arg1)
   return found;
 }
 
+bool has_key(OBJ rel, OBJ arg1)
+{
+  if (is_empty_bin_rel(rel))
+    return false;
+
+  BIN_REL_OBJ *ptr = get_bin_rel_ptr(rel);
+  uint32 size = ptr->size;
+  OBJ *left_col = get_left_col_array_ptr(ptr);
+
+  if (is_ne_map(rel)) {
+    bool found;
+    uint32 idx = find_obj(left_col, size, arg1, found);
+    return found;
+  }
+
+  uint32 count;
+  uint32 idx = find_objs_range(left_col, size, arg1, count);
+  return count > 0;
+}
+
 bool has_triple(OBJ rel, OBJ arg1, OBJ arg2, OBJ arg3)
 {
   assert(is_tern_rel(rel));
@@ -243,5 +263,5 @@ OBJ search_or_lookup(OBJ coll, OBJ value)
     return make_bool(has_elem(coll, value));
 
   assert(is_empty_bin_rel(coll) | is_ne_map(coll));
-  return lookup(coll, value);
+  return make_bool(has_key(coll, value));
 }
