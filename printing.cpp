@@ -139,11 +139,9 @@ void print_seq(OBJ obj, bool print_parentheses, void (*emit)(void *, const void 
 }
 
 
-void print_set(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
-{
+void print_set(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data) {
   emit(data, "[", TEXT);
-  if (!is_empty_set(obj))
-  {
+  if (!is_empty_rel(obj)) {
     SET_OBJ *set = get_set_ptr(obj);
     uint32 size = set->size;
     OBJ *elems = set->buffer;
@@ -158,14 +156,7 @@ void print_set(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *d
 }
 
 
-void print_bin_rel(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
-{
-  if (is_empty_bin_rel(obj))
-  {
-    emit(data, "[:]", TEXT);
-    return;
-  }
-
+void print_ne_bin_rel(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data) {
   emit(data, "[", TEXT);
 
   BIN_REL_OBJ *rel = get_bin_rel_ptr(obj);
@@ -191,7 +182,7 @@ void print_bin_rel(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), voi
 }
 
 
-void print_map(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
+void print_ne_map(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
 {
   BIN_REL_OBJ *map = get_bin_rel_ptr(obj);
   uint32 size = map->size;
@@ -241,14 +232,7 @@ void print_record(OBJ obj, bool print_parentheses, void (*emit)(void *, const vo
 }
 
 
-void print_tern_rel(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
-{
-  if (is_empty_tern_rel(obj))
-  {
-    emit(data, "[::]", TEXT);
-    return;
-  }
-
+void print_ne_tern_rel(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data) {
   emit(data, "[", TEXT);
 
   TERN_REL_OBJ *rel = get_tern_rel_ptr(obj);
@@ -333,13 +317,13 @@ void print_obj(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *d
     print_record(obj, true, emit, data);
 
   else if (is_ne_map(obj)) //## SHOULD I PRINT IT AS A MAP ONLY WHEN IT'S A PHYSICAL ONE?
-    print_map(obj, emit, data);
+    print_ne_map(obj, emit, data);
 
-  else if (is_bin_rel(obj))
-    print_bin_rel(obj, emit, data);
+  else if (is_ne_bin_rel(obj))
+    print_ne_bin_rel(obj, emit, data);
 
-  else if (is_tern_rel(obj))
-    print_tern_rel(obj, emit, data);
+  else if (is_ne_tern_rel(obj))
+    print_ne_tern_rel(obj, emit, data);
 
   else // is_tag_obj(obj)
     print_tag_obj(obj, emit, data);

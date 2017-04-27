@@ -68,7 +68,7 @@ OBJ build_seq(STREAM &s)
 OBJ build_set(OBJ *elems, uint32 size)
 {
   if (size == 0)
-    return make_empty_set();
+    return make_empty_rel();
 
   size = sort_and_release_dups(elems, size);
 
@@ -86,7 +86,7 @@ OBJ build_set(STREAM &s)
 
   uint32 count = s.count;
   if (count == 0)
-    return make_empty_set();
+    return make_empty_rel();
 
   OBJ *buffer = s.buffer;
   OBJ set = build_set(buffer, count);
@@ -325,13 +325,6 @@ OBJ rev_seq(OBJ seq)
   return make_seq(rs, len);
 }
 
-OBJ get_at(OBJ seq, uint32 idx) // Increases reference count
-{
-  OBJ obj = at(seq, idx);
-  add_ref(obj);
-  return obj;
-}
-
 void set_at(OBJ seq, uint32 idx, OBJ value) // Value must be already reference counted
 {
   // This is not called directly by the user, so asserts should be sufficient
@@ -351,8 +344,7 @@ OBJ lookup(OBJ map, OBJ key)
   if (found)
     return res;
 
-  if (is_empty_bin_rel(map))
-  {
+  if (is_empty_rel(map)) {
     soft_fail("_lookup_(): Key not found. Map is empty");
   }
   else if (is_symb(key))
@@ -371,8 +363,7 @@ OBJ lookup(OBJ map, OBJ key, bool &found)
 {
   // No need to check the parameters
 
-  if (is_empty_bin_rel(map))
-  {
+  if (is_empty_rel(map)) {
     found = false;
     return make_blank_obj();
   }
@@ -412,8 +403,7 @@ OBJ ext_lookup(OBJ map_or_tag_obj, OBJ key, bool &found)
 {
   uint16 key_idx = get_symb_idx(key);
   OBJ map = is_tag_obj(map_or_tag_obj) ? get_inner_obj(map_or_tag_obj) : map_or_tag_obj;
-  if (!is_empty_bin_rel(map))
-  {
+  if (!is_empty_rel(map)) {
     BIN_REL_OBJ *ptr = get_bin_rel_ptr(map);
     uint32 size = ptr->size;
     OBJ *keys = ptr->buffer;
@@ -429,9 +419,8 @@ OBJ ext_lookup(OBJ map_or_tag_obj, OBJ key, bool &found)
   return make_blank_obj(); //## WHAT SHOULD I RETURN HERE?
 }
 
-OBJ internal_sort(OBJ set)
-{
-  if (is_empty_set(set))
+OBJ internal_sort(OBJ set) {
+  if (is_empty_rel(set))
     return make_empty_seq();
 
   SET_OBJ *s = get_set_ptr(set);
@@ -463,8 +452,7 @@ OBJ parse_value(OBJ str_obj)
 void get_set_iter(SET_ITER &it, OBJ set)
 {
   it.idx = 0;
-  if (!is_empty_set(set))
-  {
+  if (!is_empty_rel(set)) {
     SET_OBJ *ptr = get_set_ptr(set);
     it.buffer = ptr->buffer;
     it.size = ptr->size;

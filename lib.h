@@ -370,15 +370,13 @@ bool is_float(OBJ);
 bool is_seq(OBJ);
 bool is_empty_seq(OBJ);
 bool is_ne_seq(OBJ);
+bool is_empty_rel(OBJ);
 bool is_set(OBJ);
-bool is_empty_set(OBJ);
 bool is_ne_set(OBJ);
 bool is_bin_rel(OBJ);
-bool is_empty_bin_rel(OBJ);
 bool is_ne_bin_rel(OBJ);
 bool is_ne_map(OBJ);
 bool is_tern_rel(OBJ);
-bool is_empty_tern_rel(OBJ);
 bool is_ne_tern_rel(OBJ);
 bool is_tag_obj(OBJ);
 
@@ -396,9 +394,7 @@ OBJ    get_inner_obj(OBJ);
 OBJ make_blank_obj();
 OBJ make_null_obj();
 OBJ make_empty_seq();
-OBJ make_empty_set();
-OBJ make_empty_bin_rel();
-OBJ make_empty_tern_rel();
+OBJ make_empty_rel();
 OBJ make_symb(uint16 symb_idx);
 OBJ make_bool(bool b);
 OBJ make_int(uint64 value);
@@ -501,7 +497,6 @@ OBJ get_seq_slice(OBJ seq, int64 idx_first, int64 len);
 OBJ append_to_seq(OBJ seq, OBJ obj);            // Both seq and obj must already be reference counted
 OBJ join_seqs(OBJ left, OBJ right);
 OBJ rev_seq(OBJ seq);
-OBJ get_at(OBJ seq, uint32 idx);                // Increases reference count
 void set_at(OBJ seq, uint32 idx, OBJ value);    // Value must be already reference counted
 OBJ lookup(OBJ map, OBJ key);                   // Does not increase reference count
 OBJ lookup(OBJ map, OBJ key, bool &found);      // Does not increase reference count

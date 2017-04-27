@@ -69,13 +69,11 @@ const uint64 INTEGER_MASK         = MAKE_TYPE(TYPE_INTEGER);
 const uint64 FLOAT_MASK           = MAKE_TYPE(TYPE_FLOAT);
 const uint64 EMPTY_SEQ_MASK       = MAKE_TYPE(TYPE_SEQUENCE);
 const uint64 NE_SEQ_BASE_MASK     = MAKE_TYPE(TYPE_SEQUENCE) | STD_MEM_LAYOUT;
-const uint64 EMPTY_SET_MASK       = MAKE_TYPE(TYPE_SET);
+const uint64 EMPTY_REL_MASK       = MAKE_TYPE(TYPE_SET);
 const uint64 NE_SET_MASK          = MAKE_TYPE(TYPE_SET)      | STD_MEM_LAYOUT;
-const uint64 EMPTY_BIN_REL_MASK   = MAKE_TYPE(TYPE_BIN_REL);
 const uint64 NE_BIN_REL_MASK      = MAKE_TYPE(TYPE_BIN_REL)  | STD_MEM_LAYOUT;
 const uint64 NE_MAP_MASK          = MAKE_TYPE(TYPE_MAP)      | STD_MEM_LAYOUT;
 const uint64 NE_LOG_MAP_MASK      = MAKE_TYPE(TYPE_LOG_MAP)  | STD_MEM_LAYOUT;
-const uint64 EMPTY_TERN_REL_MASK  = MAKE_TYPE(TYPE_TERN_REL);
 const uint64 NE_TERN_REL_MASK     = MAKE_TYPE(TYPE_TERN_REL) | STD_MEM_LAYOUT;
 const uint64 TAG_OBJ_MASK         = MAKE_TYPE(TYPE_TAG_OBJ)  | STD_MEM_LAYOUT;
 
@@ -352,7 +350,7 @@ OBJ make_set(SET_OBJ *ptr)
 {
   OBJ obj;
   obj.core_data.ptr = ptr;
-  obj.extra_data = ptr == NULL ? EMPTY_SET_MASK : (is_in_try_state() ? TRY_STATE_NE_SET_MASK : NE_SET_MASK);
+  obj.extra_data = ptr == NULL ? EMPTY_REL_MASK : (is_in_try_state() ? TRY_STATE_NE_SET_MASK : NE_SET_MASK);
 
   // assert(obj.extra_data.std.symb_idx    == 0);
   // assert(obj.extra_data.std.inner_tag   == 0);
@@ -365,7 +363,7 @@ OBJ make_set(SET_OBJ *ptr)
   return obj;
 }
 
-OBJ make_empty_set()
+OBJ make_empty_rel()
 {
   return make_set(NULL);
 }
@@ -427,23 +425,6 @@ OBJ make_map(BIN_REL_OBJ *ptr)
   return obj;
 }
 
-OBJ make_empty_bin_rel()
-{
-  OBJ obj;
-  obj.core_data.ptr = NULL;
-  obj.extra_data = EMPTY_BIN_REL_MASK;
-
-  // assert(obj.extra_data.std.symb_idx    == 0);
-  // assert(obj.extra_data.std.inner_tag   == 0);
-  // assert(obj.extra_data.std.tag         == 0);
-  // assert(obj.extra_data.std.unused_byte == 0);
-  // assert(obj.extra_data.std.type        == TYPE_BIN_REL);
-  // assert(obj.extra_data.std.mem_layout  == 0);
-  // assert(obj.extra_data.std.num_tags    == 0);
-
-  return obj;
-}
-
 OBJ make_tern_rel(TERN_REL_OBJ *ptr)
 {
   assert(ptr != NULL);
@@ -458,23 +439,6 @@ OBJ make_tern_rel(TERN_REL_OBJ *ptr)
   // assert(obj.extra_data.std.unused_byte == 0);
   // assert(obj.extra_data.std.type        == TYPE_TERN_REL);
   // assert(obj.extra_data.std.mem_layout  == (is_in_try_state() ? 2 : 1));
-  // assert(obj.extra_data.std.num_tags    == 0);
-
-  return obj;
-}
-
-OBJ make_empty_tern_rel()
-{
-  OBJ obj;
-  obj.core_data.ptr = NULL;
-  obj.extra_data = EMPTY_TERN_REL_MASK;
-
-  // assert(obj.extra_data.std.symb_idx    == 0);
-  // assert(obj.extra_data.std.inner_tag   == 0);
-  // assert(obj.extra_data.std.tag         == 0);
-  // assert(obj.extra_data.std.unused_byte == 0);
-  // assert(obj.extra_data.std.type        == TYPE_TERN_REL);
-  // assert(obj.extra_data.std.mem_layout  == 0);
   // assert(obj.extra_data.std.num_tags    == 0);
 
   return obj;
@@ -730,14 +694,9 @@ bool is_ne_seq(OBJ obj)
   return is_seq(obj) & !is_empty_seq(obj);
 }
 
-bool is_set(OBJ obj)
+bool is_empty_rel(OBJ obj)
 {
-  return get_log_mask(obj) == SET_LOG_MASK;
-}
-
-bool is_empty_set(OBJ obj)
-{
-  return obj.extra_data == EMPTY_SET_MASK;
+  return obj.extra_data == EMPTY_REL_MASK;
 }
 
 bool is_ne_set(OBJ obj)
@@ -745,20 +704,15 @@ bool is_ne_set(OBJ obj)
   return obj.extra_data == NE_SET_MASK | obj.extra_data == TRY_STATE_NE_SET_MASK;
 }
 
-bool is_bin_rel(OBJ obj)
+bool is_set(OBJ obj)
 {
-  uint64 log_mask = get_log_mask(obj);
-  return log_mask == BIN_REL_LOG_MASK | log_mask == LOG_MAP_LOG_MASK | log_mask == MAP_LOG_MASK;
-}
-
-bool is_empty_bin_rel(OBJ obj)
-{
-  return obj.extra_data == EMPTY_BIN_REL_MASK;
+  return get_log_mask(obj) == SET_LOG_MASK;
 }
 
 bool is_ne_bin_rel(OBJ obj)
 {
-  return is_bin_rel(obj) & !is_empty_bin_rel(obj);
+  uint64 log_mask = get_log_mask(obj);
+  return log_mask == BIN_REL_LOG_MASK | log_mask == LOG_MAP_LOG_MASK | log_mask == MAP_LOG_MASK;
 }
 
 bool is_ne_map(OBJ obj)
@@ -767,20 +721,18 @@ bool is_ne_map(OBJ obj)
   return log_mask == MAP_LOG_MASK | log_mask == LOG_MAP_LOG_MASK;
 }
 
-bool is_tern_rel(OBJ obj)
-{
-  return get_physical_type(obj) == TYPE_TERN_REL;
-}
-
-bool is_empty_tern_rel(OBJ obj)
-{
-  return obj.extra_data == EMPTY_TERN_REL_MASK;
+bool is_bin_rel(OBJ obj) {
+  return is_empty_rel(obj) | is_ne_bin_rel(obj);
 }
 
 bool is_ne_tern_rel(OBJ obj)
 {
   uint64 extra_data = obj.extra_data;
   return extra_data == NE_TERN_REL_MASK | extra_data == TRY_STATE_NE_TERN_REL_MASK;
+}
+
+bool is_tern_rel(OBJ obj) {
+  return is_empty_rel(obj) | is_ne_tern_rel(obj);
 }
 
 bool is_tag_obj(OBJ obj)

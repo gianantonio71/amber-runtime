@@ -41,7 +41,7 @@ void build_map_right_to_left_sorted_idx_array(OBJ map)
 OBJ build_bin_rel(OBJ *vals1, OBJ *vals2, uint32 size)
 {
   if (size == 0)
-    return make_empty_bin_rel();
+    return make_empty_rel();
 
     // Creating the array of indexes sorted by column 1, column 2, index
   uint32 *index = new_uint32_array(size);
@@ -130,7 +130,7 @@ OBJ build_bin_rel(STREAM &stream1, STREAM &stream2)
   assert(stream1.count == stream2.count);
 
   if (stream1.count == 0)
-    return make_empty_bin_rel();
+    return make_empty_rel();
 
   OBJ rel = build_bin_rel(stream1.buffer, stream2.buffer, stream1.count);
 
@@ -146,7 +146,7 @@ OBJ build_bin_rel(STREAM &stream1, STREAM &stream2)
 OBJ build_map(OBJ *keys, OBJ *values, uint32 size)
 {
   if (size == 0)
-    return make_empty_bin_rel();
+    return make_empty_rel();
 
   sort_and_check_no_dups(keys, values, size);
 
@@ -168,7 +168,7 @@ OBJ build_map(STREAM &key_stream, STREAM &value_stream)
   assert(key_stream.count == value_stream.count);
 
   if (key_stream.count == 0)
-    return make_empty_bin_rel();
+    return make_empty_rel();
 
   OBJ map = build_map(key_stream.buffer, value_stream.buffer, key_stream.count);
 
@@ -194,8 +194,7 @@ void get_bin_rel_iter(BIN_REL_ITER &it, OBJ rel)
 {
   assert(is_bin_rel(rel));
 
-  if (!is_empty_bin_rel(rel))
-  {
+  if (!is_empty_rel(rel)) {
     BIN_REL_OBJ *ptr = get_bin_rel_ptr(rel);
     it.left_col = get_left_col_array_ptr(ptr);
     it.right_col = get_right_col_array_ptr(ptr);

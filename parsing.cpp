@@ -588,17 +588,12 @@ int64 parse_rel_tail(TOKEN *tokens, uint32 length, int64 offset, int size, OBJ *
 
 int64 parse_unord_coll(TOKEN *tokens, uint32 length, int64 offset, OBJ *var)
 {
-  int count = 0;
-  while (count < 2 & (++offset < length && tokens[offset].type == COLON))
-    count++;
-  if (offset >= length)
+  if (++offset >= length)
     return -offset - 1;
   if (tokens[offset].type == CLOSE_BRACKET) {
-    *var = count == 0 ? make_empty_set() : (count == 1 ? make_empty_bin_rel() : make_empty_tern_rel());
+    *var = make_empty_rel();
     return offset + 1;
   }
-  if (count > 0)
-    return -offset - 1;
 
   STATE state;
   init(&state, 1);

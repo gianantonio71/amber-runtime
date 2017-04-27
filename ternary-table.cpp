@@ -364,7 +364,7 @@ OBJ copy_ternary_table(TERNARY_TABLE *table, VALUE_STORE *vs1, VALUE_STORE *vs2,
   uint32 size = rows.size();
 
   if (size == 0)
-    return make_empty_tern_rel();
+    return make_empty_rel();
 
   OBJ *col1 = new_obj_array(3 * size);
   OBJ *col2 = col1 + size;
@@ -405,7 +405,7 @@ void set_ternary_table(
 {
   ternary_table_clear(table, updates);
 
-  if (is_empty_tern_rel(rel))
+  if (is_empty_rel(rel))
     return;
 
   TERN_REL_OBJ *ptr = get_tern_rel_ptr(rel);

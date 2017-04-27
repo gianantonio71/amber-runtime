@@ -207,7 +207,7 @@ OBJ copy_binary_table(BINARY_TABLE *table, VALUE_STORE *vs1, VALUE_STORE *vs2, b
   uint32 size = rows.size();
 
   if (size == 0)
-    return make_empty_bin_rel();
+    return make_empty_rel();
 
   OBJ *col1 = new_obj_array(2 * size);
   OBJ *col2 = col1 + size;
@@ -238,7 +238,7 @@ void set_binary_table(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates, VALUE_
 {
   binary_table_clear(table, updates);
 
-  if (is_empty_bin_rel(rel))
+  if (is_empty_rel(rel))
     return;
 
   BIN_REL_OBJ *ptr = get_bin_rel_ptr(rel);

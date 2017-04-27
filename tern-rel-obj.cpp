@@ -6,7 +6,7 @@
 OBJ build_tern_rel(OBJ *vals1, OBJ *vals2, OBJ *vals3, uint32 size)
 {
   if (size == 0)
-    return make_empty_tern_rel();
+    return make_empty_rel();
 
   // Creating the array of indexes sorted by column 1, column 2, column 3, index
   uint32 *index = new_uint32_array(size);
@@ -106,7 +106,7 @@ OBJ build_tern_rel(STREAM &stream1, STREAM &stream2, STREAM &stream3)
   assert(stream1.count == stream2.count & stream2.count == stream3.count);
 
   if (stream1.count == 0)
-    return make_empty_tern_rel();
+    return make_empty_rel();
 
   OBJ rel = build_tern_rel(stream1.buffer, stream2.buffer, stream3.buffer, stream1.count);
 

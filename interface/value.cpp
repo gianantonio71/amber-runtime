@@ -94,6 +94,8 @@ public:
 
   bool is_seq();
   bool is_set();
+  bool is_bin_rel();
+  bool is_tern_rel();
   unsigned int size();
   Value *item(unsigned int);
   void print(ostream &);
@@ -330,6 +332,14 @@ bool SeqSetValue::is_set() {
   return !ordered;
 }
 
+bool SeqSetValue::is_bin_rel() {
+  return !ordered & count == 0;
+}
+
+bool SeqSetValue::is_tern_rel() {
+  return !ordered & count == 0;
+}
+
 unsigned int SeqSetValue::size() {
   return count;
 }
@@ -549,7 +559,7 @@ Value *export_as_value_ptr(OBJ obj) {
         return new SeqSetValue(NULL, 0, true);
 
     case TYPE_SET:
-      if (!is_empty_set(obj)) {
+      if (!is_empty_rel(obj)) {
         SET_OBJ *ptr = get_set_ptr(obj);
         uint32 size = ptr->size;
         OBJ *objs = ptr->buffer;
@@ -563,36 +573,32 @@ Value *export_as_value_ptr(OBJ obj) {
 
     case TYPE_BIN_REL:
     case TYPE_MAP:
-    case TYPE_LOG_MAP:
-      if (!is_empty_bin_rel(obj)) {
-        BIN_REL_OBJ *ptr = get_bin_rel_ptr(obj);
-        uint32 size = ptr->size;
-        OBJ *buffer = ptr->buffer;
-        Value *(*entries)[2] = new Value*[size][2];
-        for (uint32 i=0 ; i < size ; i++) {
-          entries[i][0] = export_as_value_ptr(buffer[i]);
-          entries[i][1] = export_as_value_ptr(buffer[i+size]);
-        }
-        return new BinRelValue(entries, size, physical_type != TYPE_BIN_REL);
+    case TYPE_LOG_MAP: {
+      assert(!is_empty_rel(obj));
+      BIN_REL_OBJ *ptr = get_bin_rel_ptr(obj);
+      uint32 size = ptr->size;
+      OBJ *buffer = ptr->buffer;
+      Value *(*entries)[2] = new Value*[size][2];
+      for (uint32 i=0 ; i < size ; i++) {
+        entries[i][0] = export_as_value_ptr(buffer[i]);
+        entries[i][1] = export_as_value_ptr(buffer[i+size]);
       }
-      else
-        return new BinRelValue(NULL, 0, true);
+      return new BinRelValue(entries, size, physical_type != TYPE_BIN_REL);
+    }
 
-    case TYPE_TERN_REL:
-      if (!is_empty_tern_rel(obj)) {
-        TERN_REL_OBJ *ptr = get_tern_rel_ptr(obj);
-        uint32 size = ptr->size;
-        OBJ *buffer = ptr->buffer;
-        Value *(*entries)[3] = new Value*[size][3];
-        for (uint32 i=0 ; i < size ; i++) {
-          entries[i][0] = export_as_value_ptr(buffer[3*i]);
-          entries[i][1] = export_as_value_ptr(buffer[3*i+1]);
-          entries[i][2] = export_as_value_ptr(buffer[3*i+2]);
-        }
-        return new TernRelValue(entries, size);
+    case TYPE_TERN_REL: {
+      assert(!is_empty_rel(obj));
+      TERN_REL_OBJ *ptr = get_tern_rel_ptr(obj);
+      uint32 size = ptr->size;
+      OBJ *buffer = ptr->buffer;
+      Value *(*entries)[3] = new Value*[size][3];
+      for (uint32 i=0 ; i < size ; i++) {
+        entries[i][0] = export_as_value_ptr(buffer[3*i]);
+        entries[i][1] = export_as_value_ptr(buffer[3*i+1]);
+        entries[i][2] = export_as_value_ptr(buffer[3*i+2]);
       }
-      else
-        return new TernRelValue(NULL, 0);
+      return new TernRelValue(entries, size);
+    }
 
     default: // case TYPE_BLANK_OBJ: case TYPE_NULL_OBJ: case TYPE_TAG_OBJ:
       fail();

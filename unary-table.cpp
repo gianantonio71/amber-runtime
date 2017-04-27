@@ -305,7 +305,7 @@ OBJ copy_unary_table(UNARY_TABLE *table, VALUE_STORE *vs)
   uint32 count = table->count;
 
   if (count == 0)
-    return make_empty_set();
+    return make_empty_rel();
 
   SET_OBJ *set = new_set(count);
   OBJ *buffer = set->buffer;
@@ -334,7 +334,7 @@ void set_unary_table(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates, VALUE_STO
 {
   unary_table_clear(table, updates);
 
-  if (is_empty_set(set))
+  if (is_empty_rel(set))
     return;
 
   SET_OBJ *ptr = get_set_ptr(set);

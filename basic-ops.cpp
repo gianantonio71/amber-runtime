@@ -37,7 +37,7 @@ bool is_out_of_range(TERN_REL_ITER &it)
 
 bool has_elem(OBJ set, OBJ elem)
 {
-  if (is_empty_set(set))
+  if (is_empty_rel(set))
     return false;
   SET_OBJ *s = get_set_ptr(set);
   bool found;
@@ -47,7 +47,7 @@ bool has_elem(OBJ set, OBJ elem)
 
 bool has_pair(OBJ rel, OBJ arg0, OBJ arg1)
 {
-  if (is_empty_bin_rel(rel))
+  if (is_empty_rel(rel))
     return false;
 
   BIN_REL_OBJ *ptr = get_bin_rel_ptr(rel);
@@ -73,9 +73,8 @@ bool has_pair(OBJ rel, OBJ arg0, OBJ arg1)
   return found;
 }
 
-bool has_key(OBJ rel, OBJ arg1)
-{
-  if (is_empty_bin_rel(rel))
+bool has_key(OBJ rel, OBJ arg1) {
+  if (is_empty_rel(rel))
     return false;
 
   BIN_REL_OBJ *ptr = get_bin_rel_ptr(rel);
@@ -97,7 +96,7 @@ bool has_triple(OBJ rel, OBJ arg1, OBJ arg2, OBJ arg3)
 {
   assert(is_tern_rel(rel));
 
-  if (is_empty_bin_rel(rel))
+  if (is_empty_rel(rel))
     return false;
 
   TERN_REL_OBJ *ptr = get_tern_rel_ptr(rel);
@@ -142,13 +141,16 @@ uint32 get_size(OBJ coll)
 {
   assert(is_set(coll) | is_bin_rel(coll) | is_tern_rel(coll));
 
-  if (is_set(coll))
-    return is_empty_set(coll) ? 0 : get_set_ptr(coll)->size;
+  if (is_empty_rel(coll))
+    return 0;
 
-  if (is_bin_rel(coll))
-    return is_empty_bin_rel(coll) ? 0 : get_bin_rel_ptr(coll)->size;
+  if (is_ne_set(coll))
+    return get_set_ptr(coll)->size;
 
-  return is_empty_tern_rel(coll) ? 0 : get_tern_rel_ptr(coll)->size;
+  if (is_ne_bin_rel(coll))
+    return get_bin_rel_ptr(coll)->size;
+
+  return get_tern_rel_ptr(coll)->size;
 }
 
 int64 mantissa(OBJ obj)
@@ -259,9 +261,9 @@ OBJ search_or_lookup(OBJ coll, OBJ value)
   if (is_seq(coll))
     return at(coll, get_int_val(value));
 
-  if (is_set(coll))
+  if (is_ne_set(coll))
     return make_bool(has_elem(coll, value));
 
-  assert(is_empty_bin_rel(coll) | is_ne_map(coll));
+  assert(is_empty_rel(coll) | is_ne_map(coll));
   return make_bool(has_key(coll, value));
 }
