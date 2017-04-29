@@ -130,16 +130,11 @@ int64 get_int_val(OBJ obj)
   return get_int(obj);
 }
 
-uint32 get_seq_len(OBJ seq)
-{
-  assert(is_seq(seq));
+uint32 get_size(OBJ coll) {
+  assert(is_seq(coll) | is_set(coll) | is_bin_rel(coll) | is_tern_rel(coll));
 
-  return get_seq_length(seq);
-}
-
-uint32 get_size(OBJ coll)
-{
-  assert(is_set(coll) | is_bin_rel(coll) | is_tern_rel(coll));
+  if (is_seq(coll))
+    return get_seq_length(coll);
 
   if (is_empty_rel(coll))
     return 0;

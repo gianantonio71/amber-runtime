@@ -452,7 +452,6 @@ bool has_pair(OBJ rel, OBJ arg1, OBJ arg2);
 bool has_triple(OBJ rel, OBJ arg1, OBJ arg2, OBJ arg3);
 
 int64 get_int_val(OBJ);
-uint32 get_seq_len(OBJ seq);
 uint32 get_size(OBJ set);
 int64 mantissa(OBJ);
 int64 dec_exp(OBJ);
