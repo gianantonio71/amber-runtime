@@ -255,10 +255,6 @@ OBJ search_or_lookup(OBJ coll, OBJ value)
 {
   if (is_seq(coll))
     return at(coll, get_int_val(value));
-
-  if (is_ne_set(coll))
+  else
     return make_bool(has_elem(coll, value));
-
-  assert(is_empty_rel(coll) | is_ne_map(coll));
-  return make_bool(has_key(coll, value));
 }
