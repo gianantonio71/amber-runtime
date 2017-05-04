@@ -1,6 +1,7 @@
 #include "lib.h"
 
-#include <cstdlib>
+#include <stdlib.h>
+#include <string.h>
 
 
 bool inline_eq(OBJ obj1, OBJ obj2)
@@ -90,6 +91,21 @@ bool has_key(OBJ rel, OBJ arg1) {
   uint32 count;
   uint32 idx = find_objs_range(left_col, size, arg1, count);
   return count > 0;
+}
+
+bool has_field(OBJ rec_or_tag_rec, uint16 field_symb_idx) {
+  OBJ rec = is_tag_obj(rec_or_tag_rec) ? get_inner_obj(rec_or_tag_rec) : rec_or_tag_rec;
+
+  if (!is_empty_rel(rec)) {
+    BIN_REL_OBJ *ptr = get_bin_rel_ptr(rec);
+    uint32 size = ptr->size;
+    OBJ *keys = ptr->buffer;
+    for (uint32 i=0 ; i < size ; i++)
+      if (is_symb(keys[i], field_symb_idx))
+        return true;
+  }
+
+  return false;
 }
 
 bool has_triple(OBJ rel, OBJ arg1, OBJ arg2, OBJ arg3)
@@ -247,14 +263,60 @@ OBJ tern_rel_it_get_right_arg(TERN_REL_ITER &it)
 OBJ rand_set_elem(OBJ set)
 {
   SET_OBJ *set_ptr = get_set_ptr(set);
-  uint32 idx = std::rand() % set_ptr->size;
+  uint32 idx = rand() % set_ptr->size;
   return set_ptr->buffer[idx];
 }
 
-OBJ search_or_lookup(OBJ coll, OBJ value)
-{
-  if (is_seq(coll))
-    return at(coll, get_int_val(value));
-  else
-    return make_bool(has_elem(coll, value));
+OBJ lookup(OBJ rel, OBJ key) {
+  if (!is_empty_rel(rel)) {
+    BIN_REL_OBJ *ptr = get_bin_rel_ptr(rel);
+    uint32 size = ptr->size;
+    OBJ *keys = ptr->buffer;
+    OBJ *values = keys + size;
+    OBJ_TYPE rel_type = get_physical_type(rel);
+    if (rel_type == TYPE_MAP | rel_type == TYPE_LOG_MAP) {
+      bool found;
+      uint32 idx = find_obj(keys, size, key, found);
+      if (found)
+        return values[idx];
+    }
+    else {
+      assert(rel_type == TYPE_BIN_REL);
+      uint32 count;
+      uint32 idx = find_objs_range(keys, size, key, count);
+      if (count == 1)
+        return values[idx];
+      if (count > 1)
+        soft_fail("Key is not unique. Lookup failed");
+    }
+  }
+
+  if (is_empty_rel(rel))
+    soft_fail("Map is empty. Lookup failed");
+
+  if (is_symb(key)) {
+    char buff[1024];
+    strcpy(buff, "Map key not found: ");
+    uint32 len = strlen(buff);
+    printed_obj(key, buff+len, sizeof(buff)-len-1, true);
+    soft_fail(buff);
+  }
+
+  soft_fail("Map key not found");
+}
+
+OBJ lookup_field(OBJ rec_or_tag_rec, uint16 field_symb_idx) {
+  OBJ rec = is_tag_obj(rec_or_tag_rec) ? get_inner_obj(rec_or_tag_rec) : rec_or_tag_rec;
+
+  if (!is_empty_rel(rec)) {
+    BIN_REL_OBJ *ptr = get_bin_rel_ptr(rec);
+    uint32 size = ptr->size;
+    OBJ *keys = ptr->buffer;
+    OBJ *values = keys + size;
+    for (uint32 i=0 ; i < size ; i++)
+      if (is_symb(keys[i], field_symb_idx))
+        return values[i];
+  }
+
+  internal_fail();
 }

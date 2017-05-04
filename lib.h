@@ -448,6 +448,7 @@ bool is_out_of_range(BIN_REL_ITER &it);
 bool is_out_of_range(TERN_REL_ITER &it);
 bool has_elem(OBJ set, OBJ elem);
 bool has_key(OBJ rel, OBJ arg1);
+bool has_field(OBJ rec, uint16 field_symb_idx);
 bool has_pair(OBJ rel, OBJ arg1, OBJ arg2);
 bool has_triple(OBJ rel, OBJ arg1, OBJ arg2, OBJ arg3);
 
@@ -470,7 +471,8 @@ OBJ tern_rel_it_get_mid_arg(TERN_REL_ITER &it);
 OBJ tern_rel_it_get_right_arg(TERN_REL_ITER &it);
 OBJ rand_set_elem(OBJ set);   // Non-deterministic
 
-OBJ search_or_lookup(OBJ coll, OBJ value);
+OBJ lookup(OBJ rel, OBJ key);
+OBJ lookup_field(OBJ rec, uint16 field_symb_idx);
 
 ////////////////////////////////// instrs.cpp //////////////////////////////////
 
@@ -497,10 +499,6 @@ OBJ append_to_seq(OBJ seq, OBJ obj);            // Both seq and obj must already
 OBJ join_seqs(OBJ left, OBJ right);
 OBJ rev_seq(OBJ seq);
 void set_at(OBJ seq, uint32 idx, OBJ value);    // Value must be already reference counted
-OBJ lookup(OBJ map, OBJ key);                   // Does not increase reference count
-OBJ lookup(OBJ map, OBJ key, bool &found);      // Does not increase reference count
-OBJ ext_lookup(OBJ map, OBJ key);               // Does not increase reference count
-OBJ ext_lookup(OBJ map, OBJ key, bool &found);  // Does not increase reference count
 OBJ internal_sort(OBJ set);
 OBJ parse_value(OBJ str);
 void get_set_iter(SET_ITER &it, OBJ set);

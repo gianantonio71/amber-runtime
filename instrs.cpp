@@ -261,47 +261,6 @@ OBJ join_seqs(OBJ left, OBJ right)
   return extend_sequence(left, get_seq_buffer_ptr(right), right_len);
 }
 
-// OBJ join_mult_seqs(OBJ seqs)
-// {
-//   if (is_empty_seq(seq))
-//     return make_empty_seq();
-
-//   OBJ *seqs = get_seq_buffer_ptr(seqs);
-//   uint32 count = seqs_ptr->length;
-
-//   uint64 res_len = 0;
-//   for (uint32 i=0 ; i < count ; i++)
-//   {
-//     OBJ seq = seqs_ptr->elems[i];
-//     if (seq != empty_seq)
-//       res_len += get_seq_ptr(seq)->length;
-//   }
-
-//   if (res_len == 0)
-//     return empty_seq;
-
-//   SEQ_OBJ *res_seq = new_full_seq(res_len);
-
-//   uint32 copied = 0;
-//   for (uint32 i=0 ; i < seqs_count ; i++)
-//   {
-//     OBJ seq = seqs_ptr->elems[i];
-//     if (seq != empty_seq)
-//     {
-//       SEQ_OBJ *seq_ptr = get_seq_ptr(seq);
-//       uint32 len = seq_ptr->length;
-//       for (uint32 j=0 ; j < len ; j++)
-//         res_seq->elems[copied+j] = seq_ptr->elems[j];
-//       copied += len;
-//     }
-//   }
-//   assert(copied == res_len);
-
-//   vec_add_ref(res_seq->elems, res_seq->length);
-
-//   return make_obj(res_seq);
-// }
-
 OBJ rev_seq(OBJ seq)
 {
   // No need to check the parameters here
@@ -333,90 +292,6 @@ void set_at(OBJ seq, uint32 idx, OBJ value) // Value must be already reference c
   OBJ *target = get_seq_buffer_ptr(seq) + idx;
   release(*target);
   *target = value;
-}
-
-OBJ lookup(OBJ map, OBJ key)
-{
-  // No need to check the parameters
-
-  bool found;
-  OBJ res = lookup(map, key, found);
-  if (found)
-    return res;
-
-  if (is_empty_rel(map)) {
-    soft_fail("_lookup_(): Key not found. Map is empty");
-  }
-  else if (is_symb(key))
-  {
-    char buff[1024];
-    strcpy(buff, "_lookup_(): Key not found: ");
-    uint32 len = strlen(buff);
-    printed_obj(key, buff+len, sizeof(buff)-len-1, true);
-    soft_fail(buff);
-  }
-  else
-    soft_fail("_lookup_(): Key not found");
-}
-
-OBJ lookup(OBJ map, OBJ key, bool &found)
-{
-  // No need to check the parameters
-
-  if (is_empty_rel(map)) {
-    found = false;
-    return make_blank_obj();
-  }
-
-  assert(get_physical_type(map) == TYPE_MAP | get_physical_type(map) == TYPE_LOG_MAP);
-
-  BIN_REL_OBJ *m = get_bin_rel_ptr(map);
-  uint32 size = m->size;
-  OBJ *keys = m->buffer;
-
-  uint32 idx = find_obj(keys, size, key, found);
-  if (!found)
-  {
-    found = false;
-    return make_blank_obj();
-  }
-
-  OBJ *values = keys + size;
-  return values[idx];
-}
-
-OBJ ext_lookup(OBJ map_or_tag_obj, OBJ key)
-{
-  uint16 key_idx = get_symb_idx(key);
-  OBJ map = is_tag_obj(map_or_tag_obj) ? get_inner_obj(map_or_tag_obj) : map_or_tag_obj;
-  BIN_REL_OBJ *ptr = get_bin_rel_ptr(map);
-  uint32 size = ptr->size;
-  OBJ *keys = ptr->buffer;
-  OBJ *values = keys + size;
-  for (uint32 i=0 ; i < size ; i++)
-    if (get_symb_idx(keys[i]) == key_idx)
-      return values[i];
-  internal_fail();
-}
-
-OBJ ext_lookup(OBJ map_or_tag_obj, OBJ key, bool &found)
-{
-  uint16 key_idx = get_symb_idx(key);
-  OBJ map = is_tag_obj(map_or_tag_obj) ? get_inner_obj(map_or_tag_obj) : map_or_tag_obj;
-  if (!is_empty_rel(map)) {
-    BIN_REL_OBJ *ptr = get_bin_rel_ptr(map);
-    uint32 size = ptr->size;
-    OBJ *keys = ptr->buffer;
-    OBJ *values = keys + size;
-    for (uint32 i=0 ; i < size ; i++)
-      if (get_symb_idx(keys[i]) == key_idx)
-      {
-        found = true;
-        return values[i];
-      }
-  }
-  found = false;
-  return make_blank_obj(); //## WHAT SHOULD I RETURN HERE?
 }
 
 OBJ internal_sort(OBJ set) {
