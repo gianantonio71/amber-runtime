@@ -14,8 +14,7 @@ using std::max_element;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void unary_table_init(UNARY_TABLE *table)
-{
+void unary_table_init(UNARY_TABLE *table) {
   const uint32 INIT_SIZE = 1024;
   uint64 *bitmap = (uint64 *) malloc(INIT_SIZE/8);
   memset(bitmap, 0, INIT_SIZE/8);
@@ -24,13 +23,11 @@ void unary_table_init(UNARY_TABLE *table)
   table->count = 0;
 }
 
-void unary_table_cleanup(UNARY_TABLE *table)
-{
+void unary_table_cleanup(UNARY_TABLE *table) {
   free(table->bitmap);
 }
 
-void unary_table_updates_init(UNARY_TABLE_UPDATES *table)
-{
+void unary_table_updates_init(UNARY_TABLE_UPDATES *table) {
   table->capacity = 0;
   table->deletes_count = 0;
   table->inserts_count = 0;
@@ -39,15 +36,13 @@ void unary_table_updates_init(UNARY_TABLE_UPDATES *table)
 
 // Inserts and deletes are stored in the same buffer,
 // deletes at the front and inserts at the back
-void unary_table_updates_cleanup(UNARY_TABLE_UPDATES *table)
-{
+void unary_table_updates_cleanup(UNARY_TABLE_UPDATES *table) {
 
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool unary_table_contains(UNARY_TABLE *table, uint32 value)
-{
+bool unary_table_contains(UNARY_TABLE *table, uint32 value) {
   assert(value < table->size);
 
   uint64 *bitmap = table->bitmap;
@@ -59,8 +54,7 @@ bool unary_table_contains(UNARY_TABLE *table, uint32 value)
 ////////////////////////////////////////////////////////////////////////////////
 
 // Returns new capacity
-uint32 unary_table_updates_resize(UNARY_TABLE_UPDATES *updates)
-{
+uint32 unary_table_updates_resize(UNARY_TABLE_UPDATES *updates) {
   uint32 capacity = updates->capacity;
   uint32 new_capacity = capacity > 0 ? 2 * capacity : 32;
   uint32 *new_buffer = (uint32 *) malloc(new_capacity * sizeof(uint32));
@@ -87,8 +81,7 @@ uint32 unary_table_updates_resize(UNARY_TABLE_UPDATES *updates)
   return new_capacity;
 }
 
-void unary_table_insert(UNARY_TABLE_UPDATES *updates, uint32 value)
-{
+void unary_table_insert(UNARY_TABLE_UPDATES *updates, uint32 value) {
   uint32 capacity = updates->capacity;
   uint32 deletes_count = updates->deletes_count;
   uint32 inserts_count = updates->inserts_count;
@@ -101,8 +94,7 @@ void unary_table_insert(UNARY_TABLE_UPDATES *updates, uint32 value)
   updates->inserts_count = inserts_count + 1;
 }
 
-void unary_table_delete(UNARY_TABLE *, UNARY_TABLE_UPDATES *updates, uint32 value)
-{
+void unary_table_delete(UNARY_TABLE *, UNARY_TABLE_UPDATES *updates, uint32 value) {
   uint32 capacity = updates->capacity;
   uint32 deletes_count = updates->deletes_count;
   uint32 inserts_count = updates->inserts_count;
@@ -115,8 +107,7 @@ void unary_table_delete(UNARY_TABLE *, UNARY_TABLE_UPDATES *updates, uint32 valu
   updates->deletes_count = deletes_count + 1;
 }
 
-void unary_table_clear(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates)
-{
+void unary_table_clear(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates) {
   uint64 *bitmap = table->bitmap;
   uint32 cell_count = table->size / 64;
   for (int i=0 ; i < cell_count ; i++) {
@@ -127,13 +118,11 @@ void unary_table_clear(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates)
   }
 }
 
-bool unary_table_updates_check(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates)
-{
+bool unary_table_updates_check(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates) {
   return true;
 }
 
-void unary_table_updates_apply(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates, VALUE_STORE *vs)
-{
+void unary_table_updates_apply(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates, VALUE_STORE *vs) {
   uint32 inserts_count = updates->inserts_count;
   uint32 deletes_count = updates->deletes_count;
 
@@ -207,10 +196,8 @@ void unary_table_updates_finish(UNARY_TABLE_UPDATES *updates, VALUE_STORE *vs) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void unary_table_get_iter(UNARY_TABLE *table, UNARY_TABLE_ITER *iter)
-{
-  if (table->count != 0)
-  {
+void unary_table_get_iter(UNARY_TABLE *table, UNARY_TABLE_ITER *iter) {
+  if (table->count != 0) {
     uint64 *bitmap = table->bitmap;
     uint32 size = table->size;
 
@@ -218,36 +205,31 @@ void unary_table_get_iter(UNARY_TABLE *table, UNARY_TABLE_ITER *iter)
     iter->size = size;
 
     uint32 cell_count = size / 64;
-    for (uint32 i=0 ; i < cell_count ; i++)
-    {
+    for (uint32 i=0 ; i < cell_count ; i++) {
       uint64 cell = bitmap[i];
       if (cell != 0)
         for (int j=0 ; j < 64 ; j++)
-          if (((cell >> j) & 1) != 0)
-          {
+          if (((cell >> j) & 1) != 0) {
             iter->curr_value = 64 * i + j;
             return;
           }
     }
     internal_fail();
   }
-  else
-  {
+  else {
     iter->bitmap = NULL;
     iter->size = 0;
     iter->curr_value = 0;
   }
 }
 
-uint32 unary_table_iter_get_field(UNARY_TABLE_ITER *iter)
-{
+uint32 unary_table_iter_get_field(UNARY_TABLE_ITER *iter) {
   assert(!unary_table_iter_is_out_of_range(iter));
 
   return iter->curr_value;
 }
 
-void unary_table_iter_next(UNARY_TABLE_ITER *iter)
-{
+void unary_table_iter_next(UNARY_TABLE_ITER *iter) {
   assert(!unary_table_iter_is_out_of_range(iter));
 
   uint64 *bitmap = iter->bitmap;
@@ -260,24 +242,20 @@ void unary_table_iter_next(UNARY_TABLE_ITER *iter)
   uint32 offset = curr_value % 64 + 1;
 
   uint64 cell = bitmap[idx];
-  if (cell >> offset != 0)
-  {
+  if (cell >> offset != 0) {
     for (int i=offset ; i < 64 ; i++)
-      if (((cell >> i) & 1) != 0)
-      {
+      if (((cell >> i) & 1) != 0) {
         iter->curr_value = 64 * idx + i;
         return;
       }
     internal_fail();
   }
 
-  for (uint32 i=idx+1 ; i < cell_count ; i++)
-  {
+  for (uint32 i=idx+1 ; i < cell_count ; i++) {
     cell = bitmap[i];
     if (cell != 0)
       for (int j=0 ; j < 64 ; j++)
-        if (((cell >> j) & 1) != 0)
-        {
+        if (((cell >> j) & 1) != 0) {
           iter->curr_value = 64 * i + j;
           return;
         }
@@ -288,15 +266,13 @@ void unary_table_iter_next(UNARY_TABLE_ITER *iter)
   iter->curr_value = 0;
 }
 
-bool unary_table_iter_is_out_of_range(UNARY_TABLE_ITER *iter)
-{
+bool unary_table_iter_is_out_of_range(UNARY_TABLE_ITER *iter) {
   return iter->bitmap == NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-OBJ copy_unary_table(UNARY_TABLE *table, VALUE_STORE *vs)
-{
+OBJ copy_unary_table(UNARY_TABLE *table, VALUE_STORE *vs) {
   assert(table->size % 64 == 0);
 
   OBJ *slots = value_store_slot_array(vs);
@@ -311,12 +287,10 @@ OBJ copy_unary_table(UNARY_TABLE *table, VALUE_STORE *vs)
   OBJ *buffer = set->buffer;
 
   uint32 idx = 0;
-  for (uint32 i=0 ; i < size/64 ; i++)
-  {
+  for (uint32 i=0 ; i < size/64 ; i++) {
     uint64 word = bitmap[i];
     for (int j=0 ; j < 64 ; j++)
-      if ((word >> j) & 1)
-      {
+      if ((word >> j) & 1) {
         OBJ obj = slots[64 * i + j];
         add_ref(obj);
         buffer[idx++] = obj;
@@ -330,8 +304,7 @@ OBJ copy_unary_table(UNARY_TABLE *table, VALUE_STORE *vs)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void set_unary_table(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates, VALUE_STORE *vs, VALUE_STORE_UPDATES *vsu, OBJ set)
-{
+void set_unary_table(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates, VALUE_STORE *vs, VALUE_STORE_UPDATES *vsu, OBJ set) {
   unary_table_clear(table, updates);
 
   if (is_empty_rel(set))
@@ -341,12 +314,10 @@ void set_unary_table(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates, VALUE_STO
   uint32 size = ptr->size;
   OBJ *buffer = ptr->buffer;
 
-  for (uint32 i=0 ; i < size ; i++)
-  {
+  for (uint32 i=0 ; i < size ; i++) {
     OBJ obj = buffer[i];
     uint32 ref = lookup_value_ex(vs, vsu, obj);
-    if (ref == -1)
-    {
+    if (ref == -1) {
       add_ref(obj);
       ref = value_store_insert(vs, vsu, obj);
     }

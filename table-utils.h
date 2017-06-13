@@ -5,28 +5,23 @@ using std::sort;
 using std::unique;
 
 
-inline uint64 pack(uint64 left, uint64 right)
-{
+inline uint64 pack(uint64 left, uint64 right) {
   return (left << 32) | right;
 }
 
-inline uint64 swap(uint64 pair)
-{
+inline uint64 swap(uint64 pair) {
   return (pair >> 32) | (pair << 32);
 }
 
-inline uint32 left(uint64 pair)
-{
+inline uint32 left(uint64 pair) {
   return pair >> 32;
 }
 
-inline uint32 right(uint64 pair)
-{
+inline uint32 right(uint64 pair) {
   return pair;
 }
 
-template <typename T> void sort_unique(vector<T> &xs)
-{
+template <typename T> void sort_unique(vector<T> &xs) {
   sort(xs.begin(), xs.end());
   xs.erase(unique(xs.begin(), xs.end()), xs.end());
 }
@@ -62,14 +57,12 @@ struct col_1 {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-inline void build(tuple3 &tuple, uint32 val0, uint32 val1, uint32 val2)
-{
+inline void build(tuple3 &tuple, uint32 val0, uint32 val1, uint32 val2) {
   tuple.fields01 = pack(val0, val1);
   tuple.field2 = val2;
 }
 
-inline void shift(tuple3 &tuple)
-{
+inline void shift(tuple3 &tuple) {
   uint32 new_field2 = left(tuple.fields01);
   tuple.fields01 = pack(tuple.fields01, tuple.field2);
   tuple.field2 = new_field2;
@@ -140,22 +133,18 @@ struct col_2 {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename K, typename T> void take_keys(vector<typename K::key_type> &keys, const vector<T> &tuples)
-{
+template <typename K, typename T> void take_keys(vector<typename K::key_type> &keys, const vector<T> &tuples) {
   uint32 count = tuples.size();
   keys.resize(count);
   for (uint32 i=0 ; i < count ; i++)
     keys[i] = K::key(tuples[i]);
 }
 
-template <typename T> bool sorted_vector_has_duplicates(vector<T> &xs)
-{
+template <typename T> bool sorted_vector_has_duplicates(vector<T> &xs) {
   uint32 count = xs.size();
-  if (count > 0)
-  {
+  if (count > 0) {
     uint64 last_x = xs[0];
-    for (int i=1 ; i < count ; i++)
-    {
+    for (int i=1 ; i < count ; i++) {
       uint64 x = xs[i];
       if (x == last_x)
         return true;
@@ -167,14 +156,11 @@ template <typename T> bool sorted_vector_has_duplicates(vector<T> &xs)
 }
 
 template <typename K, typename T>
-bool update_has_conflicts(vector<typename K::key_type> &inserted_keys, vector<typename K::key_type> &deleted_keys, set<T> &target)
-{
+bool update_has_conflicts(vector<typename K::key_type> &inserted_keys, vector<typename K::key_type> &deleted_keys, set<T> &target) {
   int count = inserted_keys.size();
-  for (int i=0 ; i < count ; i++)
-  {
+  for (int i=0 ; i < count ; i++) {
     typename K::key_type key = inserted_keys[i];
-    if (!binary_search(deleted_keys.begin(), deleted_keys.end(), key))
-    {
+    if (!binary_search(deleted_keys.begin(), deleted_keys.end(), key)) {
       T lb = K::lower_bound(key);
       typename set<T>::iterator it = target.lower_bound(lb);
       if (it != target.end() && K::key_shifted(*it) == key)
@@ -187,8 +173,7 @@ bool update_has_conflicts(vector<typename K::key_type> &inserted_keys, vector<ty
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename K, typename T>
-bool table_updates_check_key(const vector<T> &inserts, const vector<T> &deletes, set<T> &target)
-{
+bool table_updates_check_key(const vector<T> &inserts, const vector<T> &deletes, set<T> &target) {
   // Gathering and sorting all keys from tuples to delete
   vector<typename K::key_type> deleted_keys;
   take_keys<K>(deleted_keys, deletes);

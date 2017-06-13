@@ -11,16 +11,14 @@ using std::map;
 
 
 
-void *alloc_pages(unsigned int page_count)
-{
+void *alloc_pages(unsigned int page_count) {
   assert(page_count > 0);
   void *ptr = malloc(4096 * page_count);
   // printf("+ %8llx - %4d\n", (unsigned long long) ptr, page_count);
   return ptr;
 }
 
-void release_pages(void *ptr, unsigned int page_count)
-{
+void release_pages(void *ptr, unsigned int page_count) {
   assert(ptr != NULL & page_count > 0);
   // printf("- %8llx - %4d\n", (unsigned long long) ptr, page_count);
   free(ptr);
@@ -28,8 +26,7 @@ void release_pages(void *ptr, unsigned int page_count)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-unsigned int size_code_size(int size_code)
-{
+unsigned int size_code_size(int size_code) {
   assert(size_code <= 5);
   switch (size_code) {
     case 0:   return 64;
@@ -68,49 +65,42 @@ static void **curr_mem_blocks_pool = std_mem_alloc.mem_blocks_pool;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool is_in_normal_state()
-{
+bool is_in_normal_state() {
   return curr_mem_alloc_state == NORMAL;
 }
 
-bool is_in_try_state()
-{
+bool is_in_try_state() {
   return curr_mem_alloc_state == TRY;
 }
 
-bool is_in_copying_state()
-{
+bool is_in_copying_state() {
   return curr_mem_alloc_state == COPYING;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void enter_try_state()
-{
+void enter_try_state() {
   assert(curr_mem_alloc_state == NORMAL);
 
   curr_mem_alloc_state = TRY;
   curr_mem_blocks_pool = try_mem_alloc.mem_blocks_pool;
 }
 
-void enter_copy_state()
-{
+void enter_copy_state() {
   assert(curr_mem_alloc_state == TRY);
 
   curr_mem_alloc_state = COPYING;
   curr_mem_blocks_pool = std_mem_alloc.mem_blocks_pool;
 }
 
-void restore_try_state()
-{
+void restore_try_state() {
   assert(curr_mem_alloc_state == COPYING);
 
   curr_mem_alloc_state = TRY;
   curr_mem_blocks_pool = try_mem_alloc.mem_blocks_pool;
 }
 
-void release_all_try_state_memory()
-{
+void release_all_try_state_memory() {
   vector<void *>::iterator pit = try_mem_alloc.pooled_blocks.begin();
   vector<void *>::iterator pend = try_mem_alloc.pooled_blocks.end();
   for ( ; pit != pend ; pit++)
@@ -127,16 +117,14 @@ void release_all_try_state_memory()
     try_mem_alloc.mem_blocks_pool[i] = NULL;
 }
 
-void return_to_normal_state()
-{
+void return_to_normal_state() {
   assert(curr_mem_alloc_state == COPYING);
 
   curr_mem_alloc_state = NORMAL;
   release_all_try_state_memory();
 }
 
-void abort_try_state()
-{
+void abort_try_state() {
   assert(curr_mem_alloc_state == TRY);
 
   curr_mem_alloc_state = NORMAL;
@@ -146,17 +134,14 @@ void abort_try_state()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void *alloc_mem_block(int size_code)
-{
+void *alloc_mem_block(int size_code) {
   assert(size_code <= 5);
 
-  if (size_code >= 0)
-  {
+  if (size_code >= 0) {
     void **pool_head = curr_mem_blocks_pool + size_code;
 
     void *head = *pool_head;
-    if (head == NULL)
-    {
+    if (head == NULL) {
       // Allocate new memory block
       void *ptr = alloc_pages(16);
       if (curr_mem_alloc_state == TRY)
@@ -177,8 +162,7 @@ void *alloc_mem_block(int size_code)
 
       unsigned int last_block_idx = ((16 * 4096) >> log_size) - 1;
       assert(last_block_idx + 1 == (16 * 4096) / block_size);
-      for (int i=1 ; i < last_block_idx ; i++)
-      {
+      for (int i=1 ; i < last_block_idx ; i++) {
         void *block_ptr = ((char *) ptr) + (i << log_size);
         assert(block_ptr == ((char *) ptr) + i * block_size);
         * (void **) block_ptr = ((char *) block_ptr) + block_size;
@@ -189,15 +173,13 @@ void *alloc_mem_block(int size_code)
       *pool_head = ((char *) ptr) + block_size;
       return ptr;
     }
-    else
-    {
+    else {
       void *next = * (void **) head;
       *pool_head = next;
       return head;
     }
   }
-  else
-  {
+  else {
     void *ptr = alloc_pages(-size_code);
     if (curr_mem_alloc_state == TRY)
       try_mem_alloc.large_blocks[ptr] = -size_code;
@@ -208,12 +190,10 @@ void *alloc_mem_block(int size_code)
   }
 }
 
-void release_mem_block(void *ptr, int size_code)
-{
+void release_mem_block(void *ptr, int size_code) {
   assert(size_code <= 5);
 
-  if (size_code >= 0)
-  {
+  if (size_code >= 0) {
 #ifndef NDEBUG
     unsigned int block_size = size_code_size(size_code);
     memset(ptr, 0xFF, block_size);
@@ -223,8 +203,7 @@ void release_mem_block(void *ptr, int size_code)
     * (void **) ptr = tail;
     *pool_head = ptr;
   }
-  else
-  {
+  else {
     release_pages(ptr, -size_code);
     if (curr_mem_alloc_state == TRY)
       try_mem_alloc.large_blocks.erase(ptr);

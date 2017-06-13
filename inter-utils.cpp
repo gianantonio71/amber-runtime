@@ -104,8 +104,7 @@ int64 to_utf8(const OBJ *chars, uint32 len, char *output) {
   return offset + 1;
 }
 
-void obj_to_str(OBJ str_obj, char *buffer, uint32 size)
-{
+void obj_to_str(OBJ str_obj, char *buffer, uint32 size) {
   OBJ raw_str_obj = get_inner_obj(str_obj);
 
   if (!is_empty_seq(raw_str_obj)) {
@@ -120,10 +119,8 @@ void obj_to_str(OBJ str_obj, char *buffer, uint32 size)
     buffer[0] = '\0';
 }
 
-char *obj_to_byte_array(OBJ byte_seq_obj, uint32 &size)
-{
-  if (is_empty_seq(byte_seq_obj))
-  {
+char *obj_to_byte_array(OBJ byte_seq_obj, uint32 &size) {
+  if (is_empty_seq(byte_seq_obj)) {
     size = 0;
     return NULL;
   }
@@ -131,8 +128,7 @@ char *obj_to_byte_array(OBJ byte_seq_obj, uint32 &size)
   uint32 len = get_seq_length(byte_seq_obj);
   OBJ *elems = get_seq_buffer_ptr(byte_seq_obj);
   char *buffer = (char *) malloc(len);
-  for (uint32 i=0 ; i < len ; i++)
-  {
+  for (uint32 i=0 ; i < len ; i++) {
     long long val = get_int_val(elems[i]);
     assert(val >= 0 && val <= 255);
     buffer[i] = (char) val;
@@ -141,8 +137,7 @@ char *obj_to_byte_array(OBJ byte_seq_obj, uint32 &size)
   return buffer;
 }
 
-char *obj_to_str(OBJ str_obj)
-{
+char *obj_to_str(OBJ str_obj) {
   uint32 size = get_seq_length(get_inner_obj(str_obj)) + 1;
   char *buffer = (char *) malloc(size);
   obj_to_str(str_obj, buffer, size);
@@ -153,14 +148,12 @@ char *obj_to_str(OBJ str_obj)
 
 static std::vector<OBJ> cached_objs;
 
-void add_obj_to_cache(OBJ obj)
-{
+void add_obj_to_cache(OBJ obj) {
   if (is_ref_obj(obj))
     cached_objs.push_back(obj);
 }
 
-void release_all_cached_objs()
-{
+void release_all_cached_objs() {
   uint32 count = cached_objs.size();
   for (uint32 i=0 ; i < count ; i++)
     release(cached_objs[i]);
@@ -169,8 +162,7 @@ void release_all_cached_objs()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool str_ord(const char *str1, const char *str2)
-{
+bool str_ord(const char *str1, const char *str2) {
   return strcmp(str1, str2) > 0;
 }
 
@@ -183,8 +175,7 @@ std::vector<const char *> dynamic_symbs_strs;
 const char *symb_repr(uint16);
 uint32 embedded_symbs_count();
 
-const char *symb_to_raw_str(OBJ obj)
-{
+const char *symb_to_raw_str(OBJ obj) {
   assert(is_symb(obj));
   uint16 idx = get_symb_idx(obj);
   uint32 count = embedded_symbs_count();
@@ -194,13 +185,11 @@ const char *symb_to_raw_str(OBJ obj)
     return dynamic_symbs_strs[idx - count];
 }
 
-OBJ to_str(OBJ obj)
-{
+OBJ to_str(OBJ obj) {
   return str_to_obj(symb_to_raw_str(obj));
 }
 
-uint16 lookup_symb_idx(const char *str_, uint32 len)
-{
+uint16 lookup_symb_idx(const char *str_, uint32 len) {
   uint32 count = embedded_symbs_count();
 
   if (str_to_symb_map.size() == 0)
@@ -223,16 +212,14 @@ uint16 lookup_symb_idx(const char *str_, uint32 len)
   return next_symb_id;
 }
 
-OBJ to_symb(OBJ obj)
-{
+OBJ to_symb(OBJ obj) {
   char *str = obj_to_str(obj);
   uint16 symb_idx = lookup_symb_idx(str, strlen(str));
   free(str);
   return make_symb(symb_idx);
 }
 
-OBJ extern_str_to_symb(const char *str)
-{
+OBJ extern_str_to_symb(const char *str) {
   //## CHECK THAT IT'S A VALID SYMBOL, AND THAT IT'S AMONG THE "STATIC" ONES
   return make_symb(lookup_symb_idx(str, strlen(str)));
 }

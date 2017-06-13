@@ -1,5 +1,4 @@
-namespace generated
-{
+namespace generated {
   struct ENV;
 }
 

@@ -5,8 +5,7 @@
 #include "lib.h"
 
 
-bool is_str(uint16 tag_idx, OBJ obj)
-{
+bool is_str(uint16 tag_idx, OBJ obj) {
   if (tag_idx != symb_idx_string)
     return false;
 
@@ -19,8 +18,7 @@ bool is_str(uint16 tag_idx, OBJ obj)
   uint32 len = get_seq_length(obj);
   OBJ *elems = get_seq_buffer_ptr(obj);
 
-  for (uint32 i=0 ; i < len ; i++)
-  {
+  for (uint32 i=0 ; i < len ; i++) {
     OBJ elem = elems[i];
 
     if (!is_int(elem))
@@ -35,8 +33,7 @@ bool is_str(uint16 tag_idx, OBJ obj)
 }
 
 
-bool is_record(OBJ obj)
-{
+bool is_record(OBJ obj) {
   if (!is_ne_map(obj))
     return false;
 
@@ -52,8 +49,7 @@ bool is_record(OBJ obj)
 }
 
 
-void print_bare_str(OBJ str, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
-{
+void print_bare_str(OBJ str, void (*emit)(void *, const void *, EMIT_ACTION), void *data) {
   char buffer[64];
 
   assert(is_str(get_tag_idx(str), get_inner_obj(str)));
@@ -65,27 +61,22 @@ void print_bare_str(OBJ str, void (*emit)(void *, const void *, EMIT_ACTION), vo
   uint32 len = get_seq_length(char_seq);
   OBJ *chars = get_seq_buffer_ptr(char_seq);
 
-  for (uint32 i=0 ; i < len ; i++)
-  {
+  for (uint32 i=0 ; i < len ; i++) {
     int64 ch = get_int_val(chars[i]);
     assert(ch >= 0 & ch < 65536);
-    if (ch >= ' ' & ch <= '~')
-    {
+    if (ch >= ' ' & ch <= '~') {
       buffer[0] = '\\';
       buffer[1] = ch;
       buffer[2] = '\0';
       emit(data, buffer + (ch == '"' | ch == '\\' ? 0 : 1), TEXT);
     }
-    else if (ch == '\n')
-    {
+    else if (ch == '\n') {
       emit(data, "\\n", TEXT);
     }
-    else if (ch == '\t')
-    {
+    else if (ch == '\t') {
       emit(data, "\\t", TEXT);
     }
-    else
-    {
+    else {
       sprintf(buffer, "\\%04llx", ch);
       emit(data, buffer, TEXT);
     }
@@ -93,8 +84,7 @@ void print_bare_str(OBJ str, void (*emit)(void *, const void *, EMIT_ACTION), vo
 }
 
 
-void print_int(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
-{
+void print_int(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data) {
   int64 n = get_int(obj);
   char buffer[1024];
   sprintf(buffer, "%lld", n);
@@ -102,8 +92,7 @@ void print_int(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *d
 }
 
 
-void print_float(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
-{
+void print_float(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data) {
   double x = get_float(obj);
   char buffer[1024];
   sprintf(buffer, "%g", x);
@@ -111,24 +100,20 @@ void print_float(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void 
 }
 
 
-void print_symb(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
-{
+void print_symb(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data) {
   OBJ str = to_str(obj);
   print_bare_str(str, emit, data);
   release(str);
 }
 
 
-void print_seq(OBJ obj, bool print_parentheses, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
-{
+void print_seq(OBJ obj, bool print_parentheses, void (*emit)(void *, const void *, EMIT_ACTION), void *data) {
   if (print_parentheses)
     emit(data, "(", TEXT);
-  if (!is_empty_seq(obj))
-  {
+  if (!is_empty_seq(obj)) {
     uint32 len = get_seq_length(obj);
     OBJ *elems = get_seq_buffer_ptr(obj);
-    for (uint32 i=0 ; i < len ; i++)
-    {
+    for (uint32 i=0 ; i < len ; i++) {
       if (i > 0)
         emit(data, ", ", TEXT);
       print_obj(elems[i], emit, data);
@@ -145,8 +130,7 @@ void print_set(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *d
     SET_OBJ *set = get_set_ptr(obj);
     uint32 size = set->size;
     OBJ *elems = set->buffer;
-    for (uint32 i=0 ; i < size ; i++)
-    {
+    for (uint32 i=0 ; i < size ; i++) {
       if (i > 0)
         emit(data, ", ", TEXT);
       print_obj(elems[i], emit, data);
@@ -164,8 +148,7 @@ void print_ne_bin_rel(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), 
   OBJ *left_col = get_left_col_array_ptr(rel);
   OBJ *right_col = get_right_col_array_ptr(rel);
 
-  for (uint32 i=0 ; i < size ; i++)
-  {
+  for (uint32 i=0 ; i < size ; i++) {
     if (i > 0)
       emit(data, "; ", TEXT);
     emit(data, NULL, SUB_START);
@@ -182,8 +165,7 @@ void print_ne_bin_rel(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), 
 }
 
 
-void print_ne_map(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
-{
+void print_ne_map(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data) {
   BIN_REL_OBJ *map = get_bin_rel_ptr(obj);
   uint32 size = map->size;
   OBJ *keys = get_left_col_array_ptr(map);
@@ -191,8 +173,7 @@ void print_ne_map(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void
 
   emit(data, "[", TEXT);
 
-  for (uint32 i=0 ; i < size ; i++)
-  {
+  for (uint32 i=0 ; i < size ; i++) {
     if (i > 0)
       emit(data, ", ", TEXT);
     emit(data, NULL, SUB_START);
@@ -206,8 +187,7 @@ void print_ne_map(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void
 }
 
 
-void print_record(OBJ obj, bool print_parentheses, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
-{
+void print_record(OBJ obj, bool print_parentheses, void (*emit)(void *, const void *, EMIT_ACTION), void *data) {
   if (print_parentheses)
     emit(data, "(", TEXT);
 
@@ -216,8 +196,7 @@ void print_record(OBJ obj, bool print_parentheses, void (*emit)(void *, const vo
   OBJ *keys = get_left_col_array_ptr(map);
   OBJ *values = get_right_col_array_ptr(map);
 
-  for (uint32 i=0 ; i < size ; i++)
-  {
+  for (uint32 i=0 ; i < size ; i++) {
     if (i > 0)
       emit(data, ", ", TEXT);
     emit(data, NULL, SUB_START);
@@ -241,8 +220,7 @@ void print_ne_tern_rel(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION),
   OBJ *col2 = get_col_array_ptr(rel, 1);
   OBJ *col3 = get_col_array_ptr(rel, 2);
 
-  for (uint32 i=0 ; i < size ; i++)
-  {
+  for (uint32 i=0 ; i < size ; i++) {
     if (i > 0)
       emit(data, "; ", TEXT);
     emit(data, NULL, SUB_START);
@@ -261,18 +239,15 @@ void print_ne_tern_rel(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION),
 }
 
 
-void print_tag_obj(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
-{
+void print_tag_obj(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data) {
   uint16 tag_idx = get_tag_idx(obj);
   OBJ inner_obj = get_inner_obj(obj);
-  if (is_str(tag_idx, inner_obj))
-  {
+  if (is_str(tag_idx, inner_obj)) {
     emit(data, "\"", TEXT);
     print_bare_str(obj, emit, data);
     emit(data, "\"", TEXT);
   }
-  else
-  {
+  else {
     print_symb(make_symb(tag_idx), emit, data);
     emit(data, "(", TEXT);
 
@@ -288,8 +263,7 @@ void print_tag_obj(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), voi
 }
 
 
-void print_obj(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data)
-{
+void print_obj(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *data) {
   emit(data, NULL, SUB_START);
 
   if (is_blank_obj(obj))
@@ -332,16 +306,14 @@ void print_obj(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *d
 }
 
 
-struct TEXT_FRAG
-{
+struct TEXT_FRAG {
   int depth;
   int start;
   int length;
 };
 
 
-struct PRINT_BUFFER
-{
+struct PRINT_BUFFER {
   int str_len;
   char buffer[64 * 1024 * 1024];
 
@@ -352,8 +324,7 @@ struct PRINT_BUFFER
 };
 
 
-void init(PRINT_BUFFER *pb)
-{
+void init(PRINT_BUFFER *pb) {
   pb->str_len = 0;
   pb->buffer[0] = '\0';
   pb->frag_count = 0;
@@ -368,8 +339,7 @@ void init(PRINT_BUFFER *pb)
 }
 
 
-uint32 printable_frags_count(PRINT_BUFFER *pb)
-{
+uint32 printable_frags_count(PRINT_BUFFER *pb) {
   uint32 fc = pb->frag_count;
   TEXT_FRAG *fs = pb->fragments;
 
@@ -381,8 +351,7 @@ uint32 printable_frags_count(PRINT_BUFFER *pb)
 
   uint32 curr_length = lf->length;
 
-  for (uint32 i=fc-2 ; i >= 0 ; i--)
-  {
+  for (uint32 i=fc-2 ; i >= 0 ; i--) {
     TEXT_FRAG *f = fs + i;
     curr_length += f->length;
     if (curr_length > 100)
@@ -393,13 +362,11 @@ uint32 printable_frags_count(PRINT_BUFFER *pb)
 }
 
 
-void calculate_subobjects_lengths(PRINT_BUFFER *pb, int *ls)
-{
+void calculate_subobjects_lengths(PRINT_BUFFER *pb, int *ls) {
   int fc = pb->frag_count;
   TEXT_FRAG *fs = pb->fragments;
 
-  for (int i=0 ; i < fc ; i++)
-  {
+  for (int i=0 ; i < fc ; i++) {
     TEXT_FRAG *f = fs + i;
 
     int pd;
@@ -408,11 +375,9 @@ void calculate_subobjects_lengths(PRINT_BUFFER *pb, int *ls)
     else
       pd = fs[i-1].depth;
 
-    if (f->depth > pd)
-    {
+    if (f->depth > pd) {
       int len = 0;
-      for (int j=i ; j < fc ; j++)
-      {
+      for (int j=i ; j < fc ; j++) {
         TEXT_FRAG *f2 = fs + j;
         if (f2->depth < f->depth)
           break;
@@ -426,8 +391,7 @@ void calculate_subobjects_lengths(PRINT_BUFFER *pb, int *ls)
 }
 
 
-void emit_known(PRINT_BUFFER *pb, void (*emit)(void *, const char *, uint32), void *data)
-{
+void emit_known(PRINT_BUFFER *pb, void (*emit)(void *, const char *, uint32), void *data) {
   int pfc = printable_frags_count(pb);
 
   int *ls = new int[pb->frag_count];
@@ -438,8 +402,7 @@ void emit_known(PRINT_BUFFER *pb, void (*emit)(void *, const char *, uint32), vo
 
   int split_depth = ls[0] > 100 ? 0 : -1;
 
-  for (int i=0 ; i < pfc ; i++)
-  {
+  for (int i=0 ; i < pfc ; i++) {
     TEXT_FRAG *f = fs + i;
     TEXT_FRAG *nf = f + 1;
 
@@ -451,39 +414,31 @@ void emit_known(PRINT_BUFFER *pb, void (*emit)(void *, const char *, uint32), vo
     assert(d == nd - 1 || d == nd + 1);
     assert(split_depth <= d);
 
-    if (nd > d)
-    {
+    if (nd > d) {
       emit(data, buff + f->start, len);
 
-      if (d <= split_depth)
-      {
-        if (len >= 2)
-        {
+      if (d <= split_depth) {
+        if (len >= 2) {
           emit(data, "\n", 1);
           for (int j=0 ; j < nd ; j++)
             emit(data, "  ", 2);
         }
-        else if (len == 1)
-        {
+        else if (len == 1) {
           emit(data, " ", 1);
         }
       }
 
-      if (ls[i+1] > 100)
-      {
+      if (ls[i+1] > 100) {
         assert(split_depth == d);
         split_depth = nd;
       }
     }
-    else
-    {
+    else {
       assert(nd < d);
-      if (nd < split_depth)
-      {
+      if (nd < split_depth) {
         assert(split_depth == d);
         split_depth = nd;
-        if (len > 0)
-        {
+        if (len > 0) {
           emit(data, "\n", 1);
           for (int j=0 ; j <= nd ; j++)
             emit(data, "  ", 2);
@@ -496,8 +451,7 @@ void emit_known(PRINT_BUFFER *pb, void (*emit)(void *, const char *, uint32), vo
 }
 
 
-void process_text(PRINT_BUFFER *pb, const char *text)
-{
+void process_text(PRINT_BUFFER *pb, const char *text) {
   strcpy(pb->buffer + pb->str_len, text);
   int len = strlen(text);
   pb->str_len += len;
@@ -507,8 +461,7 @@ void process_text(PRINT_BUFFER *pb, const char *text)
 }
 
 
-void subobj_start(PRINT_BUFFER *pb)
-{
+void subobj_start(PRINT_BUFFER *pb) {
   int new_depth = pb->curr_depth + 1;
   pb->curr_depth = new_depth;
 
@@ -522,8 +475,7 @@ void subobj_start(PRINT_BUFFER *pb)
 }
 
 
-void subobj_end(PRINT_BUFFER *pb)
-{
+void subobj_end(PRINT_BUFFER *pb) {
   int new_depth = pb->curr_depth - 1;
   pb->curr_depth = new_depth;
 
@@ -539,12 +491,10 @@ void subobj_end(PRINT_BUFFER *pb)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void emit_store(void *pb_, const void *data, EMIT_ACTION action)
-{
+void emit_store(void *pb_, const void *data, EMIT_ACTION action) {
   PRINT_BUFFER *pb = (PRINT_BUFFER *) pb_;
 
-  switch (action)
-  {
+  switch (action) {
     case TEXT:
       process_text(pb, (char *) data);
       break;
@@ -558,15 +508,13 @@ void emit_store(void *pb_, const void *data, EMIT_ACTION action)
 }
 
 
-void stdout_print(void *, const char *text, uint32 len)
-{
+void stdout_print(void *, const char *text, uint32 len) {
   fwrite(text, 1, len, stdout);
   fflush(stdout);
 }
 
 
-void print(OBJ obj)
-{
+void print(OBJ obj) {
   PRINT_BUFFER *pb = new PRINT_BUFFER;
 
   init(pb);
@@ -579,14 +527,12 @@ void print(OBJ obj)
 }
 
 
-void write_to_file(void *fp, const char *text, uint32 len)
-{
+void write_to_file(void *fp, const char *text, uint32 len) {
   fwrite(text, 1, len, (FILE *) fp);
 }
 
 
-void append_to_string(void *ptr, const char *text, uint32 len)
-{
+void append_to_string(void *ptr, const char *text, uint32 len) {
   char *str = (char *) ptr;
   int curr_len = strlen(str);
   memcpy(str + curr_len, text, len);
@@ -594,15 +540,13 @@ void append_to_string(void *ptr, const char *text, uint32 len)
 }
 
 
-void calc_length(void *ptr, const char *text, uint32 len)
-{
+void calc_length(void *ptr, const char *text, uint32 len) {
   uint32 *total_len = (uint32 *) ptr;
   *total_len += len;
 }
 
 
-void print_to_buffer_or_file(OBJ obj, char *buffer, uint32 max_size, const char *fname)
-{
+void print_to_buffer_or_file(OBJ obj, char *buffer, uint32 max_size, const char *fname) {
   PRINT_BUFFER *pb = (PRINT_BUFFER *) malloc(sizeof(PRINT_BUFFER));
 
   init(pb);
@@ -612,12 +556,10 @@ void print_to_buffer_or_file(OBJ obj, char *buffer, uint32 max_size, const char 
   emit_known(pb, calc_length, &len);
 
   buffer[0] = '\0';
-  if (len < max_size)
-  {
+  if (len < max_size) {
     emit_known(pb, append_to_string, buffer);
   }
-  else
-  {
+  else {
     FILE *fp = fopen(fname, "w");
     emit_known(pb, write_to_file, fp);
     fclose(fp);
@@ -627,8 +569,7 @@ void print_to_buffer_or_file(OBJ obj, char *buffer, uint32 max_size, const char 
 }
 
 
-void printed_obj(OBJ obj, char *buffer, uint32 max_size, bool truncate)
-{
+void printed_obj(OBJ obj, char *buffer, uint32 max_size, bool truncate) {
   PRINT_BUFFER *pb = (PRINT_BUFFER *) malloc(sizeof(PRINT_BUFFER));
 
   init(pb);

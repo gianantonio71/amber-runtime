@@ -17,22 +17,18 @@ struct obj_inline_less {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-uint32 find_obj(OBJ *sorted_array, uint32 len, OBJ obj, bool &found) // The array mustn't contain duplicates
-{
-  if (len > 0)
-  {
+uint32 find_obj(OBJ *sorted_array, uint32 len, OBJ obj, bool &found) { // The array mustn't contain duplicates
+  if (len > 0) {
     int64 low_idx = 0;
     int64 high_idx = len - 1;
 
-    while (low_idx <= high_idx)
-    {
+    while (low_idx <= high_idx) {
       int64 middle_idx = (low_idx + high_idx) / 2;
       OBJ middle_obj = sorted_array[middle_idx];
 
       int cr = comp_objs(obj, middle_obj);
 
-      if (cr == 0)
-      {
+      if (cr == 0) {
         found = true;
         return middle_idx;
       }
@@ -50,8 +46,7 @@ uint32 find_obj(OBJ *sorted_array, uint32 len, OBJ obj, bool &found) // The arra
 
 ////////////////////////////////////////////////////////////////////////////////
 
-uint32 count_at_start(uint32 *sorted_idx_array, OBJ *values, uint32 len, OBJ obj)
-{
+uint32 count_at_start(uint32 *sorted_idx_array, OBJ *values, uint32 len, OBJ obj) {
   //## IMPLEMENT FOR REAL...
   int c = 0;
   while (c < len && comp_objs(obj, values[sorted_idx_array[c]]) == 0)
@@ -59,8 +54,7 @@ uint32 count_at_start(uint32 *sorted_idx_array, OBJ *values, uint32 len, OBJ obj
   return c;
 }
 
-uint32 count_at_end(uint32 *sorted_idx_array, OBJ *values, uint32 len, OBJ obj)
-{
+uint32 count_at_end(uint32 *sorted_idx_array, OBJ *values, uint32 len, OBJ obj) {
   //## IMPLEMENT FOR REAL...
   int c = 0;
   while (c < len && comp_objs(obj, values[sorted_idx_array[len-1-c]]) == 0)
@@ -68,20 +62,17 @@ uint32 count_at_end(uint32 *sorted_idx_array, OBJ *values, uint32 len, OBJ obj)
   return c;
 }
 
-uint32 find_idxs_range(uint32 *sorted_idx_array, OBJ *values, uint32 len, OBJ obj, uint32 &count)
-{
+uint32 find_idxs_range(uint32 *sorted_idx_array, OBJ *values, uint32 len, OBJ obj, uint32 &count) {
   int64 low_idx = 0;
   int64 high_idx = len - 1;
 
-  while (low_idx <= high_idx)
-  {
+  while (low_idx <= high_idx) {
     int64 middle_idx = (low_idx + high_idx) / 2;
     OBJ middle_obj = values[sorted_idx_array[middle_idx]];
 
     int cr = comp_objs(obj, middle_obj);
 
-    if (cr == 0)
-    {
+    if (cr == 0) {
       int count_up = count_at_start(sorted_idx_array + middle_idx + 1, values, len - middle_idx - 1, obj);
       int count_down = count_at_end(sorted_idx_array, values, middle_idx, obj);
       count = 1 + count_up + count_down;
@@ -100,8 +91,7 @@ uint32 find_idxs_range(uint32 *sorted_idx_array, OBJ *values, uint32 len, OBJ ob
 
 ////////////////////////////////////////////////////////////////////////////////
 
-uint32 count_at_start(OBJ *sorted_array, uint32 len, OBJ obj)
-{
+uint32 count_at_start(OBJ *sorted_array, uint32 len, OBJ obj) {
   //## IMPLEMENT FOR REAL...
   int c = 0;
   while (c < len && comp_objs(obj, sorted_array[c]) == 0)
@@ -109,8 +99,7 @@ uint32 count_at_start(OBJ *sorted_array, uint32 len, OBJ obj)
   return c;
 }
 
-uint32 count_at_end(OBJ *sorted_array, uint32 len, OBJ obj)
-{
+uint32 count_at_end(OBJ *sorted_array, uint32 len, OBJ obj) {
   //## IMPLEMENT FOR REAL...
   int c = 0;
   while (c < len && comp_objs(obj, sorted_array[len-1-c]) == 0)
@@ -118,20 +107,17 @@ uint32 count_at_end(OBJ *sorted_array, uint32 len, OBJ obj)
   return c;
 }
 
-uint32 find_objs_range(OBJ *sorted_array, uint32 len, OBJ obj, uint32 &count)
-{
+uint32 find_objs_range(OBJ *sorted_array, uint32 len, OBJ obj, uint32 &count) {
   int64 low_idx = 0;
   int64 high_idx = len - 1;
 
-  while (low_idx <= high_idx)
-  {
+  while (low_idx <= high_idx) {
     int64 middle_idx = (low_idx + high_idx) / 2;
     OBJ middle_obj = sorted_array[middle_idx];
 
     int cr = comp_objs(obj, middle_obj);
 
-    if (cr == 0)
-    {
+    if (cr == 0) {
       int count_up = count_at_start(sorted_array + middle_idx + 1, len - middle_idx - 1, obj);
       int count_down = count_at_end(sorted_array, middle_idx, obj);
       count = 1 + count_up + count_down;
@@ -150,8 +136,7 @@ uint32 find_objs_range(OBJ *sorted_array, uint32 len, OBJ obj, uint32 &count)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-uint32 count_at_start(OBJ *major_col, OBJ *minor_col, uint32 len, OBJ major_arg, OBJ minor_arg)
-{
+uint32 count_at_start(OBJ *major_col, OBJ *minor_col, uint32 len, OBJ major_arg, OBJ minor_arg) {
   //## IMPLEMENT FOR REAL...
   int c = 0;
   while (c < len && comp_objs(major_arg, major_col[c]) == 0 && comp_objs(minor_arg, minor_col[c]) == 0)
@@ -159,8 +144,7 @@ uint32 count_at_start(OBJ *major_col, OBJ *minor_col, uint32 len, OBJ major_arg,
   return c;
 }
 
-uint32 count_at_end(OBJ *major_col, OBJ *minor_col, uint32 len, OBJ major_arg, OBJ minor_arg)
-{
+uint32 count_at_end(OBJ *major_col, OBJ *minor_col, uint32 len, OBJ major_arg, OBJ minor_arg) {
   //## IMPLEMENT FOR REAL...
   int c = 0;
   while (c < len && comp_objs(major_arg, major_col[len-1-c]) == 0 && comp_objs(minor_arg, minor_col[len-1-c]) == 0)
@@ -168,21 +152,18 @@ uint32 count_at_end(OBJ *major_col, OBJ *minor_col, uint32 len, OBJ major_arg, O
   return c;
 }
 
-uint32 find_objs_range(OBJ *major_col, OBJ *minor_col, uint32 len, OBJ major_arg, OBJ minor_arg, uint32 &count)
-{
+uint32 find_objs_range(OBJ *major_col, OBJ *minor_col, uint32 len, OBJ major_arg, OBJ minor_arg, uint32 &count) {
   int64 low_idx = 0;
   int64 high_idx = len - 1;
 
-  while (low_idx <= high_idx)
-  {
+  while (low_idx <= high_idx) {
     int64 idx = (low_idx + high_idx) / 2;
 
     int cr = comp_objs(major_arg, major_col[idx]);
     if (cr == 0)
       cr = comp_objs(minor_arg, minor_col[idx]);
 
-    if (cr == 0)
-    {
+    if (cr == 0) {
       int count_up = count_at_start(major_col+idx+1, minor_col+idx+1, len-idx-1, major_arg, minor_arg);
       int count_down = count_at_end(major_col, minor_col, idx, major_arg, minor_arg);
       count = 1 + count_up + count_down;
@@ -201,12 +182,10 @@ uint32 find_objs_range(OBJ *major_col, OBJ *minor_col, uint32 len, OBJ major_arg
 
 ////////////////////////////////////////////////////////////////////////////////
 
-uint32 count_at_start(uint32 *index, OBJ *major_col, OBJ *minor_col, uint32 len, OBJ major_arg, OBJ minor_arg)
-{
+uint32 count_at_start(uint32 *index, OBJ *major_col, OBJ *minor_col, uint32 len, OBJ major_arg, OBJ minor_arg) {
   //## IMPLEMENT FOR REAL...
   int c = 0;
-  while (c < len)
-  {
+  while (c < len) {
     uint32 idx = index[c];
     if (comp_objs(major_arg, major_col[idx]) == 0 && comp_objs(minor_arg, minor_col[idx]) == 0)
       c++;
@@ -216,12 +195,10 @@ uint32 count_at_start(uint32 *index, OBJ *major_col, OBJ *minor_col, uint32 len,
   return c;
 }
 
-uint32 count_at_end(uint32 *index, OBJ *major_col, OBJ *minor_col, uint32 len, OBJ major_arg, OBJ minor_arg)
-{
+uint32 count_at_end(uint32 *index, OBJ *major_col, OBJ *minor_col, uint32 len, OBJ major_arg, OBJ minor_arg) {
   //## IMPLEMENT FOR REAL...
   int c = 0;
-  while (c < len)
-  {
+  while (c < len) {
     uint32 idx = index[len-c-1];
     if (comp_objs(major_arg, major_col[idx]) == 0 and comp_objs(minor_arg, minor_col[idx]) == 0)
       c++;
@@ -231,13 +208,11 @@ uint32 count_at_end(uint32 *index, OBJ *major_col, OBJ *minor_col, uint32 len, O
   return c;
 }
 
-uint32 find_idxs_range(uint32 *index, OBJ *major_col, OBJ *minor_col, uint32 len, OBJ major_arg, OBJ minor_arg, uint32 &count)
-{
+uint32 find_idxs_range(uint32 *index, OBJ *major_col, OBJ *minor_col, uint32 len, OBJ major_arg, OBJ minor_arg, uint32 &count) {
   int64 low_idx = 0;
   int64 high_idx = len - 1;
 
-  while (low_idx <= high_idx)
-  {
+  while (low_idx <= high_idx) {
     int64 idx = (low_idx + high_idx) / 2;
     uint32 dr_idx = index[idx];
 
@@ -245,8 +220,7 @@ uint32 find_idxs_range(uint32 *index, OBJ *major_col, OBJ *minor_col, uint32 len
     if (cr == 0)
       cr = comp_objs(minor_arg, minor_col[dr_idx]);
 
-    if (cr == 0)
-    {
+    if (cr == 0) {
       int count_up = count_at_start(index+idx+1, major_col, minor_col, len-idx-1, major_arg, minor_arg);
       int count_down = count_at_end(index, major_col, minor_col, idx, major_arg, minor_arg);
       count = 1 + count_up + count_down;
@@ -265,15 +239,13 @@ uint32 find_idxs_range(uint32 *index, OBJ *major_col, OBJ *minor_col, uint32 len
 
 ////////////////////////////////////////////////////////////////////////////////
 
-uint32 sort_and_release_dups(OBJ *objs, uint32 size)
-{
+uint32 sort_and_release_dups(OBJ *objs, uint32 size) {
   if (size < 2)
     return size;
 
   uint32 low_idx = 0;
   uint32 high_idx = size - 1; // size is greater than 0 (actually 1) here, so this is always non-negative (actually positive)
-  for ( ; ; )
-  {
+  for ( ; ; ) {
     // Advancing the lower cursor to the next non-inline object
     while (low_idx < high_idx & is_inline_obj(objs[low_idx]))
       low_idx++;
@@ -293,16 +265,13 @@ uint32 sort_and_release_dups(OBJ *objs, uint32 size)
   uint32 inline_count = is_inline_obj(objs[low_idx]) ? low_idx + 1 : low_idx;
 
   uint32 idx = 0;
-  if (inline_count > 0)
-  {
+  if (inline_count > 0) {
     std::sort(objs, objs+inline_count, obj_inline_less());
 
     OBJ last_obj = objs[0];
-    for (uint32 i=1 ; i < inline_count ; i++)
-    {
+    for (uint32 i=1 ; i < inline_count ; i++) {
       OBJ next_obj = objs[i];
-      if (!inline_eq(last_obj, next_obj))
-      {
+      if (!inline_eq(last_obj, next_obj)) {
         idx++;
         last_obj = next_obj;
         assert(idx <= i);
@@ -325,8 +294,7 @@ uint32 sort_and_release_dups(OBJ *objs, uint32 size)
     // if (are_eq(objs[idx], objs[i]))
     if (comp_objs(objs[idx], objs[i]) == 0)
       release(objs[i]);
-    else
-    {
+    else {
       idx++;
       assert(idx <= i);
       if (idx != i)
@@ -336,16 +304,14 @@ uint32 sort_and_release_dups(OBJ *objs, uint32 size)
   return idx + 1;
 }
 
-uint32 sort_group_and_count(OBJ *objs, uint32 len, uint32 *idxs, OBJ *counters)
-{
+uint32 sort_group_and_count(OBJ *objs, uint32 len, uint32 *idxs, OBJ *counters) {
   assert(len > 0);
 
   index_sort(idxs, objs, len);
 
   uint32 n = 0;
 
-  for (uint32 i=0 ; i < len ; )
-  {
+  for (uint32 i=0 ; i < len ; ) {
     assert(i >= n);
 
     uint32 j = i + 1;
@@ -365,8 +331,7 @@ uint32 sort_group_and_count(OBJ *objs, uint32 len, uint32 *idxs, OBJ *counters)
 }
 
 
-void sort_and_check_no_dups(OBJ *keys, OBJ *values, uint32 size)
-{
+void sort_and_check_no_dups(OBJ *keys, OBJ *values, uint32 size) {
   if (size < 2)
     return;
 
@@ -374,24 +339,20 @@ void sort_and_check_no_dups(OBJ *keys, OBJ *values, uint32 size)
   index_sort(idxs, keys, size);
 
   for (uint32 i=0 ; i < size ; i++)
-    if (idxs[i] != i)
-    {
+    if (idxs[i] != i) {
       OBJ key = keys[i];
       OBJ value = values[i];
 
-      for (uint32 j = i ; ; )
-      {
+      for (uint32 j = i ; ; ) {
         uint32 k = idxs[j];
         idxs[j] = j;
 
-        if (k == i)
-        {
+        if (k == i) {
           keys[j]   = key;
           values[j] = value;
           break;
         }
-        else
-        {
+        else {
           keys[j]   = keys[k];
           values[j] = values[k];
           j = k;
@@ -403,8 +364,7 @@ void sort_and_check_no_dups(OBJ *keys, OBJ *values, uint32 size)
 }
 
 
-void sort_obj_array(OBJ *objs, uint32 len)
-{
+void sort_obj_array(OBJ *objs, uint32 len) {
   std::sort(objs, objs+len, obj_less());
 }
 
@@ -415,8 +375,7 @@ void sort_obj_array(OBJ *objs, uint32 len)
 //              0     if obj1 = obj2
 //            < 0     if obj1 > obj2
 
-int comp_objs(OBJ obj1, OBJ obj2)
-{
+int comp_objs(OBJ obj1, OBJ obj2) {
   if (are_shallow_eq(obj1, obj2))
     return 0;
 
@@ -441,10 +400,8 @@ int comp_objs(OBJ obj1, OBJ obj2)
   OBJ *elems1 = 0;
   OBJ *elems2 = 0;
 
-  switch (type1)
-  {
-    case TYPE_SEQUENCE:
-    {
+  switch (type1) {
+    case TYPE_SEQUENCE: {
       uint32 len1 = get_seq_length(obj1);
       uint32 len2 = get_seq_length(obj2);
       if (len1 != len2)
@@ -455,8 +412,7 @@ int comp_objs(OBJ obj1, OBJ obj2)
       break;
     }
 
-    case TYPE_SET:
-    {
+    case TYPE_SET: {
       SET_OBJ *set1 = get_set_ptr(obj1);
       SET_OBJ *set2 = get_set_ptr(obj2);
       uint32 size1 = set1->size;
@@ -469,8 +425,7 @@ int comp_objs(OBJ obj1, OBJ obj2)
       break;
     }
 
-    case TYPE_BIN_REL:
-    {
+    case TYPE_BIN_REL: {
       BIN_REL_OBJ *rel1 = get_bin_rel_ptr(obj1);
       BIN_REL_OBJ *rel2 = get_bin_rel_ptr(obj2);
       uint32 size1 = rel1->size;
@@ -483,8 +438,7 @@ int comp_objs(OBJ obj1, OBJ obj2)
       break;
     }
 
-    case TYPE_TERN_REL:
-    {
+    case TYPE_TERN_REL: {
       TERN_REL_OBJ *rel1 = get_tern_rel_ptr(obj1);
       TERN_REL_OBJ *rel2 = get_tern_rel_ptr(obj2);
       uint32 size1 = rel1->size;
@@ -497,8 +451,7 @@ int comp_objs(OBJ obj1, OBJ obj2)
       break;
     }
 
-    case TYPE_TAG_OBJ:
-    {
+    case TYPE_TAG_OBJ: {
       uint16 tag_idx_1 = get_tag_idx(obj1);
       uint16 tag_idx_2 = get_tag_idx(obj2);
       if (tag_idx_1 != tag_idx_2)
@@ -510,8 +463,7 @@ int comp_objs(OBJ obj1, OBJ obj2)
       internal_fail();
   }
 
-  for (uint32 i=0 ; i < count ; i++)
-  {
+  for (uint32 i=0 ; i < count ; i++) {
     int cr = comp_objs(elems1[i], elems2[i]);
     if (cr != 0)
       return cr;

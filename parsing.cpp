@@ -42,8 +42,7 @@ struct TOKEN {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-inline int64 read_nat(const char *text, uint32 length, int64 *offset_ptr)
-{
+inline int64 read_nat(const char *text, uint32 length, int64 *offset_ptr) {
   int64 offset = *offset_ptr;
   int64 value = 0;
   while (offset < length) {
@@ -59,8 +58,7 @@ inline int64 read_nat(const char *text, uint32 length, int64 *offset_ptr)
 }
 
 
-inline int64 read_number(const char *text, uint32 length, int64 offset, TOKEN *token, bool negate)
-{
+inline int64 read_number(const char *text, uint32 length, int64 offset, TOKEN *token, bool negate) {
   char ch;
 
   int64 i = offset;
@@ -136,8 +134,7 @@ inline int64 read_number(const char *text, uint32 length, int64 offset, TOKEN *t
 }
 
 
-inline int64 read_symbol(const char *text, uint32 length, int64 offset, TOKEN *token)
-{
+inline int64 read_symbol(const char *text, uint32 length, int64 offset, TOKEN *token) {
   int64 i = offset;
   while (++i < length) {
     char ch = text[i];
@@ -162,8 +159,7 @@ inline int64 read_symbol(const char *text, uint32 length, int64 offset, TOKEN *t
 }
 
 
-inline int64 read_string(const char *text, uint32 length, int64 offset, TOKEN *token)
-{
+inline int64 read_string(const char *text, uint32 length, int64 offset, TOKEN *token) {
   uint32 str_len = 0;
   for (int64 i=offset+1 ; i < length ; i++) {
     char ch = text[i];
@@ -201,8 +197,7 @@ inline int64 read_string(const char *text, uint32 length, int64 offset, TOKEN *t
 }
 
 
-int64 tokenize(const char *text, uint32 length, TOKEN *tokens)
-{
+int64 tokenize(const char *text, uint32 length, TOKEN *tokens) {
   bool ok;
 
   uint32 index = 0;
@@ -220,8 +215,7 @@ int64 tokenize(const char *text, uint32 length, TOKEN *tokens)
     index++;
 
     bool negate = false;
-    if (ch == '-')
-    {
+    if (ch == '-') {
       if (offset + 1 == length)
         return -offset - 1;
 
@@ -328,8 +322,7 @@ struct STATE {
   uint32 capacity;
 };
 
-static void init(STATE *state, int arity)
-{
+static void init(STATE *state, int arity) {
   const int MIN_CAPACITY = 128;
   OBJ **cols = state->cols;
   for (int i=0 ; i < 3 ; i++)
@@ -338,8 +331,7 @@ static void init(STATE *state, int arity)
   state->capacity = MIN_CAPACITY;
 }
 
-void cleanup(STATE *state, bool release)
-{
+void cleanup(STATE *state, bool release) {
   uint32 count = state->count;
   for (int c=0 ; c < 3 ; c++) {
     OBJ *col = state->cols[c];
@@ -351,8 +343,7 @@ void cleanup(STATE *state, bool release)
   }
 }
 
-void store(STATE *state, OBJ *objs, int size)
-{
+void store(STATE *state, OBJ *objs, int size) {
   uint32 count = state->count;
   uint32 capacity = state->capacity;
   OBJ **cols = state->cols;
@@ -371,8 +362,7 @@ void store(STATE *state, OBJ *objs, int size)
 
 typedef int64 (*parser)(TOKEN*, uint32, int64, STATE*);
 
-int64 read_list(TOKEN *tokens, uint32 length, int64 offset, TOKEN_TYPE sep, TOKEN_TYPE term, parser parse_elem, STATE *state)
-{
+int64 read_list(TOKEN *tokens, uint32 length, int64 offset, TOKEN_TYPE sep, TOKEN_TYPE term, parser parse_elem, STATE *state) {
   // Empty list
   if (offset < length && tokens[offset].type == term)
     return offset + 1;
@@ -413,8 +403,7 @@ int64 parse_obj(TOKEN *tokens, uint32 length, int64 offset, OBJ *var);
 
 ////////////////////////////////////////////////////////////////////////////////
 
-int64 parse_entry(TOKEN *tokens, uint32 length, int64 offset, uint32 count, TOKEN_TYPE sep, OBJ *vars)
-{
+int64 parse_entry(TOKEN *tokens, uint32 length, int64 offset, uint32 count, TOKEN_TYPE sep, OBJ *vars) {
   uint32 read = 0;
 
   for (read = 0 ; read < count ; read++) {
@@ -439,8 +428,7 @@ int64 parse_entry(TOKEN *tokens, uint32 length, int64 offset, uint32 count, TOKE
 
 ////////////////////////////////////////////////////////////////////////////////
 
-int64 read_obj(TOKEN *tokens, uint32 length, int64 offset, STATE *state)
-{
+int64 read_obj(TOKEN *tokens, uint32 length, int64 offset, STATE *state) {
   OBJ obj;
   offset = parse_obj(tokens, length, offset, &obj);
   if (offset >= 0)
@@ -448,8 +436,7 @@ int64 read_obj(TOKEN *tokens, uint32 length, int64 offset, STATE *state)
   return offset;
 }
 
-int64 read_entry(TOKEN *tokens, uint32 length, int64 offset, STATE *state, int size, TOKEN_TYPE sep)
-{
+int64 read_entry(TOKEN *tokens, uint32 length, int64 offset, STATE *state, int size, TOKEN_TYPE sep) {
   OBJ entry[3];
   offset = parse_entry(tokens, length, offset, size, sep, entry);
   if (offset >= 0)
@@ -457,23 +444,19 @@ int64 read_entry(TOKEN *tokens, uint32 length, int64 offset, STATE *state, int s
   return offset;
 }
 
-int64 read_map_entry(TOKEN *tokens, uint32 length, int64 offset, STATE *state)
-{
+int64 read_map_entry(TOKEN *tokens, uint32 length, int64 offset, STATE *state) {
   return read_entry(tokens, length, offset, state, 2, ARROW);
 }
 
-int64 read_bin_rel_entry(TOKEN *tokens, uint32 length, int64 offset, STATE *state)
-{
+int64 read_bin_rel_entry(TOKEN *tokens, uint32 length, int64 offset, STATE *state) {
   return read_entry(tokens, length, offset, state, 2, COMMA);
 }
 
-int64 read_tern_rel_entry(TOKEN *tokens, uint32 length, int64 offset, STATE *state)
-{
+int64 read_tern_rel_entry(TOKEN *tokens, uint32 length, int64 offset, STATE *state) {
   return read_entry(tokens, length, offset, state, 3, COMMA);
 }
 
-int64 read_rec_entry(TOKEN *tokens, uint32 length, int64 offset, STATE *state)
-{
+int64 read_rec_entry(TOKEN *tokens, uint32 length, int64 offset, STATE *state) {
   if (offset >= length || tokens[offset].type != SYMBOL)
     return -offset - 1;
   uint16 symb_idx = tokens[offset++].value.symb_idx;
@@ -490,8 +473,7 @@ int64 read_rec_entry(TOKEN *tokens, uint32 length, int64 offset, STATE *state)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-int64 parse_seq(TOKEN *tokens, uint32 length, int64 offset, OBJ *var)
-{
+int64 parse_seq(TOKEN *tokens, uint32 length, int64 offset, OBJ *var) {
   STATE state;
   init(&state, 1);
 
@@ -506,13 +488,11 @@ int64 parse_seq(TOKEN *tokens, uint32 length, int64 offset, OBJ *var)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool is_record(TOKEN *tokens, uint32 length, int64 offset)
-{
+bool is_record(TOKEN *tokens, uint32 length, int64 offset) {
   return offset + 2 < length && tokens[offset+1].type == SYMBOL && tokens[offset+2].type == COLON;
 }
 
-int64 parse_rec(TOKEN *tokens, uint32 length, int64 offset, OBJ *var)
-{
+int64 parse_rec(TOKEN *tokens, uint32 length, int64 offset, OBJ *var) {
   STATE state;
   init(&state, 2);
 
@@ -527,8 +507,7 @@ int64 parse_rec(TOKEN *tokens, uint32 length, int64 offset, OBJ *var)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-int64 parse_inner_obj_or_tuple(TOKEN *tokens, uint32 length, int64 offset, OBJ *var)
-{
+int64 parse_inner_obj_or_tuple(TOKEN *tokens, uint32 length, int64 offset, OBJ *var) {
   STATE state;
   init(&state, 1);
 
@@ -541,8 +520,7 @@ int64 parse_inner_obj_or_tuple(TOKEN *tokens, uint32 length, int64 offset, OBJ *
   return offset;
 }
 
-int64 parse_symb_or_tagged_obj(TOKEN *tokens, uint32 length, int64 offset, OBJ *var)
-{
+int64 parse_symb_or_tagged_obj(TOKEN *tokens, uint32 length, int64 offset, OBJ *var) {
   uint16 symb_idx = tokens[offset].value.symb_idx;
   if (++offset < length) {
     if (tokens[offset].type == OPEN_PAR) {
@@ -562,8 +540,7 @@ int64 parse_symb_or_tagged_obj(TOKEN *tokens, uint32 length, int64 offset, OBJ *
 
 ////////////////////////////////////////////////////////////////////////////////
 
-int64 parse_rel_tail(TOKEN *tokens, uint32 length, int64 offset, int size, OBJ *first_entry, bool is_map, OBJ *var)
-{
+int64 parse_rel_tail(TOKEN *tokens, uint32 length, int64 offset, int size, OBJ *first_entry, bool is_map, OBJ *var) {
   STATE state;
   init(&state, size);
   store(&state, first_entry, size);
@@ -586,8 +563,7 @@ int64 parse_rel_tail(TOKEN *tokens, uint32 length, int64 offset, int size, OBJ *
 
 ////////////////////////////////////////////////////////////////////////////////
 
-int64 parse_unord_coll(TOKEN *tokens, uint32 length, int64 offset, OBJ *var)
-{
+int64 parse_unord_coll(TOKEN *tokens, uint32 length, int64 offset, OBJ *var) {
   if (++offset >= length)
     return -offset - 1;
   if (tokens[offset].type == CLOSE_BRACKET) {
@@ -649,14 +625,12 @@ int64 parse_unord_coll(TOKEN *tokens, uint32 length, int64 offset, OBJ *var)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-inline char hex_digit(char ch)
-{
+inline char hex_digit(char ch) {
   assert(isxdigit(ch));
   return isdigit(ch) ? (ch - '0') : (tolower(ch) - 'a' + 10);
 }
 
-void parse_string(TOKEN *token, OBJ *var)
-{
+void parse_string(TOKEN *token, OBJ *var) {
   const char *text = token->value.string.ptr;
   uint32 length = token->value.string.length;
 
@@ -699,8 +673,7 @@ void parse_string(TOKEN *token, OBJ *var)
 
 // If the function is successfull, it returns the index of the next token to consume
 // If it fails, it returns the location/index of the error, negated and decremented by one
-int64 parse_obj(TOKEN *tokens, uint32 length, int64 offset, OBJ *var)
-{
+int64 parse_obj(TOKEN *tokens, uint32 length, int64 offset, OBJ *var) {
   if (offset >= length)
     return -offset - 1;
 
@@ -747,8 +720,7 @@ int64 parse_obj(TOKEN *tokens, uint32 length, int64 offset, OBJ *var)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-bool parse(const char *text, uint32 size, OBJ *var, uint32 *error_offset)
-{
+bool parse(const char *text, uint32 size, OBJ *var, uint32 *error_offset) {
   int64 count = tokenize(text, size, NULL);
   if (count <= 0) {
     *error_offset = count < 0 ? -count - 1 : size;

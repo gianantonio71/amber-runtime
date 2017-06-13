@@ -3,8 +3,7 @@
 #include <stdlib.h>
 
 
-void build_map_right_to_left_sorted_idx_array(OBJ map)
-{
+void build_map_right_to_left_sorted_idx_array(OBJ map) {
   assert(get_physical_type(map) == TYPE_MAP);
 
   BIN_REL_OBJ *ptr = get_bin_rel_ptr(map);
@@ -18,15 +17,13 @@ void build_map_right_to_left_sorted_idx_array(OBJ map)
   OBJ *left_col = get_left_col_array_ptr(ptr);
   OBJ *right_col = get_right_col_array_ptr(ptr);
 
-  for (uint32 i=1 ; i < size ; i++)
-  {
+  for (uint32 i=1 ; i < size ; i++) {
     int cr_M = comp_objs(left_col[i-1], left_col[i]);
     int cr_m = comp_objs(right_col[i-1], right_col[i]);
     assert(cr_M > 0 | (cr_M == 0 & cr_m > 0));
   }
 
-  for (uint32 i=1 ; i < size ; i++)
-  {
+  for (uint32 i=1 ; i < size ; i++) {
     uint32 curr_idx = rev_idxs[i];
     uint32 prev_idx = rev_idxs[i-1];
     int cr_M = comp_objs(right_col[prev_idx], right_col[curr_idx]);
@@ -38,8 +35,7 @@ void build_map_right_to_left_sorted_idx_array(OBJ map)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-OBJ build_bin_rel(OBJ *vals1, OBJ *vals2, uint32 size)
-{
+OBJ build_bin_rel(OBJ *vals1, OBJ *vals2, uint32 size) {
   if (size == 0)
     return make_empty_rel();
 
@@ -52,22 +48,18 @@ OBJ build_bin_rel(OBJ *vals1, OBJ *vals2, uint32 size)
   uint32 unique_tuples = 1;
   uint32 prev_idx = index[0];
   bool left_col_is_unique = true;
-  for (uint32 i=1 ; i < size ; i++)
-  {
+  for (uint32 i=1 ; i < size ; i++) {
     uint32 idx = index[i];
-    if (comp_objs(vals1[idx], vals1[prev_idx]) != 0)
-    {
+    if (comp_objs(vals1[idx], vals1[prev_idx]) != 0) {
       // The current left column value is new, so the tuple is new too.
       unique_tuples++;
     }
-    else if (comp_objs(vals2[idx], vals2[prev_idx]) != 0)
-    {
+    else if (comp_objs(vals2[idx], vals2[prev_idx]) != 0) {
       // The current left column value is unchanged, but the value in the right column is new, so the tuple is new too
       unique_tuples++;
       left_col_is_unique = false;
     }
-    else
-    {
+    else {
       // Duplicate tuple, marking the entry as duplicate and releasing the objects
       index[i] = INVALID_INDEX;
       release(vals1[idx]);
@@ -84,11 +76,9 @@ OBJ build_bin_rel(OBJ *vals1, OBJ *vals2, uint32 size)
 
   // Copying the sorted, non-duplicate tuples into their final destination
   uint32 count = 0;
-  for (uint32 i=0 ; i < size ; i++)
-  {
+  for (uint32 i=0 ; i < size ; i++) {
     uint32 idx = index[i];
-    if (idx != INVALID_INDEX)
-    {
+    if (idx != INVALID_INDEX) {
       left_col[count] = vals1[idx];
       right_col[count] = vals2[idx];
       count++;
@@ -101,15 +91,13 @@ OBJ build_bin_rel(OBJ *vals1, OBJ *vals2, uint32 size)
   stable_index_sort(rev_index, right_col, count);
 
 #ifndef NDEBUG
-  for (uint32 i=1 ; i < count ; i++)
-  {
+  for (uint32 i=1 ; i < count ; i++) {
     int cr_M = comp_objs(left_col[i-1], left_col[i]);
     int cr_m = comp_objs(right_col[i-1], right_col[i]);
     assert(cr_M > 0 | (cr_M == 0 & cr_m > 0));
   }
 
-  for (uint32 i=1 ; i < count ; i++)
-  {
+  for (uint32 i=1 ; i < count ; i++) {
     uint32 curr_idx = rev_index[i];
     uint32 prev_idx = rev_index[i-1];
     int cr_M = comp_objs(right_col[prev_idx], right_col[curr_idx]);
@@ -125,8 +113,7 @@ OBJ build_bin_rel(OBJ *vals1, OBJ *vals2, uint32 size)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-OBJ build_bin_rel(STREAM &stream1, STREAM &stream2)
-{
+OBJ build_bin_rel(STREAM &stream1, STREAM &stream2) {
   assert(stream1.count == stream2.count);
 
   if (stream1.count == 0)
@@ -143,8 +130,7 @@ OBJ build_bin_rel(STREAM &stream1, STREAM &stream2)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-OBJ build_map(OBJ *keys, OBJ *values, uint32 size)
-{
+OBJ build_map(OBJ *keys, OBJ *values, uint32 size) {
   if (size == 0)
     return make_empty_rel();
 
@@ -154,8 +140,7 @@ OBJ build_map(OBJ *keys, OBJ *values, uint32 size)
   OBJ *ks  = map->buffer;
   OBJ *vs  = ks + map->size;
 
-  for (uint32 i=0 ; i < size ; i++)
-  {
+  for (uint32 i=0 ; i < size ; i++) {
     ks[i] = keys[i];
     vs[i] = values[i];
   }
@@ -163,8 +148,7 @@ OBJ build_map(OBJ *keys, OBJ *values, uint32 size)
   return make_map(map);
 }
 
-OBJ build_map(STREAM &key_stream, STREAM &value_stream)
-{
+OBJ build_map(STREAM &key_stream, STREAM &value_stream) {
   assert(key_stream.count == value_stream.count);
 
   if (key_stream.count == 0)
@@ -181,8 +165,7 @@ OBJ build_map(STREAM &key_stream, STREAM &value_stream)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-void get_bin_rel_null_iter(BIN_REL_ITER &it)
-{
+void get_bin_rel_null_iter(BIN_REL_ITER &it) {
   it.left_col = NULL;   // Not strictly necessary
   it.right_col = NULL;  // Not strictly necessary
   it.rev_idxs = NULL;
@@ -190,8 +173,7 @@ void get_bin_rel_null_iter(BIN_REL_ITER &it)
   it.end = 0;
 }
 
-void get_bin_rel_iter(BIN_REL_ITER &it, OBJ rel)
-{
+void get_bin_rel_iter(BIN_REL_ITER &it, OBJ rel) {
   assert(is_bin_rel(rel));
 
   if (!is_empty_rel(rel)) {
@@ -206,12 +188,10 @@ void get_bin_rel_iter(BIN_REL_ITER &it, OBJ rel)
     get_bin_rel_null_iter(it);
 }
 
-void get_bin_rel_iter_0(BIN_REL_ITER &it, OBJ rel, OBJ arg0)
-{
+void get_bin_rel_iter_0(BIN_REL_ITER &it, OBJ rel, OBJ arg0) {
   assert(is_bin_rel(rel));
 
-  if (is_ne_bin_rel(rel))
-  {
+  if (is_ne_bin_rel(rel)) {
     BIN_REL_OBJ *ptr = get_bin_rel_ptr(rel);
     uint32 size = ptr->size;
     OBJ *left_col = get_left_col_array_ptr(ptr);
@@ -219,8 +199,7 @@ void get_bin_rel_iter_0(BIN_REL_ITER &it, OBJ rel, OBJ arg0)
     uint32 count;
     uint32 first = find_objs_range(left_col, size, arg0, count);
 
-    if (count > 0)
-    {
+    if (count > 0) {
       it.left_col = left_col;
       it.right_col = get_right_col_array_ptr(ptr);
       it.rev_idxs = NULL;
@@ -233,12 +212,10 @@ void get_bin_rel_iter_0(BIN_REL_ITER &it, OBJ rel, OBJ arg0)
   get_bin_rel_null_iter(it);
 }
 
-void get_bin_rel_iter_1(BIN_REL_ITER &it, OBJ rel, OBJ arg1)
-{
+void get_bin_rel_iter_1(BIN_REL_ITER &it, OBJ rel, OBJ arg1) {
   assert(is_bin_rel(rel));
 
-  if (is_ne_bin_rel(rel))
-  {
+  if (is_ne_bin_rel(rel)) {
     if (get_physical_type(rel) == TYPE_MAP)
       build_map_right_to_left_sorted_idx_array(rel);
 
@@ -250,8 +227,7 @@ void get_bin_rel_iter_1(BIN_REL_ITER &it, OBJ rel, OBJ arg1)
     uint32 count;
     uint32 first = find_idxs_range(rev_idxs, right_col, size, arg1, count);
 
-    if (count > 0)
-    {
+    if (count > 0) {
       it.left_col = get_left_col_array_ptr(ptr);
       it.right_col = right_col;
       it.rev_idxs = rev_idxs;

@@ -11,8 +11,7 @@ void release_mem_block(void *ptr, int byte_size);
 
 ////////////////////////////////////////////////////////////////////////////////
 
-int min_size_code_ref(uint32 byte_size)
-{
+int min_size_code_ref(uint32 byte_size) {
   if (byte_size <= 64)
     return 0;
   if (byte_size <= 128)
@@ -33,8 +32,7 @@ int min_size_code_ref(uint32 byte_size)
   return -(1 << 20);
 }
 
-int min_size_code_fast(uint32 byte_size)
-{
+int min_size_code_fast(uint32 byte_size) {
   const uint64 SLOT_MASK =
     (0ULL <<  1 * 4) |  //   64
     (1ULL <<  2 * 4) |  //  128
@@ -54,8 +52,7 @@ int min_size_code_fast(uint32 byte_size)
 
   assert(byte_size > 0);
 
-  if (byte_size <= 960)
-  {
+  if (byte_size <= 960) {
     int blocks_64_count = (byte_size + 63) / 64;
     assert(blocks_64_count < 16);
     return (SLOT_MASK >> (4 * blocks_64_count)) & 7;
@@ -74,8 +71,7 @@ int min_size_code_fast(uint32 byte_size)
   return -(1 << 20);
 }
 
-int min_size_code(uint32 byte_size)
-{
+int min_size_code(uint32 byte_size) {
   int code = min_size_code_fast(byte_size);
   // int ref_code = min_size_code_ref(byte_size);
   assert(code == min_size_code_ref(byte_size));
@@ -98,8 +94,7 @@ uint32 total_mem_requested;
 
 std::set<void *> live_objs;
 
-void inc_live_obj_count(uint32 byte_size)
-{
+void inc_live_obj_count(uint32 byte_size) {
   num_of_live_objs++;
   total_num_of_objs++;
   if (num_of_live_objs > max_num_of_live_objs)
@@ -111,51 +106,41 @@ void inc_live_obj_count(uint32 byte_size)
     max_live_mem_usage = live_mem_usage;
 }
 
-void dec_live_obj_count(uint32 byte_size)
-{
+void dec_live_obj_count(uint32 byte_size) {
   num_of_live_objs--;
   live_mem_usage -= byte_size;
 }
 
-uint32 get_live_objs_count()
-{
+uint32 get_live_objs_count() {
   return num_of_live_objs;
 }
 
-uint32 get_max_live_objs_count()
-{
+uint32 get_max_live_objs_count() {
   return max_num_of_live_objs;
 }
 
-uint32 get_total_objs_count()
-{
+uint32 get_total_objs_count() {
   return total_num_of_objs;
 }
 
-uint32 get_live_mem_usage()
-{
+uint32 get_live_mem_usage() {
   return live_mem_usage;
 }
 
-uint32 get_max_live_mem_usage()
-{
+uint32 get_max_live_mem_usage() {
   return max_live_mem_usage;
 }
 
-uint32 get_total_mem_requested()
-{
+uint32 get_total_mem_requested() {
   return total_mem_requested;
 }
 
 #include <cstdio>
 
-void print_all_live_objs()
-{
-  if (!live_objs.empty())
-  {
+void print_all_live_objs() {
+  if (!live_objs.empty()) {
     std::fprintf(stderr, "Live objects:\n");
-    for (std::set<void*>::iterator it = live_objs.begin() ; it != live_objs.end() ; it++)
-    {
+    for (std::set<void*>::iterator it = live_objs.begin() ; it != live_objs.end() ; it++) {
       void *ptr = *it;
       std::printf("  %8llx\n", (unsigned long long)ptr);
     }
@@ -163,8 +148,7 @@ void print_all_live_objs()
   }
 }
 
-bool is_alive(void *obj)
-{
+bool is_alive(void *obj) {
   return live_objs.find(obj) != live_objs.end();
 }
 
@@ -173,13 +157,11 @@ bool is_alive(void *obj)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-void *new_obj(uint32 byte_size)
-{
+void *new_obj(uint32 byte_size) {
   void *mem_block = alloc_mem_block(min_size_code(byte_size));
 
 #ifndef NDEBUG
-  if (!is_in_try_state())
-  {
+  if (!is_in_try_state()) {
     inc_live_obj_count(byte_size); //## THE SIZE IS THE WRONG ONE, BUT IT IS THE SAME THAT IS REPORTED BACK TO free_obj
     live_objs.insert(mem_block);
   }
@@ -188,15 +170,13 @@ void *new_obj(uint32 byte_size)
   return mem_block;
 }
 
-void *new_obj(uint32 byte_size_requested, uint32 &byte_size_returned)
-{
+void *new_obj(uint32 byte_size_requested, uint32 &byte_size_returned) {
   int size_code = min_size_code(byte_size_requested);
   byte_size_returned = size_code_size(size_code);
   void *mem_block = alloc_mem_block(size_code);
 
 #ifndef NDEBUG
-  if (!is_in_try_state())
-  {
+  if (!is_in_try_state()) {
     inc_live_obj_count(byte_size_returned);
     live_objs.insert(mem_block);
   }
@@ -205,11 +185,9 @@ void *new_obj(uint32 byte_size_requested, uint32 &byte_size_returned)
   return mem_block;
 }
 
-void free_obj(void *ptr, uint32 byte_size)
-{
+void free_obj(void *ptr, uint32 byte_size) {
 #ifndef NDEBUG
-  if (!is_in_try_state())
-  {
+  if (!is_in_try_state()) {
     assert(num_of_live_objs > 0);
     assert(is_alive(ptr));
 

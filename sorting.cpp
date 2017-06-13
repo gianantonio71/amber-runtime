@@ -12,8 +12,7 @@ struct obj_idx_less {
   }
 };
 
-struct obj_idx_less_no_eq
-{
+struct obj_idx_less_no_eq {
   OBJ *values;
   obj_idx_less_no_eq(OBJ *values) : values(values) {}
 
@@ -63,22 +62,19 @@ struct obj_triple_idx_less {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-void stable_index_sort(uint32 *index, OBJ *values, uint32 count)
-{
+void stable_index_sort(uint32 *index, OBJ *values, uint32 count) {
   for (uint32 i=0 ; i < count ; i++)
     index[i] = i;
   std::sort(index, index+count, obj_idx_less_no_eq(values));
 }
 
-void stable_index_sort(uint32 *index, OBJ *major_sort, OBJ *minor_sort, uint32 count)
-{
+void stable_index_sort(uint32 *index, OBJ *major_sort, OBJ *minor_sort, uint32 count) {
   for (uint32 i=0 ; i < count ; i++)
     index[i] = i;
   std::sort(index, index+count, obj_pair_idx_less(major_sort, minor_sort));
 }
 
-void stable_index_sort(uint32 *index, OBJ *major_sort, OBJ *middle_sort, OBJ *minor_sort, uint32 count)
-{
+void stable_index_sort(uint32 *index, OBJ *major_sort, OBJ *middle_sort, OBJ *minor_sort, uint32 count) {
   for (uint32 i=0 ; i < count ; i++)
     index[i] = i;
   std::sort(index, index+count, obj_triple_idx_less(major_sort, middle_sort, minor_sort));
@@ -86,19 +82,16 @@ void stable_index_sort(uint32 *index, OBJ *major_sort, OBJ *middle_sort, OBJ *mi
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void index_sort(uint32 *index, OBJ *values, uint32 count)
-{
+void index_sort(uint32 *index, OBJ *values, uint32 count) {
   for (uint32 i=0 ; i < count ; i++)
     index[i] = i;
   std::sort(index, index+count, obj_idx_less(values));
 }
 
-void index_sort(uint32 *index, OBJ *major_sort, OBJ *minor_sort, uint32 count)
-{
+void index_sort(uint32 *index, OBJ *major_sort, OBJ *minor_sort, uint32 count) {
   stable_index_sort(index, major_sort, minor_sort, count);
 }
 
-void index_sort(uint32 *index, OBJ *major_sort, OBJ *middle_sort, OBJ *minor_sort, uint32 count)
-{
+void index_sort(uint32 *index, OBJ *major_sort, OBJ *middle_sort, OBJ *minor_sort, uint32 count) {
   stable_index_sort(index, major_sort, middle_sort, minor_sort, count);
 }

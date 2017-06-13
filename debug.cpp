@@ -11,8 +11,7 @@ std::vector<const char *> function_names;
 std::vector<uint32>       arities;
 std::vector<OBJ *>        param_lists;
 
-void push_call_info(const char *fn_name, uint32 arity, OBJ *params)
-{
+void push_call_info(const char *fn_name, uint32 arity, OBJ *params) {
 #ifndef NDEBUG
   function_names.push_back(fn_name);
   arities.push_back(arity);
@@ -20,8 +19,7 @@ void push_call_info(const char *fn_name, uint32 arity, OBJ *params)
 #endif
 }
 
-void pop_call_info()
-{
+void pop_call_info() {
 #ifndef NDEBUG
   uint32 arity = arities.back();
   if (arity > 0)
@@ -33,21 +31,18 @@ void pop_call_info()
 #endif
 }
 
-void pop_try_mode_call_info(int depth)
-{
+void pop_try_mode_call_info(int depth) {
   while (function_names.size() > depth)
     pop_call_info();
 }
 
-int get_call_stack_depth()
-{
+int get_call_stack_depth() {
   return function_names.size();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void printed_obj_or_filename(OBJ obj, bool add_path, char *buffer, uint32 buff_size)
-{
+void printed_obj_or_filename(OBJ obj, bool add_path, char *buffer, uint32 buff_size) {
   const uint32 MAX_OBJ_COUNT = 1024;
   static uint32 filed_objs_count = 0;
   // Deliberate bug: storing objects without reference counting them.
@@ -58,8 +53,7 @@ void printed_obj_or_filename(OBJ obj, bool add_path, char *buffer, uint32 buff_s
   const char *file_template = add_path ? "<debug/obj_%02d.txt>" : "<obj_%02d.txt>";
 
   for (uint32 i=0 ; i < filed_objs_count ; i++)
-    if (are_eq(filed_objs[i], obj))
-    {
+    if (are_eq(filed_objs[i], obj)) {
       sprintf(buffer, file_template, i);
       return;
     }
@@ -69,8 +63,7 @@ void printed_obj_or_filename(OBJ obj, bool add_path, char *buffer, uint32 buff_s
 
   print_to_buffer_or_file(obj, buffer, buff_size, fname);
 
-  if (buffer[0] == '\0')
-  {
+  if (buffer[0] == '\0') {
     // The object was written to a file
     sprintf(buffer, file_template, filed_objs_count);
     if (filed_objs_count < MAX_OBJ_COUNT)
@@ -80,8 +73,7 @@ void printed_obj_or_filename(OBJ obj, bool add_path, char *buffer, uint32 buff_s
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void print_indented_param(FILE *fp, OBJ param, bool is_last)
-{
+void print_indented_param(FILE *fp, OBJ param, bool is_last) {
   const uint32 BUFF_SIZE = 512;
   char buffer[BUFF_SIZE];
 
@@ -90,8 +82,7 @@ void print_indented_param(FILE *fp, OBJ param, bool is_last)
   else
     strcpy(buffer, "<closure>");
 
-  for (uint32 i=0 ; buffer[i] != '\0' ; i++)
-  {
+  for (uint32 i=0 ; buffer[i] != '\0' ; i++) {
     if (i == 0 || buffer[i-1] == '\n')
       fputs("  ", fp);
     fputc(buffer[i], fp);
@@ -104,8 +95,7 @@ void print_indented_param(FILE *fp, OBJ param, bool is_last)
 }
 
 
-void print_stack_frame(FILE *fp, uint32 frame_idx)
-{
+void print_stack_frame(FILE *fp, uint32 frame_idx) {
   const char *fn_name = function_names[frame_idx];
   uint32 arity = arities[frame_idx];
   OBJ *params = param_lists[frame_idx];
@@ -120,16 +110,14 @@ void print_stack_frame(FILE *fp, uint32 frame_idx)
 }
 
 
-void print_stack_frame(uint32 frame_idx)
-{
+void print_stack_frame(uint32 frame_idx) {
   const char *fn_name = function_names[frame_idx];
   uint32 arity = arities[frame_idx];
   fprintf(stderr, "%s/%d\n", fn_name, arity);
 }
 
 
-void print_call_stack()
-{
+void print_call_stack() {
 #ifndef NDEBUG
   uint32 size = function_names.size();
   for (uint32 i=0 ; i < size ; i++)
@@ -137,8 +125,7 @@ void print_call_stack()
   fputs("\nNow trying to write a full dump of the stack to the file debug/stack_trace.txt.\nPlease be patient. This may take a while...", stderr);
   fflush(stderr);
   FILE *fp = fopen("debug/stack_trace.txt", "w");
-  if (fp == NULL)
-  {
+  if (fp == NULL) {
     fputs("\nFailed to open file debug/stack_trace.txt\n", stderr);
     return;
   }
@@ -150,8 +137,7 @@ void print_call_stack()
 }
 
 
-void dump_var(const char *name, OBJ value)
-{
+void dump_var(const char *name, OBJ value) {
   const uint32 BUFF_SIZE = 512;
   char buffer[BUFF_SIZE];
   printed_obj_or_filename(value, true, buffer, BUFF_SIZE);
@@ -160,8 +146,7 @@ void dump_var(const char *name, OBJ value)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void print_assertion_failed_msg(const char *file, uint32 line, const char *text)
-{
+void print_assertion_failed_msg(const char *file, uint32 line, const char *text) {
   if (text == NULL)
     fprintf(stderr, "\nAssertion failed. File: %s, line: %d\n\n", file, line);
   else
@@ -170,8 +155,7 @@ void print_assertion_failed_msg(const char *file, uint32 line, const char *text)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void soft_fail(const char *msg)
-{
+void soft_fail(const char *msg) {
   if (is_in_try_state())
     throw 0;
 
@@ -181,16 +165,14 @@ void soft_fail(const char *msg)
   *(char *)0 = 0;
 }
 
-void impl_fail(const char *msg)
-{
+void impl_fail(const char *msg) {
   if (msg != NULL)
     fprintf(stderr, "%s\n\n", msg);
   print_call_stack();
   *(char *)0 = 0;
 }
 
-void internal_fail()
-{
+void internal_fail() {
   fputs("Internal error!\n", stderr);
   fflush(stderr);
   print_call_stack();
