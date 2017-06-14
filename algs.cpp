@@ -304,36 +304,41 @@ uint32 sort_and_release_dups(OBJ *objs, uint32 size) {
   return idx + 1;
 }
 
-uint32 sort_group_and_count(OBJ *objs, uint32 len, uint32 *idxs, OBJ *counters) {
-  assert(len > 0);
+uint32 adjust_map_with_duplicate_keys(OBJ *keys, OBJ *values, uint32 size) {
+  assert(size >= 2);
 
-  index_sort(idxs, objs, len);
+  OBJ prev_key = keys[0];
+  OBJ prev_val = values[0];
 
-  uint32 n = 0;
+  uint32 next_slot_idx = 1;
+  uint32 i = 1;
+  do {
+    OBJ curr_key = keys[i];
+    OBJ curr_val = values[i];
 
-  for (uint32 i=0 ; i < len ; ) {
-    assert(i >= n);
+    if (comp_objs(curr_key, prev_key) == 0) {
+      if (comp_objs(curr_val, prev_val) == 0) {
+        release(curr_key);
+        release(curr_val);
+      }
+      else
+        soft_fail("Map contains duplicate keys");
+    }
+    else {
+      keys[next_slot_idx] = curr_key;
+      values[next_slot_idx] = curr_val;
+      next_slot_idx++;
+      prev_key = curr_key;
+      prev_val = curr_val;
+    }
+  } while (++i < size);
 
-    uint32 j = i + 1;
-    while (j < len && comp_objs(objs[idxs[i]], objs[idxs[j]]) == 0)
-      j++;
-
-    uint32 count = j - i;
-
-    idxs[n] = idxs[i];
-    counters[n] = make_int(count);
-    n++;
-
-    i = j;
-  }
-
-  return n;
+  return next_slot_idx;
 }
 
-
-void sort_and_check_no_dups(OBJ *keys, OBJ *values, uint32 size) {
+uint32 sort_and_check_no_dups(OBJ *keys, OBJ *values, uint32 size) {
   if (size < 2)
-    return;
+    return size;
 
   uint32 *idxs = new_uint32_array(size);
   index_sort(idxs, keys, size);
@@ -361,6 +366,18 @@ void sort_and_check_no_dups(OBJ *keys, OBJ *values, uint32 size) {
     }
 
   delete_uint32_array(idxs, size);
+
+  OBJ prev_key = keys[0];
+  for (uint32 i=1 ; i < size ; i++) {
+    OBJ curr_key = keys[i];
+    if (comp_objs(curr_key, prev_key) == 0) {
+      uint32 offset = i - 1;
+      return offset + adjust_map_with_duplicate_keys(keys+offset, values+offset, size-offset);
+    }
+    prev_key = curr_key;
+  }
+
+  return size;
 }
 
 

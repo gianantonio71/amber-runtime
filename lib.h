@@ -567,9 +567,8 @@ void index_sort(uint32 *index, OBJ *major_sort, OBJ *middle_sort, OBJ *minor_sor
 
 /////////////////////////////////// algs.cpp ///////////////////////////////////
 
-uint32 sort_group_and_count(OBJ* objs, uint32 len, uint32* idxs, OBJ* counters);
 uint32 sort_and_release_dups(OBJ* objs, uint32 size);
-void sort_and_check_no_dups(OBJ* keys, OBJ* values, uint32 size);
+uint32 sort_and_check_no_dups(OBJ* keys, OBJ* values, uint32 size);
 void sort_obj_array(OBJ* objs, uint32 len);
 
 uint32 find_obj(OBJ* sorted_array, uint32 len, OBJ obj, bool &found); //## WHAT SHOULD THIS RETURN? ANY VALUE IN THE [0, 2^32-1] IS A VALID SEQUENCE INDEX, SO WHAT COULD BE USED TO REPRESENT "NOT FOUND"?

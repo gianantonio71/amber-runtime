@@ -134,13 +134,13 @@ OBJ build_map(OBJ *keys, OBJ *values, uint32 size) {
   if (size == 0)
     return make_empty_rel();
 
-  sort_and_check_no_dups(keys, values, size);
+  uint32 actual_size = sort_and_check_no_dups(keys, values, size);
 
-  BIN_REL_OBJ *map = new_map(size);
+  BIN_REL_OBJ *map = new_map(actual_size);
   OBJ *ks  = map->buffer;
   OBJ *vs  = ks + map->size;
 
-  for (uint32 i=0 ; i < size ; i++) {
+  for (uint32 i=0 ; i < actual_size ; i++) {
     ks[i] = keys[i];
     vs[i] = values[i];
   }
