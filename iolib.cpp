@@ -63,5 +63,5 @@ OBJ GetChar_P(generated::ENV &env) {
   int ch = getchar();
   if (ch == EOF)
     return make_symb(symb_idx_nothing);
-  return make_int(ch);
+  return make_tag_obj(symb_idx_just, make_int(ch));
 }

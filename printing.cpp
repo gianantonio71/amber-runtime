@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include "lib.h"
 
@@ -96,6 +97,14 @@ void print_float(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void 
   double x = get_float(obj);
   char buffer[1024];
   sprintf(buffer, "%g", x);
+  bool is_integer = true;
+  for (int i=0 ; buffer[i] != '\0' ; i++)
+    if (!isdigit(buffer[i])) {
+      is_integer = false;
+      break;
+    }
+  if (is_integer)
+    strcat(buffer, ".0");
   emit(data, buffer, TEXT);
 }
 
