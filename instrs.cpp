@@ -1,6 +1,8 @@
-#include <cstdio>
-#include <cstring>
-#include <cmath>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+
 #include <map>
 
 #include "lib.h"
@@ -294,6 +296,17 @@ OBJ parse_value(OBJ str_obj) {
     return make_tag_obj(symb_idx_failure, make_int(error_offset));
 }
 
+char *print_value_alloc(void *ptr, uint32 size) {
+  return (char *) malloc(size);
+}
+
+OBJ print_value(OBJ obj) {
+  char *raw_str = printed_obj(obj, print_value_alloc, NULL);
+  OBJ str_obj = str_to_obj(raw_str);
+  free(raw_str);
+  return str_obj;
+}
+
 void get_set_iter(SET_ITER &it, OBJ set) {
   it.idx = 0;
   if (!is_empty_rel(set)) {
@@ -354,11 +367,11 @@ void runtime_check(OBJ cond) {
 
   if (!get_bool(cond)) {
 #ifndef NDEBUG
-    std::fputs("\nAssertion failed. Call stack:\n\n", stderr);
+    fputs("\nAssertion failed. Call stack:\n\n", stderr);
 #else
-    std::fputs("\nAssertion failed\n", stderr);
+    fputs("\nAssertion failed\n", stderr);
 #endif
-    std::fflush(stderr);
+    fflush(stderr);
     print_call_stack();
     *(char *)0 = 0; // Causing a runtime crash, useful for debugging
   }

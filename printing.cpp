@@ -600,3 +600,20 @@ void printed_obj(OBJ obj, char *buffer, uint32 max_size, bool truncate) {
   }
   free(pb);
 }
+
+
+char *printed_obj(OBJ obj, char *alloc_buffer(void *, uint32), void *data) {
+  PRINT_BUFFER *pb = (PRINT_BUFFER *) malloc(sizeof(PRINT_BUFFER));
+
+  init(pb);
+  print_obj(obj, emit_store, pb);
+
+  uint32 len = 0;
+  emit_known(pb, calc_length, &len);
+
+  char *buffer = alloc_buffer(data, len+1);
+  memcpy(buffer, pb->buffer, len + 1);
+
+  free(pb);
+  return buffer;
+}

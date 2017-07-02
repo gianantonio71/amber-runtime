@@ -501,6 +501,7 @@ OBJ rev_seq(OBJ seq);
 void set_at(OBJ seq, uint32 idx, OBJ value);    // Value must be already reference counted
 OBJ internal_sort(OBJ set);
 OBJ parse_value(OBJ str);
+OBJ print_value(OBJ);
 void get_set_iter(SET_ITER &it, OBJ set);
 void get_seq_iter(SEQ_ITER &it, OBJ seq);
 void move_forward(SET_ITER &it);
@@ -625,6 +626,7 @@ void print_obj(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *d
 void print(OBJ);
 void print_to_buffer_or_file(OBJ obj, char* buffer, uint32 max_size, const char* fname);
 void printed_obj(OBJ obj, char* buffer, uint32 max_size, bool truncate);
+char *printed_obj(OBJ obj, char *alloc(void *, uint32), void *data);
 
 ////////////////////////////////// parsing.cpp /////////////////////////////////
 
