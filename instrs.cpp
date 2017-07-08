@@ -202,7 +202,7 @@ OBJ extend_sequence(OBJ seq, OBJ *new_elems, uint32 count) {
   }
 }
 
-OBJ append_to_seq(OBJ seq, OBJ obj) {
+OBJ append_to_seq(OBJ seq, OBJ obj) { // Obj must be reference counted already
   if (is_empty_seq(seq))
     return build_seq(&obj, 1);
 
@@ -214,6 +214,27 @@ OBJ append_to_seq(OBJ seq, OBJ obj) {
   release(seq);
   release(obj);
   return res;
+}
+
+OBJ update_seq_at(OBJ seq, OBJ idx, OBJ value) { // Value must be already reference counted
+  uint32 len = get_seq_length(seq);
+  int64 int_idx = get_int_val(idx);
+
+  if (int_idx < 0 | int_idx >= len)
+    soft_fail("Invalid sequence index");
+
+  OBJ *src_ptr = get_seq_buffer_ptr(seq);
+  SEQ_OBJ *new_seq_ptr = new_seq(len);
+
+  new_seq_ptr->buffer[int_idx] = value;
+  for (uint32 i=0 ; i < len ; i++)
+    if (i != int_idx) {
+      OBJ elt = src_ptr[i];
+      add_ref(elt);
+      new_seq_ptr->buffer[i] = elt;
+    }
+
+  return make_seq(new_seq_ptr, len);
 }
 
 OBJ join_seqs(OBJ left, OBJ right) {

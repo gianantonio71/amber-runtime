@@ -496,6 +496,7 @@ OBJ int_to_float(OBJ val);
 OBJ blank_array(int64 size);
 OBJ get_seq_slice(OBJ seq, int64 idx_first, int64 len);
 OBJ append_to_seq(OBJ seq, OBJ obj);            // Both seq and obj must already be reference counted
+OBJ update_seq_at(OBJ seq, OBJ idx, OBJ value); // Value must be reference counted already
 OBJ join_seqs(OBJ left, OBJ right);
 OBJ rev_seq(OBJ seq);
 void set_at(OBJ seq, uint32 idx, OBJ value);    // Value must be already reference counted
