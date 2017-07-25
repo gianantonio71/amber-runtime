@@ -1,10 +1,5 @@
-#include <stdlib.h>
-#include <string.h>
-
-#include <string>
-
 #include "lib.h"
-
+#include <string>
 
 using std::string;
 
@@ -64,14 +59,14 @@ OBJ convert_text(const char *buffer) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void export_as_c_string(OBJ obj, char *buffer, uint32 capacity) {
-  obj_to_str(obj, buffer, capacity);
-}
+// void export_as_c_string(OBJ obj, char *buffer, uint32 capacity) {
+//   obj_to_str(obj, buffer, capacity);
+// }
 
 uint32 export_as_bool_array(OBJ obj, bool *array, uint32 capacity) {
   uint32 len = get_seq_length(obj);
   if (len >= capacity)
-    throw len;
+    throw (long long) len;
   OBJ *buffer = get_seq_buffer_ptr(obj);
   for (uint32 i=0 ; i < len ; i++)
     array[i] = get_bool(buffer[i]);
@@ -81,7 +76,7 @@ uint32 export_as_bool_array(OBJ obj, bool *array, uint32 capacity) {
 uint32 export_as_long_long_array(OBJ obj, int64 *array, uint32 capacity) {
   uint32 len = get_seq_length(obj);
   if (len >= capacity)
-    throw len;
+    throw (long long) len;
   OBJ *buffer = get_seq_buffer_ptr(obj);
   for (uint32 i=0 ; i < len ; i++)
     array[i] = get_int(buffer[i]);
@@ -91,7 +86,7 @@ uint32 export_as_long_long_array(OBJ obj, int64 *array, uint32 capacity) {
 uint32 export_as_float_array(OBJ obj, double *array, uint32 capacity) {
   uint32 len = get_seq_length(obj);
   if (len >= capacity)
-    throw len;
+    throw (long long) len;
   OBJ *buffer = get_seq_buffer_ptr(obj);
   for (uint32 i=0 ; i < len ; i++)
     array[i] = get_float(buffer[i]);
@@ -99,7 +94,9 @@ uint32 export_as_float_array(OBJ obj, double *array, uint32 capacity) {
 }
 
 void export_literal_as_c_string(OBJ obj, char *buffer, uint32 capacity) {
-  printed_obj(obj, buffer, capacity, false);
+  uint32 min_capacity = printed_obj(obj, buffer, capacity);
+  if (capacity < min_capacity)
+    throw (long long) min_capacity;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

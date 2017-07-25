@@ -1,5 +1,4 @@
 #include "lib.h"
-#include <string.h>
 
 
 struct NODE {

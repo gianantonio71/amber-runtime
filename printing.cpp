@@ -1,8 +1,3 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <ctype.h>
-
 #include "lib.h"
 
 
@@ -317,17 +312,19 @@ void print_obj(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *d
 
 struct TEXT_FRAG {
   int depth;
-  int start;
-  int length;
+  uint32 start;
+  uint32 length;
 };
 
 
 struct PRINT_BUFFER {
-  int str_len;
-  char buffer[64 * 1024 * 1024];
+  uint32 str_len;
+  char *buffer;
+  uint32 buff_size;
 
-  int frag_count;
-  TEXT_FRAG fragments[16 * 1024 * 1024];
+  uint32 frags_count;
+  TEXT_FRAG *fragments;
+  uint32 frags_buff_size;
 
   int curr_depth;
 };
@@ -335,21 +332,58 @@ struct PRINT_BUFFER {
 
 void init(PRINT_BUFFER *pb) {
   pb->str_len = 0;
+  pb->buffer = new_byte_array(4096);
+  pb->buff_size = 4096;
   pb->buffer[0] = '\0';
-  pb->frag_count = 0;
-  // for (int i=0 ; i < 1024 * 1024 ; i++)
-  // {
-  //   TEXT_FRAG *f = pb->fragments + i;
-  //   f->depth = -100000;
-  //   f->start = -100000;
-  //   f->length = -100000;
-  // }
+
+  pb->frags_count = 0;
+  pb->fragments = (TEXT_FRAG *) new_void_array(4096);
+  pb->frags_buff_size = 4096;
+
   pb->curr_depth = -1;
 }
 
 
+void cleanup(PRINT_BUFFER *pb) {
+  delete_byte_array(pb->buffer, pb->buff_size);
+  delete_void_array(pb->fragments, pb->frags_buff_size);
+}
+
+
+void adjust_buff_capacity(PRINT_BUFFER *pb, uint32 extra_capacity) {
+  uint32 buff_size = pb->buff_size;
+  uint32 min_capacity = pb->str_len + extra_capacity + 1;
+  if (buff_size < min_capacity) {
+    uint32 new_capacity = 2 * buff_size;
+    while (new_capacity < min_capacity)
+      new_capacity *= 2;
+    char *new_buff = new_byte_array(new_capacity);
+    memcpy(new_buff, pb->buffer, pb->str_len+1);
+    delete_byte_array(pb->buffer, buff_size);
+    pb->buffer = new_buff;
+    pb->buff_size = new_capacity;
+  }
+}
+
+
+TEXT_FRAG *insert_new_fragment(PRINT_BUFFER *pb) {
+  uint32 curr_capacity = pb->frags_buff_size;
+  uint32 frags_count = pb->frags_count;
+  uint32 min_capacity = sizeof(TEXT_FRAG) * (frags_count + 1);
+  if (curr_capacity < min_capacity) {
+    TEXT_FRAG *new_frags = (TEXT_FRAG *) new_void_array(2 * curr_capacity);
+    memcpy(new_frags, pb->fragments, sizeof(TEXT_FRAG) * frags_count);
+    delete_void_array(pb->fragments, curr_capacity);
+    pb->fragments = new_frags;
+    pb->frags_buff_size = 2 * curr_capacity;
+  }
+  pb->frags_count = frags_count + 1;
+  return pb->fragments + frags_count;
+}
+
+
 uint32 printable_frags_count(PRINT_BUFFER *pb) {
-  uint32 fc = pb->frag_count;
+  uint32 fc = pb->frags_count;
   TEXT_FRAG *fs = pb->fragments;
 
   TEXT_FRAG *lf = fs + fc - 1;
@@ -371,8 +405,8 @@ uint32 printable_frags_count(PRINT_BUFFER *pb) {
 }
 
 
-void calculate_subobjects_lengths(PRINT_BUFFER *pb, int *ls) {
-  int fc = pb->frag_count;
+void calculate_subobjects_lengths(PRINT_BUFFER *pb, int32 *ls) {
+  int fc = pb->frags_count;
   TEXT_FRAG *fs = pb->fragments;
 
   for (int i=0 ; i < fc ; i++) {
@@ -403,7 +437,7 @@ void calculate_subobjects_lengths(PRINT_BUFFER *pb, int *ls) {
 void emit_known(PRINT_BUFFER *pb, void (*emit)(void *, const char *, uint32), void *data) {
   int pfc = printable_frags_count(pb);
 
-  int *ls = new int[pb->frag_count];
+  int32 *ls = new_int32_array(pb->frags_count);
   calculate_subobjects_lengths(pb, ls);
 
   char *buff = pb->buffer;
@@ -456,15 +490,16 @@ void emit_known(PRINT_BUFFER *pb, void (*emit)(void *, const char *, uint32), vo
       emit(data, buff + f->start, len);
     }
   }
-  delete ls;
+  delete_int32_array(ls, pb->frags_count);
 }
 
 
 void process_text(PRINT_BUFFER *pb, const char *text) {
-  strcpy(pb->buffer + pb->str_len, text);
   int len = strlen(text);
+  adjust_buff_capacity(pb, len);
+  memcpy(pb->buffer + pb->str_len, text, len+1);
   pb->str_len += len;
-  TEXT_FRAG *curr_frag = pb->fragments + pb->frag_count - 1;
+  TEXT_FRAG *curr_frag = pb->fragments + pb->frags_count - 1;
   assert(curr_frag->depth == pb->curr_depth);
   curr_frag->length += len;
 }
@@ -474,10 +509,7 @@ void subobj_start(PRINT_BUFFER *pb) {
   int new_depth = pb->curr_depth + 1;
   pb->curr_depth = new_depth;
 
-  int new_frag_idx = pb->frag_count;
-  pb->frag_count = new_frag_idx + 1;
-
-  TEXT_FRAG *new_frag = pb->fragments + new_frag_idx;
+  TEXT_FRAG *new_frag = insert_new_fragment(pb);
   new_frag->depth = new_depth;
   new_frag->start = pb->str_len;
   new_frag->length = 0;
@@ -488,10 +520,7 @@ void subobj_end(PRINT_BUFFER *pb) {
   int new_depth = pb->curr_depth - 1;
   pb->curr_depth = new_depth;
 
-  int new_frag_idx = pb->frag_count;
-  pb->frag_count = new_frag_idx + 1;
-
-  TEXT_FRAG *new_frag = pb->fragments + new_frag_idx;
+  TEXT_FRAG *new_frag = insert_new_fragment(pb);
   new_frag->depth = new_depth;
   new_frag->start = pb->str_len;
   new_frag->length = 0;
@@ -524,15 +553,14 @@ void stdout_print(void *, const char *text, uint32 len) {
 
 
 void print(OBJ obj) {
-  PRINT_BUFFER *pb = new PRINT_BUFFER;
+  PRINT_BUFFER pb;
 
-  init(pb);
-  print_obj(obj, emit_store, pb);
+  init(&pb);
+  print_obj(obj, emit_store, &pb);
   fputs("\n", stdout);
-  emit_known(pb, stdout_print, NULL);
+  emit_known(&pb, stdout_print, NULL);
   fputs("\n", stdout);
-
-  delete pb;
+  cleanup(&pb);
 }
 
 
@@ -556,64 +584,58 @@ void calc_length(void *ptr, const char *text, uint32 len) {
 
 
 void print_to_buffer_or_file(OBJ obj, char *buffer, uint32 max_size, const char *fname) {
-  PRINT_BUFFER *pb = (PRINT_BUFFER *) malloc(sizeof(PRINT_BUFFER));
+  PRINT_BUFFER pb;
 
-  init(pb);
-  print_obj(obj, emit_store, pb);
+  init(&pb);
+  print_obj(obj, emit_store, &pb);
 
   uint32 len = 0;
-  emit_known(pb, calc_length, &len);
+  emit_known(&pb, calc_length, &len);
 
   buffer[0] = '\0';
   if (len < max_size) {
-    emit_known(pb, append_to_string, buffer);
+    emit_known(&pb, append_to_string, buffer);
   }
   else {
     FILE *fp = fopen(fname, "w");
-    emit_known(pb, write_to_file, fp);
+    emit_known(&pb, write_to_file, fp);
     fclose(fp);
   }
 
-  free(pb);
+  cleanup(&pb);
 }
 
 
-void printed_obj(OBJ obj, char *buffer, uint32 max_size, bool truncate) {
-  PRINT_BUFFER *pb = (PRINT_BUFFER *) malloc(sizeof(PRINT_BUFFER));
+uint32 printed_obj(OBJ obj, char *buffer, uint32 max_size) {
+  PRINT_BUFFER pb;
 
-  init(pb);
-  print_obj(obj, emit_store, pb);
+  init(&pb);
+  print_obj(obj, emit_store, &pb);
 
   uint32 len = 0;
-  emit_known(pb, calc_length, &len);
+  emit_known(&pb, calc_length, &len);
 
   if (len + 1 < max_size) {
-    memcpy(buffer, pb->buffer, len + 1);
+    memcpy(buffer, pb.buffer, len + 1);
   }
-  else if (truncate) {
-    memcpy(buffer, pb->buffer, max_size - 1);
-    buffer[max_size-1] = '\0';
-  }
-  else {
-    free(pb);
-    throw (long long) len;
-  }
-  free(pb);
+
+  cleanup(&pb);
+  return len + 1;
 }
 
 
 char *printed_obj(OBJ obj, char *alloc_buffer(void *, uint32), void *data) {
-  PRINT_BUFFER *pb = (PRINT_BUFFER *) malloc(sizeof(PRINT_BUFFER));
+  PRINT_BUFFER pb;
 
-  init(pb);
-  print_obj(obj, emit_store, pb);
+  init(&pb);
+  print_obj(obj, emit_store, &pb);
 
   uint32 len = 0;
-  emit_known(pb, calc_length, &len);
+  emit_known(&pb, calc_length, &len);
 
   char *buffer = alloc_buffer(data, len+1);
-  memcpy(buffer, pb->buffer, len + 1);
+  memcpy(buffer, pb.buffer, len + 1);
 
-  free(pb);
+  cleanup(&pb);
   return buffer;
 }

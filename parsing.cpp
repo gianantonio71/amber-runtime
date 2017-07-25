@@ -1,9 +1,3 @@
-#include <stddef.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <math.h>
-#include <string.h>
-
 #include "lib.h"
 
 
@@ -43,17 +37,34 @@ struct TOKEN {
 ////////////////////////////////////////////////////////////////////////////////
 
 inline int64 read_nat(const char *text, uint32 length, int64 *offset_ptr) {
-  int64 offset = *offset_ptr;
+  int64 start_offset = *offset_ptr;
+  int64 end_offset = start_offset;
   int64 value = 0;
-  while (offset < length) {
-    char ch = text[offset];
-    if (!isdigit(ch))
-      break;
-    //## MAKE SURE THERE'S NO OVERFLOW HERE (RETURN -1 AND MAKE THE OFFSET NEGATIVE IN THAT CASE)
+  char ch;
+  while (end_offset < length && isdigit(ch = text[end_offset])) {
     value = 10 * value + (ch - '0');
-    offset++;
+    end_offset++;
   }
-  *offset_ptr = offset;
+  assert(end_offset > start_offset);
+  int64 count = end_offset - start_offset;
+  if (count > 19) {
+    *offset_ptr = -start_offset - 1;
+    return -1;
+  }
+  else if (count == 19) {
+    static const char *MAX = "9223372036854775807";
+    for (int i=0 ; i < 19 ; i++) {
+      ch = text[start_offset + i];
+      char max_ch = MAX[i];
+      if (ch > max_ch) {
+        *offset_ptr = -start_offset - 1;
+        return -1;
+      }
+      else if (ch < max_ch)
+        break;
+    }
+  }
+  *offset_ptr = end_offset;
   return value;
 }
 
@@ -326,7 +337,7 @@ static void init(STATE *state, int arity) {
   const int MIN_CAPACITY = 128;
   OBJ **cols = state->cols;
   for (int i=0 ; i < 3 ; i++)
-    cols[i] = i < arity ? (OBJ *) malloc(MIN_CAPACITY * sizeof(OBJ)) : NULL;
+    cols[i] = i < arity ? new_obj_array(MIN_CAPACITY) : NULL;
   state->count = 0;
   state->capacity = MIN_CAPACITY;
 }
@@ -339,7 +350,7 @@ void cleanup(STATE *state, bool release) {
       break;
     if (release)
       vec_release(col, count);
-    free(col);
+    delete_obj_array(col, state->capacity);
   }
 }
 
@@ -348,10 +359,11 @@ void store(STATE *state, OBJ *objs, int size) {
   uint32 capacity = state->capacity;
   OBJ **cols = state->cols;
   if (count >= capacity) {
-    capacity = 2 * capacity;
+    //## ARE WE SURE HERE THAT THIS NEW CAPACITY IS ALWAYS ENOUGH?
+    uint32 new_capacity = 2 * capacity;
     for (int i=0 ; i < 3 && cols[i] != NULL ; i++)
-      cols[i] = (OBJ *) realloc(cols[i], capacity * sizeof(OBJ));
-    state->capacity = capacity;
+      cols[i] = resize_obj_array(cols[i], capacity, new_capacity);
+    state->capacity = new_capacity;
   }
   for (int i=0 ; i < size ; i++)
     cols[i][count] = objs[i];
@@ -713,7 +725,7 @@ int64 parse_obj(TOKEN *tokens, uint32 length, int64 offset, OBJ *var) {
       return offset + 1;
 
     default:
-      throw false;
+      internal_fail();
   }
 }
 
@@ -727,17 +739,17 @@ bool parse(const char *text, uint32 size, OBJ *var, uint32 *error_offset) {
     return false;
   }
 
-  TOKEN *tokens = (TOKEN *) malloc(count * sizeof(TOKEN));
+  TOKEN *tokens = (TOKEN *) new_void_array(count * sizeof(TOKEN));
   tokenize(text, size, tokens);
 
   memset(var, 0, sizeof(OBJ));
   int64 res = parse_obj(tokens, count, 0, var);
   if (res < 0 | res < count) {
     *error_offset = res < 0 ? tokens[-res-1].offset : size;
-    free(tokens);
+    delete_void_array(tokens, count * sizeof(TOKEN));
     return false;
   }
 
-  free(tokens);
+  delete_void_array(tokens, count * sizeof(TOKEN));
   return true;
 }

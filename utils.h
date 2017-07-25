@@ -1,9 +1,17 @@
-//#include <memory.h>
-#include <set>
-#include <vector>
+#include <ctype.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <math.h>
+#include <stdio.h>
 
-using std::set;
-using std::vector;
+#include <map>
+#include <vector>
+#include <set>
+#include <algorithm>
+
+////////////////////////////////////////////////////////////////////////////////
 
 #ifndef NDEBUG
   //#define assert(_E_) (void)(_assert_((_E_), #_E_, __FILE__, __LINE__) ? 0 : (*((char *)0)) = 0)

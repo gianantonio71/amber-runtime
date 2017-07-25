@@ -209,20 +209,20 @@ struct UNARY_TABLE_ITER {
 
 
 struct BINARY_TABLE {
-  set<uint64> left_to_right;
-  set<uint64> right_to_left;
+  std::set<uint64> left_to_right;
+  std::set<uint64> right_to_left;
 };
 
 
 struct BINARY_TABLE_UPDATES {
-  vector<uint64> deletes;
-  vector<uint64> inserts;
+  std::vector<uint64> deletes;
+  std::vector<uint64> inserts;
 };
 
 
 struct BINARY_TABLE_ITER {
-  set<uint64>::iterator iter;
-  set<uint64>::iterator end;
+  std::set<uint64>::iterator iter;
+  std::set<uint64>::iterator end;
   uint32 value;
   bool reversed;
 };
@@ -247,21 +247,21 @@ struct tuple3 {
 
 
 struct TERNARY_TABLE {
-  set<tuple3> unshifted;
-  set<tuple3> shifted_once;
-  set<tuple3> shifted_twice;
+  std::set<tuple3> unshifted;
+  std::set<tuple3> shifted_once;
+  std::set<tuple3> shifted_twice;
 };
 
 
 struct TERNARY_TABLE_UPDATES {
-  vector<tuple3> deletes;
-  vector<tuple3> inserts;
+  std::vector<tuple3> deletes;
+  std::vector<tuple3> inserts;
 };
 
 
 struct TERNARY_TABLE_ITER {
-  set<tuple3>::iterator iter;
-  set<tuple3>::iterator end;
+  std::set<tuple3>::iterator iter;
+  std::set<tuple3>::iterator end;
   uint64 excl_upper_bound;
   uint8 shift;
 };
@@ -302,6 +302,7 @@ OBJ copy_obj(OBJ obj);
 void* new_obj(uint32 byte_size);
 void* new_obj(uint32 requested_byte_size, uint32 &returned_byte_size);
 void  free_obj(void* obj, uint32 byte_size);
+void* resize_obj(void *ptr, uint32 byte_size, uint32 new_byte_size);
 
 bool is_alive(void* obj);
 
@@ -342,15 +343,22 @@ SET_OBJ* shrink_set(SET_OBJ* set, uint32 new_size);
 
 OBJ* new_obj_array(uint32 size);
 void delete_obj_array(OBJ* buffer, uint32 size);
+OBJ* resize_obj_array(OBJ* buffer, uint32 size, uint32 new_size);
 
 uint32 *new_uint32_array(uint32 size);
 void delete_uint32_array(uint32 *buffer, uint32 size);
 
-// int* new_int_array(uint32 size);
-// void delete_int_array(int* buffer, uint32 size);
+int32* new_int32_array(uint32 size);
+void delete_int32_array(int32* buffer, uint32 size);
+
+char *new_byte_array(uint32 size);
+void delete_byte_array(char* buffer, uint32 size);
 
 void** new_ptr_array(uint32 size);
 void delete_ptr_array(void** buffer, uint32 size);
+
+void *new_void_array(uint32 size);
+void delete_void_array(void* buffer, uint32 size);
 
 //uint32 get_ref_count(OBJ);
 
@@ -612,7 +620,7 @@ OBJ convert_int_seq(const int64 *array, uint32 size);
 OBJ convert_float_seq(const double *array, uint32 size);
 OBJ convert_text(const char *buffer);
 
-void export_as_c_string(OBJ obj, char *buffer, uint32 capacity);
+// void export_as_c_string(OBJ obj, char *buffer, uint32 capacity);
 uint32 export_as_bool_array(OBJ obj, bool *array, uint32 capacity);
 uint32 export_as_long_long_array(OBJ obj, int64 *array, uint32 capacity);
 uint32 export_as_float_array(OBJ obj, double *array, uint32 capacity);
@@ -626,7 +634,7 @@ void print_obj(OBJ obj, void (*emit)(void *, const void *, EMIT_ACTION), void *d
 
 void print(OBJ);
 void print_to_buffer_or_file(OBJ obj, char* buffer, uint32 max_size, const char* fname);
-void printed_obj(OBJ obj, char* buffer, uint32 max_size, bool truncate);
+uint32 printed_obj(OBJ obj, char* buffer, uint32 max_size);
 char *printed_obj(OBJ obj, char *alloc(void *, uint32), void *data);
 
 ////////////////////////////////// parsing.cpp /////////////////////////////////

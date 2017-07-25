@@ -1,6 +1,4 @@
-#include <cstdio>
-#include <cstring>
-#include <sstream>
+#include "lib.h"
 
 
 bool _assert_(int exp, const char *exp_text, const char *file, int line) {
@@ -11,7 +9,7 @@ bool _assert_(int exp, const char *exp_text, const char *file, int line) {
 
     while (idx >= 0 && file[idx] != '\\')
       idx--;
-    
+
     fprintf(stderr, "Assertion \"%s\" failed, file: %s, line: %d\n", exp_text, file + idx + 1, line);
     fflush(stderr);
 
@@ -42,6 +40,5 @@ void mantissa_and_dec_exp(double value, long long &mantissa, int &dec_exp) {
     len--;
   }
 
-  std::stringstream sstr(buffer);
-  sstr >> mantissa;
+  sscanf(buffer, "%lld", &mantissa);
 }

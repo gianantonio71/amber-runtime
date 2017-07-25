@@ -1,10 +1,3 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
-
-#include <map>
-
 #include "lib.h"
 
 
@@ -307,10 +300,11 @@ OBJ internal_sort(OBJ set) {
 
 OBJ parse_value(OBJ str_obj) {
   char *raw_str = obj_to_str(str_obj);
+  uint32 len = strlen(raw_str);
   OBJ obj;
   uint32 error_offset;
-  bool ok = parse(raw_str, strlen(raw_str), &obj, &error_offset);
-  delete [] raw_str;
+  bool ok = parse(raw_str, len, &obj, &error_offset);
+  delete_byte_array(raw_str, len+1);
   if (ok)
     return make_tag_obj(symb_idx_success, obj);
   else
@@ -318,13 +312,17 @@ OBJ parse_value(OBJ str_obj) {
 }
 
 char *print_value_alloc(void *ptr, uint32 size) {
-  return (char *) malloc(size);
+  uint32 *size_ptr = (uint32 *) ptr;
+  assert(*size_ptr == 0);
+  *size_ptr = size;
+  return new_byte_array(size);
 }
 
 OBJ print_value(OBJ obj) {
-  char *raw_str = printed_obj(obj, print_value_alloc, NULL);
+  uint32 size = 0;
+  char *raw_str = printed_obj(obj, print_value_alloc, &size);
   OBJ str_obj = str_to_obj(raw_str);
-  free(raw_str);
+  delete_byte_array(raw_str, size);
   return str_obj;
 }
 

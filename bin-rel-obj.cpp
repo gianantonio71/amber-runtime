@@ -1,7 +1,5 @@
 #include "lib.h"
 
-#include <stdlib.h>
-
 
 void build_map_right_to_left_sorted_idx_array(OBJ map) {
   assert(get_physical_type(map) == TYPE_MAP);
@@ -53,10 +51,12 @@ OBJ build_bin_rel(OBJ *vals1, OBJ *vals2, uint32 size) {
     if (comp_objs(vals1[idx], vals1[prev_idx]) != 0) {
       // The current left column value is new, so the tuple is new too.
       unique_tuples++;
+      prev_idx = idx;
     }
     else if (comp_objs(vals2[idx], vals2[prev_idx]) != 0) {
       // The current left column value is unchanged, but the value in the right column is new, so the tuple is new too
       unique_tuples++;
+      prev_idx = idx;
       left_col_is_unique = false;
     }
     else {
@@ -65,7 +65,6 @@ OBJ build_bin_rel(OBJ *vals1, OBJ *vals2, uint32 size) {
       release(vals1[idx]);
       release(vals2[idx]);
     }
-    prev_idx = idx;
   }
 
   // Creating the new binary relation object

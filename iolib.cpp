@@ -1,8 +1,6 @@
 #include "lib.h"
 #include "os-interface.h"
 
-#include <stdio.h> //## MAYBE THIS SHOULD NOT BE HERE...
-
 
 namespace generated {
   struct ENV;
@@ -13,7 +11,7 @@ OBJ FileRead_P(OBJ filename, generated::ENV &) {
   char *fname = obj_to_str(filename);
   int size;
   char *data = file_read(fname, size);
-  delete [] fname;
+  delete_byte_array(fname, strlen(fname)+1);
 
   if (size == -1)
     return make_symb(symb_idx_nothing);
@@ -23,7 +21,7 @@ OBJ FileRead_P(OBJ filename, generated::ENV &) {
     SEQ_OBJ *seq = new_seq(size);
     for (uint32 i=0 ; i < size ; i++)
       seq->buffer[i] = make_int((uint8) data[i]);
-    delete [] data;
+    delete_byte_array(data, size);
     seq_obj = make_seq(seq, size);
   }
 
@@ -39,13 +37,13 @@ OBJ FileWrite_P(OBJ filename, OBJ mode, OBJ data, generated::ENV &) {
   bool res;
   if (size > 0) {
     res = file_write(fname, buffer, size, append);
-    delete [] buffer;
+    delete_byte_array(buffer, size);
   }
   else {
     char empty_buff[1];
     res = file_write(fname, empty_buff, 0, append);
   }
-  delete [] fname;
+  delete_byte_array(fname, strlen(fname)+1);
   return make_bool(true);
 }
 
@@ -54,7 +52,7 @@ OBJ Print_P(OBJ str_obj, generated::ENV &env) {
   char *str = obj_to_str(str_obj);
   fputs(str, stdout);
   fflush(stdout);
-  delete [] str;
+  delete_byte_array(str, strlen(str)+1);
   return make_blank_obj();
 }
 

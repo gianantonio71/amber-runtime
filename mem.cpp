@@ -1,10 +1,5 @@
 #include "lib.h"
 
-#include <cstring>
-
-
-using namespace std;
-
 
 uint64 set_obj_mem_size(uint64 size) {
   assert(size > 0);
@@ -73,6 +68,9 @@ uint32 seq_capacity(uint64 byte_size) {
 
 SEQ_OBJ *new_seq(uint32 length) {
   assert(length > 0);
+
+  if (length > 0xFFFFFFF)
+    impl_fail("Maximum permitted sequence length (2^28-1) exceeded");
 
   uint32 actual_byte_size;
   SEQ_OBJ *seq = (SEQ_OBJ *) new_obj(seq_obj_mem_size(length), actual_byte_size);
@@ -161,6 +159,10 @@ void delete_obj_array(OBJ *buffer, uint32 size) {
   free_obj(buffer, size * sizeof(OBJ));
 }
 
+OBJ* resize_obj_array(OBJ* buffer, uint32 size, uint32 new_size) {
+  return (OBJ *) resize_obj(buffer, size * sizeof(OBJ), new_size * sizeof(OBJ));
+}
+
 uint32 *new_uint32_array(uint32 size) {
   return (uint32 *) new_obj(size * sizeof(uint32));
 }
@@ -169,12 +171,36 @@ void delete_uint32_array(uint32 *buffer, uint32 size) {
   free_obj(buffer, size * sizeof(uint32));
 }
 
+int32 *new_int32_array(uint32 size) {
+  return (int32 *) new_obj(size * sizeof(int32));
+}
+
+void delete_int32_array(int32 *buffer, uint32 size) {
+  free_obj(buffer, size * sizeof(int32));
+}
+
+char *new_byte_array(uint32 size) {
+  return (char *) new_obj(size);
+}
+
+void delete_byte_array(char *buffer, uint32 size) {
+  free_obj(buffer, size);
+}
+
 void **new_ptr_array(uint32 size) {
   return (void **) new_obj(size * sizeof(void *));
 }
 
 void delete_ptr_array(void **buffer, uint32 size) {
   free_obj(buffer, size * sizeof(void *));
+}
+
+void *new_void_array(uint32 size) {
+  return new_obj(size);
+}
+
+void delete_void_array(void *buffer, uint32 size) {
+  free_obj(buffer, size);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

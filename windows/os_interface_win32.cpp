@@ -2,7 +2,6 @@
 
 #include "windows.h"
 
-int get_tick_count()
-{
+uint64 get_tick_count() {
   return GetTickCount();
 }

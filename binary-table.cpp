@@ -21,8 +21,8 @@ void binary_table_updates_cleanup(BINARY_TABLE_UPDATES *updates) {
 ////////////////////////////////////////////////////////////////////////////////
 
 bool binary_table_contains(BINARY_TABLE *table, uint32 left_val, uint32 right_val) {
-  set<uint64> &left_to_right = table->left_to_right;
-  set<uint64>::iterator it = left_to_right.find(pack(left_val, right_val));
+  std::set<uint64> &left_to_right = table->left_to_right;
+  std::set<uint64>::iterator it = left_to_right.find(pack(left_val, right_val));
   return it != left_to_right.end();
 }
 
@@ -30,7 +30,7 @@ bool binary_table_contains(BINARY_TABLE *table, uint32 left_val, uint32 right_va
 
 void binary_table_delete_range_(BINARY_TABLE_ITER *iter, BINARY_TABLE_UPDATES *updates) {
   bool reversed = iter->reversed;
-  vector<uint64> &deletes = updates->deletes;
+  std::vector<uint64> &deletes = updates->deletes;
   while (!binary_table_iter_is_out_of_range(iter)) {
     uint64 pair = *iter->iter;
     deletes.push_back(reversed ? swap(pair) : pair);
@@ -66,8 +66,8 @@ void binary_table_insert(BINARY_TABLE_UPDATES *updates, uint32 left_val, uint32 
 }
 
 void binary_table_updates_apply(BINARY_TABLE *table, BINARY_TABLE_UPDATES *updates, VALUE_STORE *vs0, VALUE_STORE *vs1) {
-  set<uint64> &left_to_right = table->left_to_right;
-  set<uint64> &right_to_left = table->right_to_left;
+  std::set<uint64> &left_to_right = table->left_to_right;
+  std::set<uint64> &right_to_left = table->right_to_left;
 
   if (!updates->deletes.empty()) {
     uint32 count = updates->deletes.size();
@@ -112,7 +112,7 @@ void binary_table_updates_finish(BINARY_TABLE_UPDATES *updates, VALUE_STORE *vs0
 ////////////////////////////////////////////////////////////////////////////////
 
 void binary_table_get_iter_by_col_0(BINARY_TABLE *table, BINARY_TABLE_ITER *iter, uint32 value) {
-  set<uint64> &left_to_right = table->left_to_right;
+  std::set<uint64> &left_to_right = table->left_to_right;
   iter->iter = left_to_right.lower_bound(pack(value, 0));
   iter->end = left_to_right.end();
   iter->value = value;
@@ -120,7 +120,7 @@ void binary_table_get_iter_by_col_0(BINARY_TABLE *table, BINARY_TABLE_ITER *iter
 }
 
 void binary_table_get_iter_by_col_1(BINARY_TABLE *table, BINARY_TABLE_ITER *iter, uint32 value) {
-  set<uint64> &right_to_left = table->right_to_left;
+  std::set<uint64> &right_to_left = table->right_to_left;
   iter->iter = right_to_left.lower_bound(pack(value, 0));
   iter->end = right_to_left.end();
   iter->value = value;
@@ -128,7 +128,7 @@ void binary_table_get_iter_by_col_1(BINARY_TABLE *table, BINARY_TABLE_ITER *iter
 }
 
 void binary_table_get_iter(BINARY_TABLE *table, BINARY_TABLE_ITER *iter) {
-  set<uint64> &left_to_right = table->left_to_right;
+  std::set<uint64> &left_to_right = table->left_to_right;
   iter->iter = left_to_right.begin();
   iter->end = left_to_right.end();
   iter->value = 0xFFFFFFFFU;
@@ -138,7 +138,7 @@ void binary_table_get_iter(BINARY_TABLE *table, BINARY_TABLE_ITER *iter) {
 ////////////////////////////////////////////////////////////////////////////////
 
 bool binary_table_iter_is_out_of_range(BINARY_TABLE_ITER *iter) {
-  set<uint64>::iterator it = iter->iter;
+  std::set<uint64>::iterator it = iter->iter;
   return it == iter->end || (*it >> 32) > iter->value;
 }
 
@@ -178,7 +178,7 @@ OBJ copy_binary_table(BINARY_TABLE *table, VALUE_STORE *vs1, VALUE_STORE *vs2, b
   OBJ *slots1 = value_store_slot_array(vs1);
   OBJ *slots2 = value_store_slot_array(vs2);
 
-  set<uint64> &rows = table->left_to_right;
+  std::set<uint64> &rows = table->left_to_right;
   uint32 size = rows.size();
 
   if (size == 0)
@@ -188,7 +188,7 @@ OBJ copy_binary_table(BINARY_TABLE *table, VALUE_STORE *vs1, VALUE_STORE *vs2, b
   OBJ *col2 = col1 + size;
 
   uint32 idx = 0;
-  for (set<uint64>::iterator it=rows.begin(); it != rows.end() ; it++) {
+  for (std::set<uint64>::iterator it=rows.begin(); it != rows.end() ; it++) {
     uint64 row = *it;
     col1[idx] = slots1[left(row)];
     col2[idx++] = slots2[right(row)];

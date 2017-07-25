@@ -1,7 +1,5 @@
 #include "lib.h"
 
-#include <stdlib.h>
-
 
 OBJ build_tern_rel(OBJ *vals1, OBJ *vals2, OBJ *vals3, uint32 size) {
   if (size == 0)
@@ -21,6 +19,7 @@ OBJ build_tern_rel(OBJ *vals1, OBJ *vals2, OBJ *vals3, uint32 size) {
                comp_objs(vals3[idx], vals3[prev_idx]) != 0;
     if (neq) {
       unique_tuples++;
+      prev_idx = idx;
     }
     else {
       // Duplicate tuple, marking the entry as duplicate and releasing the objects
@@ -29,7 +28,6 @@ OBJ build_tern_rel(OBJ *vals1, OBJ *vals2, OBJ *vals3, uint32 size) {
       release(vals2[idx]);
       release(vals3[idx]);
     }
-    prev_idx = idx;
   }
 
   // Creating the new binary relation object

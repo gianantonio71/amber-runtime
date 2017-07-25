@@ -1,7 +1,5 @@
 #include "lib.h"
 
-#include <string.h>
-
 
 SEQ_OBJ *make_or_get_seq_obj_copy(SEQ_OBJ *seq) {
   if (seq->capacity > 0) {

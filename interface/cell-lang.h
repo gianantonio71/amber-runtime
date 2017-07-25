@@ -1,6 +1,3 @@
-#ifndef CELL_LANG_
-#define CELL_LANG_
-
 #include <string>
 #include <ostream>
 
@@ -39,5 +36,3 @@ namespace cell {
     virtual void print(std::ostream &os) = 0;
   };
 }
-
-#endif

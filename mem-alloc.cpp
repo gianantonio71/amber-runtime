@@ -1,14 +1,4 @@
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <stdio.h>
-
-#include <vector>
-#include <map>
-
-using std::vector;
-using std::map;
-
+#include "lib.h"
 
 
 void *alloc_pages(unsigned int page_count) {
@@ -54,8 +44,8 @@ struct STD_MEM_ALLOC {
 
 struct TRY_STATE_MEM_ALLOC {
   void *mem_blocks_pool[SLOT_COUNT];
-  vector<void *> pooled_blocks;
-  map<void *, unsigned int> large_blocks;
+  std::vector<void *> pooled_blocks;
+  std::map<void *, unsigned int> large_blocks;
 };
 
 static STD_MEM_ALLOC       std_mem_alloc;
@@ -101,14 +91,14 @@ void restore_try_state() {
 }
 
 void release_all_try_state_memory() {
-  vector<void *>::iterator pit = try_mem_alloc.pooled_blocks.begin();
-  vector<void *>::iterator pend = try_mem_alloc.pooled_blocks.end();
+  std::vector<void *>::iterator pit = try_mem_alloc.pooled_blocks.begin();
+  std::vector<void *>::iterator pend = try_mem_alloc.pooled_blocks.end();
   for ( ; pit != pend ; pit++)
     release_pages(*pit, 16);
   try_mem_alloc.pooled_blocks.clear();
 
-  map<void *, unsigned int>::iterator lit = try_mem_alloc.large_blocks.begin();
-  map<void *, unsigned int>::iterator lend = try_mem_alloc.large_blocks.end();
+  std::map<void *, unsigned int>::iterator lit = try_mem_alloc.large_blocks.begin();
+  std::map<void *, unsigned int>::iterator lend = try_mem_alloc.large_blocks.end();
   for ( ; lit != lend ; lit++)
     release_pages(lit->first, lit->second);
   try_mem_alloc.large_blocks.clear();

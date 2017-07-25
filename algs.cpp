@@ -1,7 +1,5 @@
 #include "lib.h"
 
-#include <algorithm>
-
 
 struct obj_less {
   bool operator () (OBJ obj1, OBJ obj2) {

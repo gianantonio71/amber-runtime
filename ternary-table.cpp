@@ -1,6 +1,7 @@
 #include "lib.h"
 #include "table-utils.h"
 
+
 void ternary_table_init(TERNARY_TABLE *table) {
 
 }
@@ -26,8 +27,8 @@ bool ternary_table_contains(TERNARY_TABLE *table, uint32 left_val, uint32 middle
   tuple3 entry;
   build(entry, left_val, middle_val, right_val);
 
-  set<tuple3> &unshifted = table->unshifted;
-  set<tuple3>::iterator it = unshifted.find(entry);
+  std::set<tuple3> &unshifted = table->unshifted;
+  std::set<tuple3>::iterator it = unshifted.find(entry);
   return it != unshifted.end();
 }
 
@@ -35,7 +36,7 @@ bool ternary_table_contains(TERNARY_TABLE *table, uint32 left_val, uint32 middle
 
 void ternary_table_delete_range_(TERNARY_TABLE_ITER *iter, TERNARY_TABLE_UPDATES *updates) {
   int shift = iter->shift;
-  vector<tuple3> &deletes = updates->deletes;
+  std::vector<tuple3> &deletes = updates->deletes;
   while (!ternary_table_iter_is_out_of_range(iter)) {
     if (shift == 0) {
       deletes.push_back(*iter->iter);
@@ -121,9 +122,9 @@ void ternary_table_insert(TERNARY_TABLE_UPDATES *updates, uint32 left_val, uint3
 ////////////////////////////////////////////////////////////////////////////////
 
 void ternary_table_updates_apply(TERNARY_TABLE *table, TERNARY_TABLE_UPDATES *updates, VALUE_STORE *vs0, VALUE_STORE *vs1, VALUE_STORE *vs2) {
-  set<tuple3> &unshifted = table->unshifted;
-  set<tuple3> &shifted_once = table->shifted_once;
-  set<tuple3> &shifted_twice = table->shifted_twice;
+  std::set<tuple3> &unshifted = table->unshifted;
+  std::set<tuple3> &shifted_once = table->shifted_once;
+  std::set<tuple3> &shifted_twice = table->shifted_twice;
 
   uint32 count = updates->deletes.size();
   if (count > 0) {
@@ -177,7 +178,7 @@ void ternary_table_updates_finish(TERNARY_TABLE_UPDATES *updates, VALUE_STORE *v
 ////////////////////////////////////////////////////////////////////////////////
 
 void ternary_table_get_iter_by_cols_01(TERNARY_TABLE *table, TERNARY_TABLE_ITER *iter, uint32 value0, uint32 value1) {
-  set<tuple3> &target = table->unshifted;
+  std::set<tuple3> &target = table->unshifted;
   tuple3 lb;
   build(lb, value0, value1, 0);
   iter->iter = target.lower_bound(lb);
@@ -187,7 +188,7 @@ void ternary_table_get_iter_by_cols_01(TERNARY_TABLE *table, TERNARY_TABLE_ITER 
 }
 
 void ternary_table_get_iter_by_cols_02(TERNARY_TABLE *table, TERNARY_TABLE_ITER *iter, uint32 value0, uint32 value2) {
-  set<tuple3> &target = table->shifted_twice;
+  std::set<tuple3> &target = table->shifted_twice;
   tuple3 lb;
   build(lb, value2, value0, 0);
   iter->iter = target.lower_bound(lb);
@@ -197,7 +198,7 @@ void ternary_table_get_iter_by_cols_02(TERNARY_TABLE *table, TERNARY_TABLE_ITER 
 }
 
 void ternary_table_get_iter_by_cols_12(TERNARY_TABLE *table, TERNARY_TABLE_ITER *iter, uint32 value1, uint32 value2) {
-  set<tuple3> &target = table->shifted_once;
+  std::set<tuple3> &target = table->shifted_once;
   tuple3 lb;
   build(lb, value1, value2, 0);
   iter->iter = target.lower_bound(lb);
@@ -207,7 +208,7 @@ void ternary_table_get_iter_by_cols_12(TERNARY_TABLE *table, TERNARY_TABLE_ITER 
 }
 
 void ternary_table_get_iter_by_col_0(TERNARY_TABLE *table, TERNARY_TABLE_ITER *iter, uint32 value) {
-  set<tuple3> &target = table->unshifted;
+  std::set<tuple3> &target = table->unshifted;
   tuple3 lb;
   build(lb, value, 0, 0);
   iter->iter = target.lower_bound(lb);
@@ -217,7 +218,7 @@ void ternary_table_get_iter_by_col_0(TERNARY_TABLE *table, TERNARY_TABLE_ITER *i
 }
 
 void ternary_table_get_iter_by_col_1(TERNARY_TABLE *table, TERNARY_TABLE_ITER *iter, uint32 value) {
-  set<tuple3> &target = table->shifted_once;
+  std::set<tuple3> &target = table->shifted_once;
   tuple3 lb;
   build(lb, value, 0, 0);
   iter->iter = target.lower_bound(lb);
@@ -227,7 +228,7 @@ void ternary_table_get_iter_by_col_1(TERNARY_TABLE *table, TERNARY_TABLE_ITER *i
 }
 
 void ternary_table_get_iter_by_col_2(TERNARY_TABLE *table, TERNARY_TABLE_ITER *iter, uint32 value) {
-  set<tuple3> &target = table->shifted_twice;
+  std::set<tuple3> &target = table->shifted_twice;
   tuple3 lb;
   build(lb, value, 0, 0);
   iter->iter = target.lower_bound(lb);
@@ -237,7 +238,7 @@ void ternary_table_get_iter_by_col_2(TERNARY_TABLE *table, TERNARY_TABLE_ITER *i
 }
 
 void ternary_table_get_iter(TERNARY_TABLE *table, TERNARY_TABLE_ITER *iter) {
-  set<tuple3> &target = table->unshifted;
+  std::set<tuple3> &target = table->unshifted;
   iter->iter = target.begin();
   iter->end = target.end();
   iter->excl_upper_bound = 0xFFFFFFFFFFFFFFFFULL;
@@ -247,7 +248,7 @@ void ternary_table_get_iter(TERNARY_TABLE *table, TERNARY_TABLE_ITER *iter) {
 ////////////////////////////////////////////////////////////////////////////////
 
 bool ternary_table_iter_is_out_of_range(TERNARY_TABLE_ITER *iter) {
-  set<tuple3>::iterator it = iter->iter;
+  std::set<tuple3>::iterator it = iter->iter;
   return it == iter->end || it->fields01 >= iter->excl_upper_bound;
 }
 
@@ -322,7 +323,7 @@ OBJ copy_ternary_table(TERNARY_TABLE *table, VALUE_STORE *vs1, VALUE_STORE *vs2,
   OBJ *slots2 = value_store_slot_array(vs2);
   OBJ *slots3 = value_store_slot_array(vs3);
 
-  set<tuple3> &rows = table->unshifted;
+  std::set<tuple3> &rows = table->unshifted;
   uint32 size = rows.size();
 
   if (size == 0)
@@ -333,7 +334,7 @@ OBJ copy_ternary_table(TERNARY_TABLE *table, VALUE_STORE *vs1, VALUE_STORE *vs2,
   OBJ *col3 = col2 + size;
 
   uint32 idx = 0;
-  for (set<tuple3>::iterator it=rows.begin() ; it != rows.end() ; it++) {
+  for (std::set<tuple3>::iterator it=rows.begin() ; it != rows.end() ; it++) {
     tuple3 row = *it;
     col1[idx] = slots1[left(row.fields01)];
     col2[idx] = slots2[right(row.fields01)];

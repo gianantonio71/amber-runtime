@@ -1,7 +1,3 @@
-#include <stddef.h>
-#include <stdio.h>
-#include <string.h>
-
 #include "lib.h"
 
 
@@ -28,12 +24,12 @@ const int SYMB_IDX_SHIFT      = 0;
 const int LENGTH_SHIFT        = 0;
 const int INNER_TAG_SHIFT     = 16;
 const int TAG_SHIFT           = 32;
-const int OFFSET_SHIFT        = 32;
+const int OFFSET_SHIFT        = 28;
 
 const int SYMB_IDX_WIDTH      = 16;
-const int LENGTH_WIDTH        = 32;
+const int LENGTH_WIDTH        = 28;
 const int TAG_WIDTH           = 16;
-const int OFFSET_WIDTH        = 24;
+const int OFFSET_WIDTH        = 28;
 
 const uint64 TYPE_MASK        = MASK(TYPE_SHIFT, TYPE_WIDTH);
 const uint64 MEM_LAYOUT_MASK  = MASK(MEM_LAYOUT_SHIFT, MEM_LAYOUT_WIDTH);
@@ -293,6 +289,10 @@ OBJ make_seq(SEQ_OBJ *ptr, uint32 length) {
 
 OBJ make_slice(SEQ_OBJ *ptr, MEM_LAYOUT mem_layout, uint32 offset, uint32 length) {
   assert(ptr != NULL & ((uint64) offset) + ((uint64) length) <= ptr->size);
+  assert(offset <= 0xFFFFFFF);
+
+  // if (offset > 0xFFFFFFF)
+  //   impl_fail("Currently subsequences cannot start at offsets greater that 2^28-1");
 
   // If the offset is 0, then we can just create a normal sequence
   // If the length is 0, we must create an empty sequence, which is again a normal sequence
@@ -302,10 +302,6 @@ OBJ make_slice(SEQ_OBJ *ptr, MEM_LAYOUT mem_layout, uint32 offset, uint32 length
     // assert(obj.extra_data.slice.mem_layout == mem_layout);
     return obj;
   }
-
-  //## BUG BUG BUG: FIX FIX FIX
-  if (offset > 0xFFFFFF)
-    impl_fail("Currently subsequences cannot start at offsets greater that 2^24-1");
 
   OBJ obj;
   obj.core_data.ptr = ptr->buffer + offset;

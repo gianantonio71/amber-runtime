@@ -1,8 +1,5 @@
 #include "lib.h"
 
-#include <stdlib.h>
-#include <string.h>
-
 
 bool inline_eq(OBJ obj1, OBJ obj2) {
   // assert(is_inline_obj(obj2) & !is_float(obj2));
@@ -272,7 +269,7 @@ OBJ lookup(OBJ rel, OBJ key) {
     char buff[1024];
     strcpy(buff, "Map key not found: ");
     uint32 len = strlen(buff);
-    printed_obj(key, buff+len, sizeof(buff)-len-1, true);
+    printed_obj(key, buff+len, sizeof(buff)-len-1);
     soft_fail(buff);
   }
 

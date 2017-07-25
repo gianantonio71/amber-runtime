@@ -1,6 +1,5 @@
-#include <stddef.h>
-
 #include "lib.h"
+
 
 const uint32 BASE_VALUE   = 17;
 const uint32 MULTIPLIER   = 37;

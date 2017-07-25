@@ -1,9 +1,5 @@
 #include "lib.h"
 
-#include <string.h>
-#include <set>
-
-
 
 unsigned int size_code_size(int size_code);
 void *alloc_mem_block(int byte_size);
@@ -135,16 +131,14 @@ uint32 get_total_mem_requested() {
   return total_mem_requested;
 }
 
-#include <cstdio>
-
 void print_all_live_objs() {
   if (!live_objs.empty()) {
-    std::fprintf(stderr, "Live objects:\n");
+    fprintf(stderr, "Live objects:\n");
     for (std::set<void*>::iterator it = live_objs.begin() ; it != live_objs.end() ; it++) {
       void *ptr = *it;
-      std::printf("  %8llx\n", (unsigned long long)ptr);
+      printf("  %8llx\n", (unsigned long long)ptr);
     }
-    std::fflush(stdout);
+    fflush(stdout);
   }
 }
 
@@ -197,4 +191,12 @@ void free_obj(void *ptr, uint32 byte_size) {
 #endif
 
   release_mem_block(ptr, min_size_code(byte_size));
+}
+
+void* resize_obj(void *ptr, uint32 byte_size, uint32 new_byte_size) {
+  void *new_ptr = new_obj(new_byte_size);
+  uint32 min_byte_size = byte_size < new_byte_size ? byte_size : new_byte_size;
+  memcpy(new_ptr, ptr, min_byte_size);
+  free_obj(ptr, byte_size);
+  return new_ptr;
 }

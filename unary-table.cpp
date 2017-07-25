@@ -1,18 +1,5 @@
 #include "lib.h"
 
-#include <cstdlib>
-#include <cstring>
-
-#include <algorithm>
-
-
-// using std::malloc;
-// using std::free;
-using std::memset;
-using std::max_element;
-// using std::size_t;
-
-////////////////////////////////////////////////////////////////////////////////
 
 void unary_table_init(UNARY_TABLE *table) {
   const uint32 INIT_SIZE = 1024;
@@ -146,7 +133,7 @@ void unary_table_updates_apply(UNARY_TABLE *table, UNARY_TABLE_UPDATES *updates,
 
   if (inserts_count > 0) {
     uint32 *inserts = updates->buffer + updates->capacity - inserts_count;
-    uint32 max_val = *max_element(inserts, inserts + inserts_count);
+    uint32 max_val = *std::max_element(inserts, inserts + inserts_count);
     uint32 size = table->size;
     uint64 *bitmap = table->bitmap;
     if (max_val >= size) {

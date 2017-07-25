@@ -1,10 +1,4 @@
-#include <vector>
-#include <cstdio>
-#include <cstring>
-
 #include "lib.h"
-
-using namespace std;
 
 
 std::vector<const char *> function_names;
@@ -112,8 +106,7 @@ void print_stack_frame(FILE *fp, uint32 frame_idx) {
 
 void print_stack_frame(uint32 frame_idx) {
   const char *fn_name = function_names[frame_idx];
-  uint32 arity = arities[frame_idx];
-  fprintf(stderr, "%s/%d\n", fn_name, arity);
+  fprintf(stderr, "%s\n", fn_name);
 }
 
 
@@ -156,8 +149,10 @@ void print_assertion_failed_msg(const char *file, uint32 line, const char *text)
 ////////////////////////////////////////////////////////////////////////////////
 
 void soft_fail(const char *msg) {
+#ifndef CELL_LANG_NO_TRANSACTIONS
   if (is_in_try_state())
-    throw 0;
+    throw 0LL;
+#endif
 
   if (msg != NULL)
     fprintf(stderr, "%s\n\n", msg);

@@ -1,10 +1,3 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-
-#include <vector>
-#include <map>
-
 #include "lib.h"
 
 
@@ -112,7 +105,7 @@ void obj_to_str(OBJ str_obj, char *buffer, uint32 size) {
     uint32 len = get_seq_length(raw_str_obj);
     int64 min_size = to_utf8(seq_buffer, len, NULL);
     if (size < min_size)
-      throw 0;
+      internal_fail();
     to_utf8(seq_buffer, len, buffer);
   }
   else
@@ -127,7 +120,7 @@ char *obj_to_byte_array(OBJ byte_seq_obj, uint32 &size) {
 
   uint32 len = get_seq_length(byte_seq_obj);
   OBJ *elems = get_seq_buffer_ptr(byte_seq_obj);
-  char *buffer = (char *) malloc(len);
+  char *buffer = new_byte_array(len);
   for (uint32 i=0 ; i < len ; i++) {
     long long val = get_int_val(elems[i]);
     assert(val >= 0 && val <= 255);
@@ -139,7 +132,7 @@ char *obj_to_byte_array(OBJ byte_seq_obj, uint32 &size) {
 
 char *obj_to_str(OBJ str_obj) {
   uint32 size = get_seq_length(get_inner_obj(str_obj)) + 1;
-  char *buffer = (char *) malloc(size);
+  char *buffer = new_byte_array(size);
   obj_to_str(str_obj, buffer, size);
   return buffer;
 }
@@ -214,8 +207,9 @@ uint16 lookup_symb_idx(const char *str_, uint32 len) {
 
 OBJ to_symb(OBJ obj) {
   char *str = obj_to_str(obj);
-  uint16 symb_idx = lookup_symb_idx(str, strlen(str));
-  free(str);
+  uint32 len = strlen(str);
+  uint16 symb_idx = lookup_symb_idx(str, len);
+  delete_byte_array(str, len+1);
   return make_symb(symb_idx);
 }
 

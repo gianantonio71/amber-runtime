@@ -1,11 +1,8 @@
+#include "lib.h"
 #include "os-interface.h"
 
-#include <time.h>
-#include <stdio.h>
-#include <assert.h>
 
-
-int get_tick_count() {
+uint64 get_tick_count() {
   struct timespec ts;
   if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) {
     // error
@@ -29,11 +26,11 @@ char *file_read(const char *fname, int &size) {
     fclose(fp);
     return NULL;
   }
-  char *buff = new char[size];
+  char *buff = new_byte_array(size);
   int read = fread(buff, 1, size, fp);
   fclose(fp);
   if (read != size) {
-    delete [] buff;
+    delete_byte_array(buff, size);
     size = -1;
     return NULL;
   }
