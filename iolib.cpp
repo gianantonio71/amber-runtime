@@ -29,22 +29,21 @@ OBJ FileRead_P(OBJ filename, generated::ENV &) {
 }
 
 
-OBJ FileWrite_P(OBJ filename, OBJ mode, OBJ data, generated::ENV &) {
+OBJ FileWrite_P(OBJ filename, OBJ data, generated::ENV &) {
   char *fname = obj_to_str(filename);
-  bool append = get_bool(mode);
   uint32 size;
   char *buffer = obj_to_byte_array(data, size);
   bool res;
   if (size > 0) {
-    res = file_write(fname, buffer, size, append);
+    res = file_write(fname, buffer, size, false);
     delete_byte_array(buffer, size);
   }
   else {
     char empty_buff[1];
-    res = file_write(fname, empty_buff, 0, append);
+    res = file_write(fname, empty_buff, 0, false);
   }
   delete_byte_array(fname, strlen(fname)+1);
-  return make_bool(true);
+  return make_bool(res);
 }
 
 
