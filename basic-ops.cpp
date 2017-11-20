@@ -150,6 +150,11 @@ uint32 get_size(OBJ coll) {
   return get_tern_rel_ptr(coll)->size;
 }
 
+int64 float_bits(OBJ obj) {
+  double x = get_float(obj);
+  return *((int64 *) &x);
+}
+
 int64 mantissa(OBJ obj) {
   int64 mantissa;
   int32 dec_exp;

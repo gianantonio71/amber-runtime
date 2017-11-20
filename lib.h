@@ -462,6 +462,7 @@ bool has_triple(OBJ rel, OBJ arg1, OBJ arg2, OBJ arg3);
 
 int64 get_int_val(OBJ);
 uint32 get_size(OBJ set);
+int64 float_bits(OBJ);
 int64 mantissa(OBJ);
 int64 dec_exp(OBJ);
 int64 rand_nat(int64 max);  // Non-deterministic
